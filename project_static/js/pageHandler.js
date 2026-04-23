@@ -64,11 +64,12 @@ let pageHandler = {
 			}
 	},
 
+    // byHen: commentato il messaggio di welcome! 
 	showWelcomeMessage: function() {
 		let url = new URLSearchParams(location.search);
-		if (url.toString() == "") {
+		/*if (url.toString() == "") {
 		    $('#welcomeMessageModal').modal('show');
-		}
+		}*/
 	},
 
 	populatePageMenu: function() {

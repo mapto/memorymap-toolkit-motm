@@ -47,6 +47,8 @@ services:
       - DJANGO_SESSION_COOKIE_SECURE=${DJANGO_SESSION_COOKIE_SECURE}
       - DJANGO_CSRF_COOKIE_SECURE=${DJANGO_CSRF_COOKIE_SECURE}
       - DJANGO_DB_HOST=${DJANGO_DB_HOST}
+      - DJANGO_SETTINGS_MODULE=memorymap_toolkit.settings.local
+      # byHen: aggiunta riga per poter utilizzare la shell nel container
 volumes:
   postgres_data:
   static:

@@ -1,65 +1,36 @@
-# For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3.11-slim
+FROM python:3.9-bullseye
 
-EXPOSE 8000
-
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Turns off buffering for easier container logging
-ENV PYTHONUNBUFFERED=1
-
-# Add Postgres apt repository so you can get version 16...
-RUN apt-get update
-RUN apt-get install curl ca-certificates -y && \
-    install -d /usr/share/postgresql-common/pgdg && \
-    curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc && \
-    sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-
-# Install dependencies
-
-RUN apt-get install \
-    gcc \
+# Install Python and build tools 
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
     python3-dev \
-    python3-setuptools \
-    libgdal36 \
+    gcc \
     libpq-dev \
-    postgresql-server-dev-all \
-    libjpeg-turbo-progs \
-    libjpeg62-turbo-dev \
-    zlib1g-dev \
-    libopenjp2-7-dev \
-    libxml2-dev \
-    libxslt-dev \
-    libfreetype6-dev \
-    libfreetype6 \
-    libffi-dev \
-    libzmq3-dev \
-    libharfbuzz-dev \
-    libfribidi-dev \
-    netcat-traditional -y
+    gdal-bin \
+    libgdal-dev \
+    && apt-get clean
+    
+# Upgrade pip & setuptools
+RUN python3 -m pip install --upgrade pip "setuptools<60" wheel
 
-# Install pip requirements
-COPY requirements.txt .
-RUN python -m pip install --upgrade pip setuptools wheel
-RUN python -m pip install -r requirements.txt
+# Install app requirements
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install -r /tmp/requirements.txt
 
+# App setup
 WORKDIR /app
 COPY . /app
 
-# Creates a non-root user with an explicit UID and adds permission to access the /app folder
-# For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+# Non-root user
+RUN useradd -u 5678 -ms /bin/bash appuser && chown -R appuser /app
 USER appuser
 
-RUN mkdir static && \
-    mkdir media && \
-    mkdir logs && \
-    mkdir backups && \
-    cp memorymap_toolkit/settings/secret_settings_template.py memorymap_toolkit/settings/secret_settings.py
+# Create folders
+RUN mkdir -p static media logs backups
 
+# Copy secret settings
+RUN cp memorymap_toolkit/settings/secret_settings_template.py memorymap_toolkit/settings/secret_settings.py
 
-RUN chmod +x entrypoint.sh
-
-# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "memorymap_toolkit.wsgi"]
+# Start command
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
