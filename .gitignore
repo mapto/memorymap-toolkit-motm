@@ -114,3 +114,5 @@ secret_settings.py
 *.tar.gz
 
 *.psql
+
+data/
