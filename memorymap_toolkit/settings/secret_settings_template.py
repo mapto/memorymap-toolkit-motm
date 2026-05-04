@@ -3,7 +3,8 @@ import os
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 
-ALLOWED_HOSTS = [os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost')]
+# Hosts are split for the occurrence that more than one host (space-separated) is provided in the .env file
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost').split()
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -20,8 +21,8 @@ DATABASES = {
 }
 
 # If you want to use Google Analytics to monitor traffic to your site, put your tracking code here
-
 GOOGLE_ANALYTICS_PROPERTY_ID = ''
+
 
 # Uncomment the lines below if you've enabled SSL for your site. Not strictly secret settings, but kept here so they are kept out of version control.
 
