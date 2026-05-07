@@ -10,7 +10,7 @@ from openpyxl import load_workbook
 
 def parse_date(value):
     """
-    Converte date tipo '15.6.1921' in 'YYYY-MM-DD'
+    Convertion '15.6.1921' in 'YYYY-MM-DD'
     """
     try:
         return datetime.strptime(value.strip(), "%d.%m.%Y").date().isoformat()
@@ -20,7 +20,7 @@ def parse_date(value):
 
 def parse_coordinates(text):
     """
-    Estrae coordinate da stringhe tipo:
+    Extraction of coordinates:
     'Koordinaten: 50.58 / 8.67'
     """
     match = re.search(r"([\d.]+)\s*/\s*([\d.]+)", text)
@@ -30,6 +30,18 @@ def parse_coordinates(text):
             "lon": float(match.group(2)),
         }
     return None
+
+def clean_value(value):
+    if not value:
+        return None
+
+    value = str(value).strip()
+
+    # valori da considerare "vuoti"
+    if value in ["", "-", "–", "—"]:
+        return None
+
+    return value
 
 
 # ==================================================
@@ -101,14 +113,18 @@ def read_person_record(
     # ==================================================
     for field, value, extra in rows:
         field = field.strip() if field else ""
-        value_str = str(value).strip() if value else ""
-        extra_str = str(extra).strip() if extra else ""
+        
+        value_str = clean_value(value)
+        extra_str = clean_value(extra)
 
         # ---------------------------
         # Identifier
         # ---------------------------
         if record["identifier"] is None:
-            match = re.search(r"(IS_[A-Z]_\d+)", field + " " + value_str)
+            combined = " ".join([x for x in [field, value_str] if x])
+            combined = combined.replace("–", "-")
+
+            match = re.search(r"Metadaten\s*-\s*([A-Za-z0-9_]+)", combined)
             if match:
                 record["identifier"] = match.group(1)
 
@@ -158,8 +174,11 @@ def read_person_record(
             elif field == "Geburtsort":
                 record["birth_place"]["name"] = value_str
 
-                parts = [p.strip() for p in extra_str.split("|") if p.strip()]
+                parts = []
 
+                if extra_str:
+                    parts = [p.strip() for p in extra_str.split("|") if p.strip()]
+                    
                 for part in parts:
                     if part.startswith("Land:"):
                         record["birth_place"]["regions"].append(part.split(":", 1)[1].strip())
@@ -201,19 +220,30 @@ def read_person_record(
             current = record["interviews"][index - 1]
 
             if subfield == "Typ":
-                current["type"] = value_str
+                current["type"] = clean_value(value)
 
             elif subfield == "Ort":
-                current["place"] = value_str
+                current["place"] = clean_value(value)
 
             elif subfield == "Datum":
-                current["date"] = parse_date(value_str)
+                current["date"] = parse_date(value_str) if value_str else None
 
             elif subfield == "Gesprächspartner/in":
-                current["interviewer"] = value_str
+                current["interviewer"] = clean_value(value)
 
             elif subfield == "ID":
-                current["archive_id"] = value_str
+                current["archive_id"] = clean_value(value)
+    
+    record["interviews"] = [
+        i for i in record["interviews"]
+        if any([
+            i["type"],
+            i["place"],
+            i["date"],
+            i["interviewer"],
+            i["archive_id"]
+        ])
+]
 
     # ==================================================
     # FAMILY SHEET
@@ -224,7 +254,7 @@ def read_person_record(
         sheet = wb["Familie"]
 
         for i, row in enumerate(sheet.iter_rows(values_only=True)):
-            if i == 0:
+            if i <= 1:
                 continue  # header
 
             if not row or all(cell is None for cell in row):
@@ -245,12 +275,12 @@ def read_person_record(
                 birth_date = parse_date(birth_date_raw)
 
             record["family"].append({
-                "relation": relation,
-                "given_name": given_name,
-                "family_name": family_name,
+                "relation": clean_value(relation),
+                "given_name": clean_value(given_name),
+                "family_name": clean_value(family_name),
                 "birth_date": birth_date,
-                "birth_place": birth_place,
-                "notes": notes.strip() if notes else None
+                "birth_place": clean_value(birth_place),
+                "notes": clean_value(notes)
             })
 
     # ==================================================
