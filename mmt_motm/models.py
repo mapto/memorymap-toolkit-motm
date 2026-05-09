@@ -126,7 +126,8 @@ def __str__(self):
 # This class contains all the People linked to the Project
 class Person(models.Model):
     # External archive identifiers
-    identifier = models.CharField(max_length=100, unique=True)
+    identifier = models.CharField(max_length=100, unique=True, null=True, blank=True,
+    db_index=True)
 
     given_name = models.CharField(max_length=100)
     family_name = models.CharField(max_length=100)
@@ -213,6 +214,12 @@ class Interview(models.Model):
 
     # Recording identifier (e.g., audio/video file ID)
     recording_id = models.CharField(max_length=100, blank=True)
+
+    interview_type = models.CharField(max_length=100, blank=True)
+
+    date = models.DateField(null=True, blank=True)
+
+    place = models.CharField(max_length=200, blank=True)
 
     description = models.TextField(blank=True)
 
