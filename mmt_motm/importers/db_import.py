@@ -5,7 +5,7 @@ import os
 import json
 from django.contrib.gis.geos import Point
 
-from mmt_motm.models import Person, Interview, Relationship, LocationPoint
+from mmt_motm.models import Person, Interview, Relationship, LocationPoint, LocationRegion
 
 
 # =======================================================
@@ -14,7 +14,6 @@ from mmt_motm.models import Person, Interview, Relationship, LocationPoint
 def load_json(path):
     with open(path, encoding="utf-8") as f:
         return json.load(f)
-
 
 def is_empty(value):
     return value in [None, "", "-", "–", "—"]
@@ -44,6 +43,31 @@ def parse_name(full_name):
         return given_name, family_name
 
     return full_name, "UNKNOWN"
+
+# Regions hierarchy
+def get_or_create_region_hierarchy(region_list):
+    if not region_list:
+        return None
+
+    parent = None
+
+    for name in region_list:
+        if is_empty(name):
+            continue
+
+        region = LocationRegion.objects.filter(name=name).first()
+
+        if not region:
+            region = LocationRegion.objects.create(name=name)
+
+        if parent and region.part_of != parent:
+            region.part_of = parent
+            region.save()
+
+        parent = region
+
+    return parent
+
 
 # =======================================================
 # PERSON MATCHING
@@ -113,11 +137,35 @@ def get_or_create_location(bp):
         current_name=bp["name"]
     ).first()
 
+    # Region update
     if location:
+
+        if not location.region:   
+            regions = bp.get("regions") or []
+
+            parent = None
+            for name in regions:
+                if is_empty(name):
+                    continue
+
+                region = LocationRegion.objects.filter(name=name).first()
+
+                if not region:
+                    region = LocationRegion.objects.create(name=name)
+
+                if parent and region.part_of != parent:
+                    region.part_of = parent
+                    region.save()
+
+                parent = region
+
+            if parent:
+                location.region = parent
+                location.save()
+
         return location
 
     point = None
-
     if bp.get("coordinates"):
         lat = bp["coordinates"].get("lat")
         lon = bp["coordinates"].get("lon")
@@ -125,11 +173,35 @@ def get_or_create_location(bp):
         if lat is not None and lon is not None:
             point = Point(lon, lat)
 
-    return LocationPoint.objects.create(
+    location = LocationPoint.objects.create(
         current_name=bp["name"],
         location=point,
         wikidata_id=bp.get("wikidata_id"),
     )
+
+    regions = bp.get("regions") or []
+
+    parent = None
+    for name in regions:
+        if is_empty(name):
+            continue
+
+        region = LocationRegion.objects.filter(name=name).first()
+
+        if not region:
+            region = LocationRegion.objects.create(name=name)
+
+        if parent and region.part_of != parent:
+            region.part_of = parent
+            region.save()
+
+        parent = region
+
+    if parent:
+        location.region = parent
+        location.save()
+
+    return location
 
 # =======================================================
 # INTERVIEW 
