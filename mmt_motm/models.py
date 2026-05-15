@@ -170,12 +170,23 @@ class Person(models.Model):
 
     def __str__(self):
         return f"{self.given_name} {self.family_name}"
-    
+
+# This class contains all RelationshipType
+class RelationshipType(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    original_label = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return self.name
+        
 # This class contains all Relationship among People
 class Relationship(models.Model):
-    # Type of relationship (e.g., mother, father, spouse, etc.)
-    # Martin: forse da creare classe con tutte le possibili relazioni...
-    relationship_type = models.CharField(max_length=50)
+    
+    relationship_type = models.ForeignKey(
+        "RelationshipType",
+        on_delete=models.CASCADE,
+        related_name="relationships"
+    )
 
     # Start and end of the relationship (if applicable)
     start_date = models.DateField(null=True, blank=True)

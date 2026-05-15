@@ -10,7 +10,8 @@ from .models import (
     Event,
     Person,
     Relationship,
-    Interview
+    Interview,
+    RelationshipType
 )
 
 @admin.register(Person)
@@ -123,6 +124,11 @@ admin.site._registry[LocationRegion].opts.verbose_name_plural = "Regions"
 
 admin.site._registry[Person].opts.verbose_name = "Person"
 admin.site._registry[Person].opts.verbose_name_plural = "People"
+
+@admin.register(RelationshipType)
+class RelationshipTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "original_label")
+    ordering = ("name",)
 
 admin.site.register(URL)
 admin.site.register(Event)

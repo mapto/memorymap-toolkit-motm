@@ -3,9 +3,17 @@
 # =======================================================
 import os
 import json
+
 from django.contrib.gis.geos import Point
 
-from mmt_motm.models import Person, Interview, Relationship, LocationPoint, LocationRegion
+from mmt_motm.models import (
+    Person, 
+    Interview, 
+    Relationship, 
+    LocationPoint, 
+    LocationRegion, 
+    RelationshipType,
+)
 
 
 # =======================================================
@@ -67,6 +75,46 @@ def get_or_create_region_hierarchy(region_list):
         parent = region
 
     return parent
+
+def clean_label(label):
+
+    label = label.strip().lower()
+    label = label.replace("(", "").replace(")", "")
+    label = label.replace(".", "")
+    label = " ".join(label.split())
+
+    return label
+
+RELATIONSHIP_MAP = {
+        "vater": "father",
+        "mutter": "mother",
+        "schwester": "sister",
+        "bruder": "brother",
+        "großvater": "grandfather",
+        "grossvater": "grandfather",
+        "großvater väterlicherseits": "paternal grandfather",
+        "grossvater väterlicherseits": "paternal grandfather",
+        "großvater väterl": "paternal grandfather",
+        "großmutter väterlicherseits": "paternal grandmother",
+        "großmutter väterl": "paternal grandmother",
+        "grossmutter väterlicherseits": "paternal grandmother",
+        "großmutter mütterlicherseits": "maternal grandmother",
+        "grossmutter mütterlicherseits": "maternal grandmother",
+        "großmutter mütt": "maternal grandmother",
+        "großvater mütterlicherseits": "maternal grandfather",
+        "großvater mütt": "maternal grandfather",
+        "tante": "aunt",
+        "onkel": "uncle",
+        "onkel väterl": "paternal uncle",
+        "bruder aus erster ehe": "brother from the first marriage",
+        "halbschwester": "half sister",
+        "1 frau erste ehe": "first wife",
+        "stiefmutter": "stepmother",
+        "cousin": "cousin",
+        "vetter": "cousin",
+        "cousine": "cousin",
+        "base": "cousin",
+}
 
 
 # =======================================================
@@ -244,6 +292,26 @@ def create_interview(person, data):
 # =======================================================
 # RELATIONSHIP 
 # =======================================================
+def get_or_create_relationship_type(label):
+
+    if is_empty(label):
+        return None
+
+    label_original = label.strip()
+    label_clean = clean_label(label)
+
+    mapped = RELATIONSHIP_MAP.get(label_clean, label_clean)
+
+    rt = RelationshipType.objects.filter(name=mapped).first()
+
+    if rt:
+        return rt
+
+    return RelationshipType.objects.create(
+        name=mapped,
+        original_label=label_original
+    )
+
 def create_relationship(main_person, data, fallback_family_name):
 
     if is_empty(data.get("relation")):
@@ -252,7 +320,7 @@ def create_relationship(main_person, data, fallback_family_name):
     given_name = data.get("given_name")
     family_name = data.get("family_name")
 
-    # Surname of primary subject
+    # Fallback surname
     if is_empty(family_name):
         family_name = fallback_family_name
 
@@ -265,17 +333,23 @@ def create_relationship(main_person, data, fallback_family_name):
     if not related:
         return None
 
+    rel_type = get_or_create_relationship_type(data.get("relation"))
+
+    if not rel_type:
+        return None
+
+    # Check
     exists = Relationship.objects.filter(
         person_from=main_person,
         person_to=related,
-        relationship_type=data["relation"]
+        relationship_type=rel_type
     ).exists()
 
     if exists:
         return None
 
     return Relationship.objects.create(
-        relationship_type=data["relation"],
+        relationship_type=rel_type,
         person_from=main_person,
         person_to=related,
         description=data.get("notes") or ""
