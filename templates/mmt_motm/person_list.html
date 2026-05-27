@@ -3,11 +3,11 @@
 {% block content %}
 <div class="container mt-4">
     <h1>Persons</h1>
-    <table class="table table-striped">
+    <input type="text" id="person-search" class="form-control mb-3" placeholder="Search by name…">
+    <table class="table table-striped" id="person-table">
         <thead>
             <tr>
-                <th>Family Name</th>
-                <th>Given Name</th>
+                <th>Name</th>
                 <th>Birth Date</th>
                 <th>Birth Place</th>
             </tr>
@@ -15,17 +15,29 @@
         <tbody>
             {% for person in persons %}
             <tr>
-                <td><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}</a></td>
-                <td>{{ person.given_name }}</td>
+                <td><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}, {{ person.given_name }}</a></td>
                 <td>{{ person.birth_date|default:"–" }}</td>
                 <td>{{ person.birth_place|default:"–" }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4">No persons found.</td>
+                <td colspan="3">No persons found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("person-search");
+    const rows = document.querySelectorAll("#person-table tbody tr");
+    input.addEventListener("input", function () {
+        const query = this.value.toLowerCase();
+        rows.forEach(function (row) {
+            const name = row.cells[0].textContent.toLowerCase();
+            row.style.display = name.includes(query) ? "" : "none";
+        });
+    });
+});
+</script>
 {% endblock %}

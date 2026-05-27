@@ -42,6 +42,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('mmt_map.urls')),
     path('api/', include('mmt_api.urls')),
+    path('motm/', include('mmt_motm.urls')),
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
     path('sitemap.xml', sitemap, 
         {
