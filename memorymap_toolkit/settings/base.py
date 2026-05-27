@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'easy_thumbnails',
     'rest_framework',
     'rest_framework_gis',
+    'drf_spectacular',
     'filer',
     'mptt',
     'ckeditor',
@@ -287,7 +288,14 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 1
+    'PAGE_SIZE': 1,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Memory Map Toolkit – MoTM API',
+    'DESCRIPTION': 'REST API for Persons, Locations, Relationships, Interviews, and Events.',
+    'VERSION': '1.0.0',
 }
 
 

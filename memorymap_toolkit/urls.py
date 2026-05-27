@@ -19,6 +19,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import GenericSitemap
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from mmt_map.models import Point, Polygon, Line
 from mmt_pages.models import Page
 
@@ -43,6 +44,9 @@ urlpatterns = [
     path('', include('mmt_map.urls')),
     path('api/', include('mmt_api.urls')),
     path('motm/', include('mmt_motm.urls')),
+    path('motm/api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('motm/api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('motm/api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
     path('sitemap.xml', sitemap, 
         {
