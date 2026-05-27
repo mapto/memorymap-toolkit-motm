@@ -11,7 +11,9 @@ from .models import (
     Person,
     Relationship,
     Interview,
-    RelationshipType
+    RelationshipType,
+    Extraction,
+    Concept,
 )
 
 @admin.register(Person)
@@ -132,3 +134,15 @@ class RelationshipTypeAdmin(admin.ModelAdmin):
 
 admin.site.register(URL)
 admin.site.register(Event)
+
+@admin.register(Extraction)
+class ExtractionAdmin(admin.ModelAdmin):
+    list_display = ("identifier", "people_mentioned", "classification", "interview")
+    search_fields = ("identifier", "quote", "notes")
+    ordering = ("identifier",)
+
+@admin.register(Concept)
+class ConceptAdmin(admin.ModelAdmin):
+    list_display = ("label",)
+    search_fields = ("label",)
+    ordering = ("label",)

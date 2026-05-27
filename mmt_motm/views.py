@@ -7,11 +7,13 @@ from rest_framework import viewsets, filters
 from .models import (
     Person, LocationPoint, LocationRegion,
     RelationshipType, Relationship, Interview, Event,
+    Extraction, Concept,
 )
 from .serializers import (
     PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
     RelationshipTypeSerializer, RelationshipSerializer,
     InterviewSerializer, EventSerializer,
+    ExtractionSerializer, ConceptSerializer,
 )
 
 
@@ -39,6 +41,22 @@ def person_search(request):
     results = [
         {"id": p.pk, "name": f"{p.family_name}, {p.given_name}"}
         for p in persons
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def extraction_search(request):
+    """Return matching extractions as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    extractions = Extraction.objects.filter(
+        Q(identifier__icontains=query) | Q(quote__icontains=query)
+        | Q(concepts__label__icontains=query)
+    ).distinct().order_by("identifier")[:10]
+    results = [
+        {"id": e.pk, "label": e.identifier or "(no ID)", "quote": (e.quote[:60] + "…") if len(e.quote) > 60 else e.quote}
+        for e in extractions
     ]
     return JsonResponse(results, safe=False)
 
@@ -88,3 +106,30 @@ class InterviewViewSet(viewsets.ModelViewSet):
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+
+
+class ExtractionListView(ListView):
+    model = Extraction
+    template_name = "mmt_motm/extraction_list.html"
+    context_object_name = "extractions"
+    ordering = ["identifier"]
+
+
+class ExtractionDetailView(DetailView):
+    model = Extraction
+    template_name = "mmt_motm/extraction_detail.html"
+    context_object_name = "extraction"
+
+
+class ExtractionViewSet(viewsets.ModelViewSet):
+    queryset = Extraction.objects.all()
+    serializer_class = ExtractionSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["identifier", "quote"]
+
+
+class ConceptViewSet(viewsets.ModelViewSet):
+    queryset = Concept.objects.all()
+    serializer_class = ConceptSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["label"]

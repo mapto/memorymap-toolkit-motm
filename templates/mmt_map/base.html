@@ -79,6 +79,9 @@
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'person_list' %}">Persons</a>
 						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="{% url 'extraction_list' %}">Quotes</a>
+						</li>
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							About
@@ -160,20 +163,45 @@
 				var q = this.value.trim();
 				if (q.length < 2) { resultsBox.style.display = 'none'; return; }
 				debounceTimer = setTimeout(function() {
-					fetch('{% url "person_search" %}?q=' + encodeURIComponent(q))
-						.then(function(r) { return r.json(); })
-						.then(function(data) {
-							resultsBox.innerHTML = '';
-							if (data.length === 0) { resultsBox.style.display = 'none'; return; }
-							data.forEach(function(p) {
+					Promise.all([
+						fetch('{% url "person_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
+						fetch('{% url "extraction_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
+					]).then(function(results) {
+						var persons = results[0];
+						var extractions = results[1];
+						resultsBox.innerHTML = '';
+						if (persons.length === 0 && extractions.length === 0) {
+							resultsBox.style.display = 'none';
+							return;
+						}
+						if (persons.length > 0) {
+							var h = document.createElement('div');
+							h.className = 'list-group-item list-group-item-secondary small';
+							h.textContent = 'Persons';
+							resultsBox.appendChild(h);
+							persons.forEach(function(p) {
 								var a = document.createElement('a');
 								a.className = 'list-group-item list-group-item-action';
 								a.href = '{% url "person_list" %}' + p.id + '/';
 								a.textContent = p.name;
 								resultsBox.appendChild(a);
 							});
-							resultsBox.style.display = 'block';
-						});
+						}
+						if (extractions.length > 0) {
+							var h2 = document.createElement('div');
+							h2.className = 'list-group-item list-group-item-secondary small';
+							h2.textContent = 'Quotes';
+							resultsBox.appendChild(h2);
+							extractions.forEach(function(e) {
+								var a = document.createElement('a');
+								a.className = 'list-group-item list-group-item-action';
+								a.href = '{% url "extraction_list" %}' + e.id + '/';
+								a.innerHTML = '<strong>' + e.label + '</strong> ' + (e.quote || '');
+								resultsBox.appendChild(a);
+							});
+						}
+						resultsBox.style.display = 'block';
+					});
 				}, 250);
 			});
 

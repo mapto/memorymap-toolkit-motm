@@ -262,4 +262,66 @@ class Interview(models.Model):
     def __str__(self):
         return f"Interview {self.archive_id}"
     
-    # x Martin: la classe/tabella Mention non l'ho capita bene...
+class Extraction(models.Model):
+
+    
+    # beleg_id - External archive identifiers
+    identifier = models.CharField(max_length=100, unique=True, null=True, blank=True,
+    db_index=True)
+
+    # betrifft_personen
+    people_mentioned = models.ForeignKey(
+        "Person",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="extractions_mentioning"
+    )
+
+    # timecode
+    timecode = models.CharField(max_length=200, blank=True)
+
+
+    # themen
+    concepts = models.ForeignKey(
+        "Concept",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="extractions"
+    )
+
+    # zitat
+    quote = models.TextField(blank=True)
+
+    # markierung
+    classification = models.CharField(max_length=100, blank=True)
+
+    event = models.ForeignKey(
+        "Event",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="extractions"
+    )
+    event_confidence = models.CharField(max_length=200, blank=True)
+
+    # notizien
+    notes = models.TextField(blank=True)
+
+    interview = models.ForeignKey(
+        "Interview",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="extracted_from"
+    )
+
+    def __str__(self):
+        return f"Extraction {self.identifier}"
+
+class Concept(models.Model):
+    label = models.CharField(max_length=200, blank=True)
+
+    def __str__(self):
+        return f"Concept {self.label}"

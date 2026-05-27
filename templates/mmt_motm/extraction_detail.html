@@ -1,0 +1,45 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <p><a href="{% url 'extraction_list' %}">&larr; Back to list</a></p>
+    <h1>Quote {{ extraction.identifier|default:"" }}</h1>
+
+    {% if extraction.people_mentioned %}
+    <p><strong>Person mentioned:</strong> <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a></p>
+    {% endif %}
+
+    {% if extraction.timecode %}
+    <p><strong>Timecode:</strong> {{ extraction.timecode }}</p>
+    {% endif %}
+
+    {% if extraction.concepts %}
+    <p><strong>Concept:</strong> {{ extraction.concepts.label }}</p>
+    {% endif %}
+
+    {% if extraction.classification %}
+    <p><strong>Classification:</strong> {{ extraction.classification }}</p>
+    {% endif %}
+
+    {% if extraction.quote %}
+    <h3>Quote</h3>
+    <blockquote class="blockquote">{{ extraction.quote }}</blockquote>
+    {% endif %}
+
+    {% if extraction.event %}
+    <p><strong>Event:</strong> {{ extraction.event }}</p>
+    {% if extraction.event_confidence %}
+    <p><strong>Event confidence:</strong> {{ extraction.event_confidence }}</p>
+    {% endif %}
+    {% endif %}
+
+    {% if extraction.interview %}
+    <p><strong>Interview:</strong> {{ extraction.interview }}</p>
+    {% endif %}
+
+    {% if extraction.notes %}
+    <h3>Notes</h3>
+    <p>{{ extraction.notes }}</p>
+    {% endif %}
+</div>
+{% endblock %}

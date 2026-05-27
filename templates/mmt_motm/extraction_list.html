@@ -1,0 +1,45 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Quotes</h1>
+    <input type="text" id="extraction-search" class="form-control mb-3" placeholder="Search by quote, concept or person…">
+    <table class="table table-striped" id="extraction-table">
+        <thead>
+            <tr>
+                <th>Person</th>
+                <th>Concept</th>
+                <th>Quote</th>
+                <th>Interview</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for extraction in extractions %}
+            <tr>
+                <td>{% if extraction.people_mentioned %}<a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a>{% else %}–{% endif %}</td>
+                <td>{{ extraction.concepts.label|default:"–" }}</td>
+                <td><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.quote|truncatewords:15|default:"–" }}</a></td>
+                <td>{{ extraction.interview|default:"–" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No extractions found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var input = document.getElementById("extraction-search");
+    var rows = document.querySelectorAll("#extraction-table tbody tr");
+    input.addEventListener("input", function () {
+        var query = this.value.toLowerCase();
+        rows.forEach(function (row) {
+            var text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? "" : "none";
+        });
+    });
+});
+</script>
+{% endblock %}

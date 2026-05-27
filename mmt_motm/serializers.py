@@ -9,6 +9,8 @@ from .models import (
     Relationship,
     Interview,
     Event,
+    Extraction,
+    Concept,
 )
 
 
@@ -73,4 +75,16 @@ class InterviewSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
+        fields = "__all__"
+
+
+class ExtractionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Extraction
+        fields = "__all__"
+
+
+class ConceptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Concept
         fields = "__all__"

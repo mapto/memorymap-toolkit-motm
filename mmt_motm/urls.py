@@ -12,10 +12,15 @@ router.register(r"relationship-types", views.RelationshipTypeViewSet, basename="
 router.register(r"relationships", views.RelationshipViewSet, basename="api-relationship")
 router.register(r"interviews", views.InterviewViewSet, basename="api-interview")
 router.register(r"events", views.EventViewSet, basename="api-event")
+router.register(r"extractions", views.ExtractionViewSet, basename="api-extraction")
+router.register(r"concepts", views.ConceptViewSet, basename="api-concept")
 
 urlpatterns = [
     path("persons/", views.PersonListView.as_view(), name="person_list"),
     path("persons/<int:pk>/", views.PersonDetailView.as_view(), name="person_detail"),
     path("persons/search/", views.person_search, name="person_search"),
+    path("extractions/", views.ExtractionListView.as_view(), name="extraction_list"),
+    path("extractions/<int:pk>/", views.ExtractionDetailView.as_view(), name="extraction_detail"),
+    path("extractions/search/", views.extraction_search, name="extraction_search"),
     path("api/", include(router.urls)),
 ]
