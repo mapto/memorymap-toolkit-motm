@@ -1,0 +1,51 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <p><a href="{% url 'person_list' %}">&larr; Back to list</a></p>
+    <h1>{{ person.given_name }} {{ person.family_name }}</h1>
+
+    {% if person.previous_given_name or person.previous_family_name %}
+    <p><strong>Previous name:</strong> {{ person.previous_given_name }} {{ person.previous_family_name }}</p>
+    {% endif %}
+
+    {% if person.identifier %}
+    <p><strong>Identifier:</strong> {{ person.identifier }}</p>
+    {% endif %}
+
+    {% if person.gender %}
+    <p><strong>Gender:</strong> {{ person.gender }}</p>
+    {% endif %}
+
+    {% if person.birth_date %}
+    <p><strong>Born:</strong> {{ person.birth_date }}{% if person.birth_place %} in {{ person.birth_place }}{% endif %}</p>
+    {% endif %}
+
+    {% if person.death_date %}
+    <p><strong>Died:</strong> {{ person.death_date }}{% if person.death_place %} in {{ person.death_place }}{% endif %}</p>
+    {% endif %}
+
+    {% if person.description %}
+    <h3>Biography</h3>
+    <p>{{ person.description }}</p>
+    {% endif %}
+
+    {% if person.events.exists %}
+    <h3>Events</h3>
+    <ul>
+        {% for event in person.events.all %}
+        <li>{{ event }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if person.urls.exists %}
+    <h3>References</h3>
+    <ul>
+        {% for url in person.urls.all %}
+        <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endblock %}
