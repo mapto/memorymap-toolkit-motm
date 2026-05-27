@@ -73,6 +73,12 @@
 
 				<div class="collapse navbar-collapse" id="navbarSupportedContent">
 					<ul class="navbar-nav ml-auto menu_links">
+						<li class="nav-item">
+							<a class="nav-link" href="{% url 'index' %}">Map</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="{% url 'person_list' %}">Persons</a>
+						</li>
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							About
@@ -103,8 +109,9 @@
 							{% endfor %}
 						{% endif %}
 					</ul>
-					<form class="form-inline my-2 my-lg-0">
+					<form class="form-inline my-2 my-lg-0" style="position:relative;">
 						<input class="form-control mr-sm-2" placeholder="Search" aria-label="Search" id="map_search">
+						<div id="person-search-results" class="list-group" style="position:absolute;top:100%;left:0;right:0;z-index:1050;max-height:300px;overflow-y:auto;display:none;"></div>
 					</form>
 				</div>
 			</nav>
@@ -140,6 +147,43 @@
 
 		{% block scripts %}
 		{% endblock %}
+
+		<script>
+		(function() {
+			var searchInput = document.getElementById('map_search');
+			var resultsBox = document.getElementById('person-search-results');
+			var debounceTimer;
+			if (!searchInput || !resultsBox) return;
+
+			searchInput.addEventListener('input', function() {
+				clearTimeout(debounceTimer);
+				var q = this.value.trim();
+				if (q.length < 2) { resultsBox.style.display = 'none'; return; }
+				debounceTimer = setTimeout(function() {
+					fetch('{% url "person_search" %}?q=' + encodeURIComponent(q))
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							resultsBox.innerHTML = '';
+							if (data.length === 0) { resultsBox.style.display = 'none'; return; }
+							data.forEach(function(p) {
+								var a = document.createElement('a');
+								a.className = 'list-group-item list-group-item-action';
+								a.href = '{% url "person_list" %}' + p.id + '/';
+								a.textContent = p.name;
+								resultsBox.appendChild(a);
+							});
+							resultsBox.style.display = 'block';
+						});
+				}, 250);
+			});
+
+			document.addEventListener('click', function(e) {
+				if (!resultsBox.contains(e.target) && e.target !== searchInput) {
+					resultsBox.style.display = 'none';
+				}
+			});
+		})();
+		</script>
 
 		{% analytical_body_bottom %}
 	</body>
