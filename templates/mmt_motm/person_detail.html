@@ -39,6 +39,18 @@
     </ul>
     {% endif %}
 
+    {% if person.relationships_from.exists or person.relationships_to.exists %}
+    <h3>Relationships</h3>
+    <ul>
+        {% for rel in person.relationships_from.all %}
+        <li>{{ rel.relationship_type }} is <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>{% if rel.start_date or rel.end_date %} ({{ rel.start_date|default:"?" }} – {{ rel.end_date|default:"?" }}){% endif %}</li>
+        {% endfor %}
+        {% for rel in person.relationships_to.all %}
+        <li>{{ rel.relationship_type }} of <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>{% if rel.start_date or rel.end_date %} ({{ rel.start_date|default:"?" }} – {{ rel.end_date|default:"?" }}){% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     {% if person.urls.exists %}
     <h3>References</h3>
     <ul>

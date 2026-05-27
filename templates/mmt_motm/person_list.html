@@ -8,16 +8,16 @@
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Birth Date</th>
-                <th>Birth Place</th>
+                <th>Birth</th>
+                <th>Death</th>
             </tr>
         </thead>
         <tbody>
             {% for person in persons %}
             <tr>
                 <td><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}, {{ person.given_name }}</a></td>
-                <td>{{ person.birth_date|default:"–" }}</td>
-                <td>{{ person.birth_place|default:"–" }}</td>
+                <td>{% if person.birth_date %}{{ person.birth_date }}{% endif %}{% if person.birth_place %}{% if person.birth_date %}, {% endif %}{{ person.birth_place }}{% endif %}{% if not person.birth_date and not person.birth_place %}–{% endif %}</td>
+                <td>{% if person.death_date %}{{ person.death_date }}{% endif %}{% if person.death_place %}{% if person.death_date %}, {% endif %}{{ person.death_place }}{% endif %}{% if not person.death_date and not person.death_place %}–{% endif %}</td>
             </tr>
             {% empty %}
             <tr>
