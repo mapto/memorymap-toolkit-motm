@@ -336,4 +336,23 @@ class ConceptDetailView(DetailView):
         context["persons"] = Person.objects.filter(
             relates_to_person__concepts=concept
         ).distinct()
+        # Build ancestor path (excluding self)
+        ancestors = []
+        node = concept.parent
+        while node:
+            ancestors.append(node)
+            node = node.parent
+        ancestors.reverse()
+        context["ancestors"] = ancestors
         return context
+
+
+class ConceptTaxonomyView(ListView):
+    model = Concept
+    template_name = "mmt_motm/concept_taxonomy.html"
+    context_object_name = "roots"
+
+    def get_queryset(self):
+        return Concept.objects.filter(
+            parent__isnull=True
+        ).prefetch_related("children").order_by("label")

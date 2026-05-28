@@ -104,7 +104,6 @@
 
     map.on('load', function() {
         new mapboxgl.Marker({ color: '#e74c3c' }).setLngLat(coord)
-            .setPopup(new mapboxgl.Popup().setText("{{ location.current_name|escapejs }}"))
             .addTo(map);
 
         // Show lines for connected events
@@ -122,9 +121,9 @@
             var feats = lines.map(function(l) {
                 return { type: 'Feature', properties: { name: l.name }, geometry: { type: 'LineString', coordinates: l.coords } };
             });
-            map.addSource('loc-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
-            map.addLayer({ id: 'loc-lines-layer', type: 'line', source: 'loc-lines',
-                paint: { 'line-color': '#e74c3c', 'line-width': 2, 'line-opacity': 0.6 } });
+            mmtAddGradientLine(map, 'loc-lines', 'loc-lines-layer',
+                { type: 'FeatureCollection', features: feats },
+                { opacity: 0.6 });
 
             var bounds = new mapboxgl.LngLatBounds();
             bounds.extend(coord);

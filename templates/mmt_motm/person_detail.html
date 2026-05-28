@@ -179,20 +179,11 @@
             };
         });
 
-        map.addSource('event-lines', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: features }
-        });
+        mmtAddGradientLine(map, 'event-lines', 'event-lines-layer',
+            { type: 'FeatureCollection', features: features });
         map.addSource('event-points', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: pointFeatures }
-        });
-
-        map.addLayer({
-            id: 'event-lines-layer',
-            type: 'line',
-            source: 'event-lines',
-            paint: { 'line-color': '#e74c3c', 'line-width': 2, 'line-opacity': 0.7 }
         });
         map.addLayer({
             id: 'event-points-layer',
@@ -217,12 +208,7 @@
 
         map.on('click', 'event-lines-layer', function(ev) {
             var props = ev.features[0].properties;
-            new mapboxgl.Popup()
-                .setLngLat(ev.lngLat)
-                .setHTML('<strong><a href="' + props.url + '">' + props.desc + '</a></strong>' +
-                         '<br>' + props.startName + ' &rarr; ' + props.endName +
-                         (props.date ? '<br><small>' + props.date + '</small>' : ''))
-                .addTo(map);
+            window.location.href = props.url;
         });
         map.on('mouseenter', 'event-lines-layer', function() { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'event-lines-layer', function() { map.getCanvas().style.cursor = ''; });

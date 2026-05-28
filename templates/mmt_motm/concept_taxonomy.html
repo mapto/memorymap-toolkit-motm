@@ -1,0 +1,28 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Concept Taxonomy</h1>
+    {% for root in roots %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="mb-0">
+                {% if root.icon %}<i class="fas {{ root.icon }}"></i> {% endif %}
+                <a href="{% url 'concept_detail' root.pk %}">{{ root.label }}</a>
+            </h3>
+        </div>
+        {% if root.children.all %}
+        <div class="card-body">
+            <ul class="list-unstyled mb-0">
+                {% for child in root.children.all %}
+                <li>
+                    <a href="{% url 'concept_detail' child.pk %}">{{ child.label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

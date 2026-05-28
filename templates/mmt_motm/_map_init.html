@@ -12,4 +12,31 @@ function mmtCreateMap(containerId, center, zoom) {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     return map;
 }
+
+function mmtAddGradientLine(map, sourceId, layerId, data, opts) {
+    opts = opts || {};
+    map.addSource(sourceId, { type: 'geojson', lineMetrics: true, data: data });
+    map.addLayer({
+        id: layerId, type: 'line', source: sourceId,
+        paint: {
+            'line-width': opts.width || 3,
+            'line-opacity': opts.opacity || 0.7,
+            'line-gradient': [
+                'interpolate', ['linear'], ['line-progress'],
+                0, '#2c3e50',
+                1, '#e74c3c'
+            ]
+        }
+    });
+}
+
+function mmtCreateFAMarker(map, lngLat, icon, color, opts) {
+    opts = opts || {};
+    var el = document.createElement('div');
+    el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + ';font-size:' + (opts.size || '20px') + ';text-shadow:0 1px 3px rgba(0,0,0,0.4);"></i>';
+    el.style.cursor = 'pointer';
+    var marker = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
+    if (opts.url) el.addEventListener('click', function() { window.location.href = opts.url; });
+    return marker;
+}
 </script>

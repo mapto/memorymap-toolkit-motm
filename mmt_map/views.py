@@ -133,7 +133,23 @@ def vector_tile(request, z, x, y, tile_format):
 	
 		response.write(pbf.tobytes())
 
-	# Add LocationPoints from mmt_motm as a separate layer
+	# Add MOTM layers (LocationPoints, Event lines)
+	_append_motm_layers(response, env)
+
+	# Return the tile
+
+	return response
+
+
+def _append_motm_layers(response, env):
+	"""Append mmt_motm LocationPoints and Event lines as MVT layers."""
+	params = {
+		'xmin': env['xmin'], 'ymin': env['ymin'],
+		'xmax': env['xmax'], 'ymax': env['ymax'],
+		'segSize': env['segSize'],
+	}
+
+	# LocationPoints with dominant concept icon
 	loc_sql = """
 		WITH
 		"bounds" AS (
@@ -160,13 +176,12 @@ def vector_tile(request, z, x, y, tile_format):
 		)
 		SELECT ST_AsMVT("mvtgeom".*, 'locations') FROM "mvtgeom"
 	"""
-	params = {'xmin': env['xmin'], 'ymin': env['ymin'], 'xmax': env['xmax'], 'ymax': env['ymax'], 'segSize': env['segSize']}
 	with connection.cursor() as cursor:
 		cursor.execute(loc_sql, params)
 		pbf = cursor.fetchone()[0]
 	response.write(pbf.tobytes())
 
-	# Add event lines from mmt_motm (start_location → end_location)
+	# Event lines (start_location → end_location)
 	evt_sql = """
 		WITH
 		"bounds" AS (
@@ -187,8 +202,7 @@ def vector_tile(request, z, x, y, tile_format):
 			WHERE "sl"."location" IS NOT NULL
 			  AND "el"."location" IS NOT NULL
 			  AND "e"."start_location_id" != "e"."end_location_id"
-			  AND (ST_Intersects("sl"."location", ST_Transform("bounds"."geom", 4326))
-				   OR ST_Intersects("el"."location", ST_Transform("bounds"."geom", 4326)))
+			  AND ST_Intersects(ST_MakeLine("sl"."location", "el"."location"), ST_Transform("bounds"."geom", 4326))
 		)
 		SELECT ST_AsMVT("mvtgeom".*, 'event_lines') FROM "mvtgeom"
 	"""
@@ -196,8 +210,6 @@ def vector_tile(request, z, x, y, tile_format):
 		cursor.execute(evt_sql, params)
 		pbf = cursor.fetchone()[0]
 	response.write(pbf.tobytes())
-
-	# Return the tile
 
 	return response
 

@@ -28,6 +28,7 @@ urlpatterns = [
     path("extractions/<int:pk>/", views.ExtractionDetailView.as_view(), name="extraction_detail"),
     path("extractions/search/", views.extraction_search, name="extraction_search"),
     path("concepts/", views.ConceptListView.as_view(), name="concept_list"),
+    path("concepts/taxonomy/", views.ConceptTaxonomyView.as_view(), name="concept_taxonomy"),
     path("concepts/<int:pk>/", views.ConceptDetailView.as_view(), name="concept_detail"),
     path("concepts/search/", views.concept_search, name="concept_search"),
     path("events/", views.EventListView.as_view(), name="event_list"),

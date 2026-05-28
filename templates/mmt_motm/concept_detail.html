@@ -3,7 +3,17 @@
 {% block content %}
 <div class="container mt-4">
     <p><a href="{% url 'concept_list' %}">&larr; Back to list</a></p>
-    <h1>{{ concept.label }}</h1>
+    {% if ancestors %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-light">
+            {% for a in ancestors %}
+            <li class="breadcrumb-item"><a href="{% url 'concept_detail' a.pk %}">{% if a.icon %}<i class="fas {{ a.icon }}"></i> {% endif %}{{ a.label }}</a></li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">{{ concept.label }}</li>
+        </ol>
+    </nav>
+    {% endif %}
+    <h1>{% if concept.icon %}<i class="fas {{ concept.icon }}"></i> {% endif %}{{ concept.label }}</h1>
 
     {% if quotes %}
     <h3>Quotes</h3>
@@ -31,7 +41,7 @@
     {% endif %}
 
     {% if persons %}
-    <h3>Persons</h3>
+    <h3>People</h3>
     <ul>
         {% for person in persons %}
         <li><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }} {{ person.family_name }}</a></li>

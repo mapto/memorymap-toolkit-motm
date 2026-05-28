@@ -96,7 +96,7 @@ if (baseMapStyleFile != 'default.json') {
 	baseMapStyle = baseMapStyleUrl;
 }*/
 
-baseMapStyle = '/tiles/style.json'
+baseMapStyle = baseMapStyleUrl + (baseMapStyleUrl.includes('?') ? '&' : '?') + 'key=' + baseMapStyleKey;
 
 django.jQuery.get(baseMapStyle, function(data) {
 

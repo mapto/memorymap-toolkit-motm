@@ -84,7 +84,7 @@
 							<a class="nav-link" href="{% url 'concept_list' %}">Concepts</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="{% url 'person_list' %}">Persons</a>
+							<a class="nav-link" href="{% url 'person_list' %}">People</a>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'location_list' %}">Locations</a>
@@ -102,6 +102,7 @@
 							About
 							</a>
 							<div class="dropdown-menu" id="pages" aria-labelledby="navbarDropdown">
+								<a class="dropdown-item" href="{% url 'concept_taxonomy' %}">Concept Taxonomy</a>
 								<div class="dropdown-divider"></div>
 								<a class="dropdown-item" href="{% url 'text_only' %}">Text Only Site</a>
 							</div>
@@ -196,7 +197,7 @@
 						if (persons.length > 0) {
 							var h = document.createElement('div');
 							h.className = 'list-group-item list-group-item-secondary small';
-							h.textContent = 'Persons';
+							h.textContent = 'People';
 							resultsBox.appendChild(h);
 							persons.forEach(function(p) {
 								var a = document.createElement('a');
