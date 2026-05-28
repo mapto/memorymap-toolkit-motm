@@ -99,7 +99,7 @@ db.sqlite3
 
 static/
 media/
-notebooks/
+notebook/.ipynb_checkpoints
 media_old/
 backups/
 
@@ -115,4 +115,8 @@ secret_settings.py
 
 *.psql
 
+data.zip
 data/
+
+.github/
+docs/
