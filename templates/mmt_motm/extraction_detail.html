@@ -13,8 +13,12 @@
     <p><strong>Timecode:</strong> {{ extraction.timecode }}</p>
     {% endif %}
 
-    {% if extraction.concepts %}
-    <p><strong>Concept:</strong> <a href="{% url 'concept_detail' extraction.concepts.pk %}">{{ extraction.concepts.label }}</a></p>
+    {% if extraction.concepts.exists %}
+    <p><strong>Concepts:</strong>
+        {% for concept in extraction.concepts.all %}
+        <a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
     {% if extraction.classification %}

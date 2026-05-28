@@ -283,10 +283,8 @@ class Extraction(models.Model):
 
 
     # themen
-    concepts = models.ForeignKey(
+    concepts = models.ManyToManyField(
         "Concept",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="relates_to_concept"
     )
