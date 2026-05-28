@@ -59,5 +59,35 @@
         {% endfor %}
     </ul>
     {% endif %}
+
+    {% if interviews_as_interviewer %}
+    <h3>Interviews conducted</h3>
+    <ul>
+        {% for interview in interviews_as_interviewer %}
+        <li><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>{% if interview.date %} ({{ interview.date }}){% endif %}{% if interview.interviewee %} — with {{ interview.interviewee }}{% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if interviews_as_interviewee %}
+    <h3>Interviews given</h3>
+    <ul>
+        {% for interview in interviews_as_interviewee %}
+        <li><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>{% if interview.date %} ({{ interview.date }}){% endif %}{% if interview.interviewer %} — by {{ interview.interviewer }}{% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if random_quotes %}
+    <h3>Quotes</h3>
+    <blockquote class="list-unstyled">
+        {% for extraction in random_quotes %}
+        <li class="mb-2">
+            <em>&ldquo;{{ extraction.quote }}&rdquo;</em>
+            {% if extraction.identifier %}<br><small class="text-muted">{{ extraction.identifier }}</small>{% endif %}
+        </li>
+        {% endfor %}
+    </blockquote>
+    {% endif %}
 </div>
 {% endblock %}

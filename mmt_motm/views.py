@@ -29,6 +29,16 @@ class PersonDetailView(DetailView):
     template_name = "mmt_motm/person_detail.html"
     context_object_name = "person"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        person = self.object
+        context["interviews_as_interviewer"] = person.interviews_conducted.all()
+        context["interviews_as_interviewee"] = person.interviews_received.all()
+        context["random_quotes"] = (
+            person.relates_to_person.exclude(quote="").order_by("?")[:3]
+        )
+        return context
+
 
 class InterviewListView(ListView):
     model = Interview
