@@ -66,21 +66,35 @@ class RelationshipSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ExtractionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Extraction
+        fields = "__all__"
+
+
 class InterviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interview
         fields = "__all__"
 
 
+class InterviewDetailSerializer(serializers.ModelSerializer):
+    extracted_from = ExtractionSerializer(many=True, read_only=True)
+    interviewee_display = serializers.CharField(source='interviewee', read_only=True)
+    interviewer_display = serializers.CharField(source='interviewer', read_only=True)
+    
+    class Meta:
+        model = Interview
+        fields = [
+            "id", "archive_id", "recording_id", "interview_type", "date", "place",
+            "description", "urls", "interviewer", "interviewer_display", "interviewee",
+            "interviewee_display", "extracted_from"
+        ]
+
+
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
-        fields = "__all__"
-
-
-class ExtractionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Extraction
         fields = "__all__"
 
 

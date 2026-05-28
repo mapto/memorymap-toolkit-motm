@@ -1,0 +1,49 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Interviews</h1>
+    <input type="text" id="interview-search" class="form-control mb-3" placeholder="Search by archive ID or quotes…">
+    <table class="table table-striped" id="interview-table">
+        <thead>
+            <tr>
+                <th>Archive ID</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Place</th>
+                <th>Interviewee</th>
+                <th>Interviewer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for interview in interviews %}
+            <tr>
+                <td><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a></td>
+                <td>{{ interview.interview_type|default:"–" }}</td>
+                <td>{{ interview.date|date:"Y-m-d"|default:"–" }}</td>
+                <td>{{ interview.place|default:"–" }}</td>
+                <td>{% if interview.interviewee %}<a href="{% url 'person_detail' interview.interviewee.pk %}">{{ interview.interviewee }}</a>{% else %}–{% endif %}</td>
+                <td>{% if interview.interviewer %}<a href="{% url 'person_detail' interview.interviewer.pk %}">{{ interview.interviewer }}</a>{% else %}–{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No interviews found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var input = document.getElementById("interview-search");
+    var rows = document.querySelectorAll("#interview-table tbody tr");
+    input.addEventListener("input", function () {
+        var query = this.value.toLowerCase();
+        rows.forEach(function (row) {
+            var text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? "" : "none";
+        });
+    });
+});
+</script>
+{% endblock %}

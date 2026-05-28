@@ -12,7 +12,7 @@ from .models import (
 from .serializers import (
     PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
     RelationshipTypeSerializer, RelationshipSerializer,
-    InterviewSerializer, EventSerializer,
+    InterviewSerializer, InterviewDetailSerializer, EventSerializer,
     ExtractionSerializer, ConceptSerializer,
 )
 
@@ -28,6 +28,19 @@ class PersonDetailView(DetailView):
     model = Person
     template_name = "mmt_motm/person_detail.html"
     context_object_name = "person"
+
+
+class InterviewListView(ListView):
+    model = Interview
+    template_name = "mmt_motm/interview_list.html"
+    context_object_name = "interviews"
+    ordering = ["archive_id"]
+
+
+class InterviewDetailView(DetailView):
+    model = Interview
+    template_name = "mmt_motm/interview_detail.html"
+    context_object_name = "interview"
 
 
 def person_search(request):
@@ -57,6 +70,21 @@ def extraction_search(request):
     results = [
         {"id": e.pk, "label": e.identifier or "(no ID)", "quote": (e.quote[:60] + "…") if len(e.quote) > 60 else e.quote}
         for e in extractions
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def interview_search(request):
+    """Return matching interviews as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    interviews = Interview.objects.filter(
+        Q(archive_id__icontains=query) | Q(extracted_from__quote__icontains=query)
+    ).distinct().order_by("archive_id")[:10]
+    results = [
+        {"id": i.pk, "label": i.archive_id or "(no ID)"}
+        for i in interviews
     ]
     return JsonResponse(results, safe=False)
 
@@ -100,7 +128,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
     queryset = Interview.objects.all()
     serializer_class = InterviewSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ["archive_id"]
+    search_fields = ["archive_id", "extracted_from__quote"]
 
 
 class EventViewSet(viewsets.ModelViewSet):
