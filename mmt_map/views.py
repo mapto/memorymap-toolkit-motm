@@ -37,8 +37,18 @@ def index(request):
 
 		bounds = [[config.BOUNDS_SW_LONGITUDE,config.BOUNDS_SW_LATITUDE],[config.BOUNDS_NE_LONGITUDE,config.BOUNDS_NE_LATITUDE]]
 
+	# Year range for event time slider
+	from django.db.models import Min, Max
+	from mmt_motm.models import Timespan
+	yr = Timespan.objects.aggregate(
+		min_yr=Min('start__year'), max_yr=Max('end__year'))
+	year_min = yr['min_yr'] or 1900
+	year_max = yr['max_yr'] or 2000
 
-	return render(request, 'mmt_map/index.html', {'themes': themes, 'bounds': bounds, 'tag_lists': tag_lists})
+	return render(request, 'mmt_map/index.html', {
+		'themes': themes, 'bounds': bounds, 'tag_lists': tag_lists,
+		'year_min': year_min, 'year_max': year_max,
+	})
 
 
 def text_only_feature_list(request):
@@ -194,10 +204,12 @@ def _append_motm_layers(response, env):
 				"bounds"."b2d"
 			) AS "geom",
 			"e"."id",
-			"e"."description" AS "name"
+			"e"."description" AS "name",
+			COALESCE(EXTRACT(YEAR FROM "ts"."start"), EXTRACT(YEAR FROM "ts"."end"))::int AS "year"
 			FROM "mmt_motm_event" "e"
 			JOIN "mmt_motm_locationpoint" "sl" ON "e"."start_location_id" = "sl"."id"
-			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id",
+			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id"
+			LEFT JOIN "mmt_motm_timespan" "ts" ON "e"."timespan_id" = "ts"."id",
 			"bounds"
 			WHERE "sl"."location" IS NOT NULL
 			  AND "el"."location" IS NOT NULL

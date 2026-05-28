@@ -387,6 +387,30 @@ map.on('load', function() {
         }
     });
 
+    // Year range slider logic
+    var minSlider = document.getElementById('year-range-min');
+    var maxSlider = document.getElementById('year-range-max');
+    var minLabel = document.getElementById('year-label-min');
+    var maxLabel = document.getElementById('year-label-max');
+
+    function applyYearFilter() {
+        var lo = parseInt(minSlider.value);
+        var hi = parseInt(maxSlider.value);
+        if (lo > hi) { var tmp = lo; lo = hi; hi = tmp; }
+        minLabel.textContent = lo;
+        maxLabel.textContent = hi;
+        map.setFilter('event_lines', [
+            'all',
+            ['>=', ['get', 'year'], lo],
+            ['<=', ['get', 'year'], hi]
+        ]);
+    }
+
+    if (minSlider && maxSlider) {
+        minSlider.addEventListener('input', applyYearFilter);
+        maxSlider.addEventListener('input', applyYearFilter);
+    }
+
 });
 
 

@@ -5,6 +5,14 @@
 
 <div class="row full_height iface_container">
 	<div class="col map_container" id="map">
+		<div id="year-slider" class="year-slider">
+			<span id="year-label-min" class="year-label">{{ year_min }}</span>
+			<div class="year-slider-track">
+				<input type="range" id="year-range-min" min="{{ year_min }}" max="{{ year_max }}" value="{{ year_min }}">
+				<input type="range" id="year-range-max" min="{{ year_min }}" max="{{ year_max }}" value="{{ year_max }}">
+			</div>
+			<span id="year-label-max" class="year-label">{{ year_max }}</span>
+		</div>
 	</div>
 </div>
 

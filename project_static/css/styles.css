@@ -495,4 +495,71 @@ article img {
 
 /* Column group separators */
 .col-right-separator { border-right: 2px solid #dee2e6 !important; }
+
+/* Year range slider overlay on main map */
+.year-slider {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 14px;
+    border-radius: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    font-size: 13px;
+    font-weight: 600;
+}
+.year-label { min-width: 32px; text-align: center; }
+.year-slider-track {
+    position: relative;
+    width: 220px;
+    height: 20px;
+}
+.year-slider-track input[type=range] {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    pointer-events: none;
+    margin: 0;
+    height: 20px;
+}
+.year-slider-track input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    pointer-events: all;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.year-slider-track input[type=range]::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    pointer-events: all;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.year-slider-track input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+}
+.year-slider-track input[type=range]::-moz-range-track {
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+}
 }
