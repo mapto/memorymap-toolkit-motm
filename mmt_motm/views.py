@@ -94,6 +94,28 @@ class EventDetailView(DetailView):
         return context
 
 
+class EventListView(ListView):
+    model = Event
+    template_name = "mmt_motm/event_list.html"
+    context_object_name = "events"
+
+    def get_queryset(self):
+        return Event.objects.select_related(
+            'timespan', 'start_location', 'end_location'
+        ).order_by('timespan__start')
+
+
+class LocationListView(ListView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_list.html"
+    context_object_name = "locations"
+
+    def get_queryset(self):
+        return LocationPoint.objects.select_related('region').annotate(
+            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True)
+        ).order_by('current_name')
+
+
 class LocationDetailView(DetailView):
     model = LocationPoint
     template_name = "mmt_motm/location_detail.html"
@@ -102,12 +124,9 @@ class LocationDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         loc = self.object
-        context["events_starting_here"] = Event.objects.filter(
-            start_location=loc
-        ).select_related('timespan', 'end_location').order_by('timespan__start')
-        context["events_ending_here"] = Event.objects.filter(
-            end_location=loc
-        ).select_related('timespan', 'start_location').order_by('timespan__start')
+        context["events"] = Event.objects.filter(
+            Q(start_location=loc) | Q(end_location=loc)
+        ).select_related('timespan', 'start_location', 'end_location').order_by('timespan__start')
         context["persons_born_here"] = loc.people_born_here.all()
         context["persons_died_here"] = loc.people_died_here.all()
         return context
@@ -171,6 +190,26 @@ def concept_search(request):
         {"id": c.pk, "label": c.label or "(no label)"}
         for c in concepts
     ]
+    return JsonResponse(results, safe=False)
+
+
+def event_search(request):
+    """Return matching events as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    events = Event.objects.filter(
+        Q(description__icontains=query)
+        | Q(start_location__current_name__icontains=query)
+        | Q(end_location__current_name__icontains=query)
+    ).select_related('timespan', 'start_location', 'end_location'
+    ).distinct().order_by('timespan__start')[:10]
+    results = []
+    for e in events:
+        label = e.description[:40]
+        if e.timespan:
+            label = f"{e.timespan} — {label}"
+        results.append({"id": e.pk, "label": label})
     return JsonResponse(results, safe=False)
 
 

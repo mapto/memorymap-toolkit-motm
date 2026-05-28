@@ -1,0 +1,151 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-0">
+    <div class="row no-gutters">
+    <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
+    <h1>Locations</h1>
+    <input type="text" id="locations-filter" class="form-control mb-2" placeholder="Filter locations…">
+    <table class="table table-sm table-striped table-hover" id="locations-table">
+        <thead>
+            <tr>
+                <th style="cursor:pointer" data-sort="name">Name <span class="sort-arrow"></span></th>
+                <th style="cursor:pointer" data-sort="region">Region <span class="sort-arrow"></span></th>
+                <th style="cursor:pointer" data-sort="events">Events <span class="sort-arrow"></span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for location in locations %}
+            <tr data-lng="{{ location.location.x|default:'' }}" data-lat="{{ location.location.y|default:'' }}">
+                <td><a href="{% url 'location_detail' location.pk %}">{{ location.current_name }}</a></td>
+                <td>{% if location.region %}{{ location.region }}{% endif %}</td>
+                <td data-value="{{ location.event_count }}">{{ location.event_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <div class="col-md-6 px-0" style="position: sticky; top: 56px; height: calc(100vh - 56px);">
+        <div id="locations-map" style="width:100%; height:100%;"></div>
+    </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var table = document.getElementById('locations-table');
+    if (!table) return;
+    var headers = table.querySelectorAll('th[data-sort]');
+    var tbody = table.querySelector('tbody');
+    var currentSort = null;
+    var currentDir = 1;
+
+    headers.forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = th.cellIndex;
+            if (currentSort === col) { currentDir *= -1; }
+            else { currentSort = col; currentDir = 1; }
+
+            headers.forEach(function(h) { h.querySelector('.sort-arrow').textContent = ''; });
+            th.querySelector('.sort-arrow').textContent = currentDir === 1 ? ' \u25B2' : ' \u25BC';
+
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function(a, b) {
+                var aVal = a.cells[col].getAttribute('data-value') || a.cells[col].textContent.trim().toLowerCase();
+                var bVal = b.cells[col].getAttribute('data-value') || b.cells[col].textContent.trim().toLowerCase();
+                if (a.cells[col].hasAttribute('data-value')) {
+                    return (parseInt(aVal) - parseInt(bVal)) * currentDir;
+                }
+                return aVal.localeCompare(bVal) * currentDir;
+            });
+            rows.forEach(function(r) { tbody.appendChild(r); });
+        });
+    });
+
+    // Filter
+    var filterInput = document.getElementById('locations-filter');
+    filterInput.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        Array.from(tbody.querySelectorAll('tr')).forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+        });
+    });
+
+    // Map
+    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
+    if (!mapboxgl.accessToken) return;
+
+    var points = [];
+    var rows = tbody.querySelectorAll('tr');
+    rows.forEach(function(row) {
+        var lng = parseFloat(row.getAttribute('data-lng'));
+        var lat = parseFloat(row.getAttribute('data-lat'));
+        if (!isNaN(lng) && !isNaN(lat)) {
+            points.push({
+                coords: [lng, lat],
+                name: row.cells[0].textContent.trim(),
+                href: row.cells[0].querySelector('a').getAttribute('href')
+            });
+        }
+    });
+
+    if (points.length === 0) {
+        document.getElementById('locations-map').innerHTML = '<p class="text-muted p-3">No geolocated locations to display.</p>';
+        return;
+    }
+
+    var map = new mapboxgl.Map({
+        container: 'locations-map',
+        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
+        center: points[0].coords,
+        zoom: 5
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', function() {
+        var features = points.map(function(p) {
+            return {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: p.coords },
+                properties: { name: p.name, href: p.href }
+            };
+        });
+        map.addSource('locations', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: features }
+        });
+        map.addLayer({
+            id: 'locations-circles',
+            type: 'circle',
+            source: 'locations',
+            paint: { 'circle-radius': 7, 'circle-color': '#e74c3c', 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' }
+        });
+        map.addLayer({
+            id: 'locations-labels',
+            type: 'symbol',
+            source: 'locations',
+            layout: { 'text-field': ['get', 'name'], 'text-offset': [0, 1.2], 'text-size': 12 },
+            paint: { 'text-halo-color': '#fff', 'text-halo-width': 1 }
+        });
+
+        // Fit bounds
+        var bounds = new mapboxgl.LngLatBounds();
+        points.forEach(function(p) { bounds.extend(p.coords); });
+        map.fitBounds(bounds, { padding: 50 });
+
+        // Click popup
+        map.on('click', 'locations-circles', function(e) {
+            var props = e.features[0].properties;
+            var popup = new mapboxgl.Popup({ offset: 10 })
+                .setLngLat(e.lngLat)
+                .setHTML('<a href="' + props.href + '">' + props.name + '</a>')
+                .addTo(map);
+        });
+        map.on('mouseenter', 'locations-circles', function() { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'locations-circles', function() { map.getCanvas().style.cursor = ''; });
+    });
+})();
+</script>
+{% endblock %}

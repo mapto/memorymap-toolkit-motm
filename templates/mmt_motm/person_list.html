@@ -21,11 +21,11 @@
             {% for person in persons %}
             <tr>
                 <td class="col-group-name"><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}</a></td>
-                <td class="col-group-name-end"><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }}</a></td>
+                <td class="col-group-name-end col-right-separator"><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }}</a></td>
                 <td class="col-group-birth" data-sort="{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:"Y" }}{% else %}–{% endif %}</td>
-                <td class="col-group-birth-end">{% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}</td>
+                <td class="col-group-birth-end col-right-separator">{% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}</td>
                 <td class="col-group-death" data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:"Y" }}{% else %}–{% endif %}</td>
-                <td class="col-group-death-end">{% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}</td>
+                <td class="col-group-death-end col-right-separator">{% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}</td>
                 <td data-sort="{{ person.interview_count }}">{% if person.interview_count %}<a href="{% url 'interview_list' %}?q={{ person.given_name }}+{{ person.family_name }}">{{ person.interview_count }}</a>{% else %}–{% endif %}</td>
                 <td>{% for c in person.top_concepts %}<a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
             </tr>
@@ -43,8 +43,7 @@
 .sort-arrow::after { content: "\2195"; opacity: 0.3; margin-left: 4px; }
 .sortable.asc .sort-arrow::after { content: "\25B2"; opacity: 1; }
 .sortable.desc .sort-arrow::after { content: "\25BC"; opacity: 1; }
-.col-group-name-end { border-right: 2px solid #dee2e6 !important; }
-.col-group-birth-end { border-right: 2px solid #dee2e6 !important; }
+.col-right-separator { border-right: 2px solid #dee2e6 !important; }
 </style>
 <script>
 document.addEventListener("DOMContentLoaded", function () {

@@ -1,0 +1,78 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Events</h1>
+    <input type="text" id="events-filter" class="form-control mb-2" placeholder="Filter events…">
+    <table class="table table-sm table-striped table-hover" id="events-table">
+        <thead>
+            <tr>
+                <th style="cursor:pointer" data-sort="date">Date <span class="sort-arrow"></span></th>
+                <th style="cursor:pointer" data-sort="location">Location <span class="sort-arrow"></span></th>
+                <th style="cursor:pointer" data-sort="description">Description <span class="sort-arrow"></span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td data-value="{% if event.timespan and event.timespan.start %}{{ event.timespan.start|date:'Y-m-d' }}{% endif %}">
+                    {% if event.timespan %}{{ event.timespan }}{% endif %}
+                </td>
+                <td>
+                    {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
+                        <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
+                        <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
+                    {% elif event.end_location %}
+                        <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
+                    {% elif event.start_location %}
+                        <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>
+                    {% endif %}
+                </td>
+                <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:15 }}</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var table = document.getElementById('events-table');
+    if (!table) return;
+    var headers = table.querySelectorAll('th[data-sort]');
+    var tbody = table.querySelector('tbody');
+    var currentSort = null;
+    var currentDir = 1;
+
+    headers.forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = th.cellIndex;
+            if (currentSort === col) { currentDir *= -1; }
+            else { currentSort = col; currentDir = 1; }
+
+            headers.forEach(function(h) { h.querySelector('.sort-arrow').textContent = ''; });
+            th.querySelector('.sort-arrow').textContent = currentDir === 1 ? ' \u25B2' : ' \u25BC';
+
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function(a, b) {
+                var aVal = a.cells[col].getAttribute('data-value') || a.cells[col].textContent.trim().toLowerCase();
+                var bVal = b.cells[col].getAttribute('data-value') || b.cells[col].textContent.trim().toLowerCase();
+                return aVal.localeCompare(bVal) * currentDir;
+            });
+            rows.forEach(function(r) { tbody.appendChild(r); });
+        });
+    });
+
+    // Filter
+    var filterInput = document.getElementById('events-filter');
+    filterInput.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        Array.from(tbody.querySelectorAll('tr')).forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+        });
+    });
+})();
+</script>
+{% endblock %}

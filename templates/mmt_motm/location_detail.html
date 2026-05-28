@@ -55,32 +55,25 @@
     </ul>
     {% endif %}
 
-    {% if events_starting_here %}
-    <h3>Events departing from here</h3>
+    {% if events %}
+    <h3>Events</h3>
     <table class="table table-sm table-striped">
-        <thead><tr><th>Description</th><th>Date</th><th>To</th></tr></thead>
+        <thead><tr><th>Date</th><th>Location</th><th>Description</th></tr></thead>
         <tbody>
-        {% for event in events_starting_here %}
+        {% for event in events %}
         <tr>
-            <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:8 }}</a></td>
             <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
-            <td>{% if event.end_location %}<a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>{% endif %}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-
-    {% if events_ending_here %}
-    <h3>Events arriving here</h3>
-    <table class="table table-sm table-striped">
-        <thead><tr><th>Description</th><th>Date</th><th>From</th></tr></thead>
-        <tbody>
-        {% for event in events_ending_here %}
-        <tr>
+            <td>
+                {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
+                    <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
+                    <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
+                {% elif event.end_location %}
+                    <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
+                {% elif event.start_location %}
+                    <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>
+                {% endif %}
+            </td>
             <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:8 }}</a></td>
-            <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
-            <td>{% if event.start_location %}<a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>{% endif %}</td>
         </tr>
         {% endfor %}
         </tbody>
@@ -122,21 +115,13 @@
             .setPopup(new mapboxgl.Popup().setText("{{ location.current_name|escapejs }}"))
             .addTo(map);
 
-        // Show lines for events departing/arriving
+        // Show lines for connected events
         var lines = [];
-        {% for event in events_starting_here %}
-        {% if event.end_location and event.end_location.location %}
+        {% for event in events %}
+        {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location and event.start_location.pk != event.end_location.pk %}
         lines.push({
-            coords: [coord, [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]],
-            name: "{{ event.description|truncatewords:6|escapejs }} → {{ event.end_location.current_name|escapejs }}"
-        });
-        {% endif %}
-        {% endfor %}
-        {% for event in events_ending_here %}
-        {% if event.start_location and event.start_location.location %}
-        lines.push({
-            coords: [[{{ event.start_location.location.x }}, {{ event.start_location.location.y }}], coord],
-            name: "{{ event.start_location.current_name|escapejs }} → {{ event.description|truncatewords:6|escapejs }}"
+            coords: [[{{ event.start_location.location.x }}, {{ event.start_location.location.y }}], [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]],
+            name: "{{ event.start_location.current_name|escapejs }} \u2192 {{ event.end_location.current_name|escapejs }}"
         });
         {% endif %}
         {% endfor %}

@@ -76,6 +76,7 @@
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'index' %}">Map</a>
 						</li>
+						&nbsp;
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'concept_list' %}">Concepts</a>
 						</li>
@@ -83,8 +84,16 @@
 							<a class="nav-link" href="{% url 'person_list' %}">Persons</a>
 						</li>
 						<li class="nav-item">
+							<a class="nav-link" href="{% url 'location_list' %}">Locations</a>
+						</li>
+						&nbsp;
+						<li class="nav-item">
+							<a class="nav-link" href="{% url 'event_list' %}">Events</a>
+						</li>
+						<li class="nav-item">
 							<a class="nav-link" href="{% url 'extraction_list' %}">Quotes</a>
 						</li>
+						&nbsp;
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 							About
@@ -169,13 +178,15 @@
 					Promise.all([
 						fetch('{% url "person_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
 						fetch('{% url "extraction_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
-						fetch('{% url "concept_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
+						fetch('{% url "concept_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
+						fetch('{% url "event_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
 					]).then(function(results) {
 						var persons = results[0];
 						var extractions = results[1];
 						var concepts = results[2];
+						var events = results[3];
 						resultsBox.innerHTML = '';
-						if (persons.length === 0 && extractions.length === 0 && concepts.length === 0) {
+						if (persons.length === 0 && extractions.length === 0 && concepts.length === 0 && events.length === 0) {
 							resultsBox.style.display = 'none';
 							return;
 						}
@@ -215,6 +226,19 @@
 								a.className = 'list-group-item list-group-item-action';
 								a.href = '{% url "concept_list" %}' + c.id + '/';
 								a.textContent = c.label;
+								resultsBox.appendChild(a);
+							});
+						}
+						if (events.length > 0) {
+							var h4 = document.createElement('div');
+							h4.className = 'list-group-item list-group-item-secondary small';
+							h4.textContent = 'Events';
+							resultsBox.appendChild(h4);
+							events.forEach(function(ev) {
+								var a = document.createElement('a');
+								a.className = 'list-group-item list-group-item-action';
+								a.href = '{% url "event_list" %}' + ev.id + '/';
+								a.textContent = ev.label;
 								resultsBox.appendChild(a);
 							});
 						}

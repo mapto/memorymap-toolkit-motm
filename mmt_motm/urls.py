@@ -30,7 +30,10 @@ urlpatterns = [
     path("concepts/", views.ConceptListView.as_view(), name="concept_list"),
     path("concepts/<int:pk>/", views.ConceptDetailView.as_view(), name="concept_detail"),
     path("concepts/search/", views.concept_search, name="concept_search"),
+    path("events/", views.EventListView.as_view(), name="event_list"),
     path("events/<int:pk>/", views.EventDetailView.as_view(), name="event_detail"),
+    path("events/search/", views.event_search, name="event_search"),
+    path("locations/", views.LocationListView.as_view(), name="location_list"),
     path("locations/<int:pk>/", views.LocationDetailView.as_view(), name="location_detail"),
     path("api/", include(router.urls)),
 ]
