@@ -14,7 +14,7 @@
     {% endif %}
 
     {% if extraction.concepts %}
-    <p><strong>Concept:</strong> {{ extraction.concepts.label }}</p>
+    <p><strong>Concept:</strong> <a href="{% url 'concept_detail' extraction.concepts.pk %}">{{ extraction.concepts.label }}</a></p>
     {% endif %}
 
     {% if extraction.classification %}

@@ -87,6 +87,15 @@
     </div>
     </div>
 
+    {% if concepts %}
+    <h3>Concepts</h3>
+    <ul>
+        {% for concept in concepts %}
+        <li><a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     {% if random_quotes %}
     <h3>Quotes</h3>
         {% for extraction in random_quotes %}

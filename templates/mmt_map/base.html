@@ -77,6 +77,9 @@
 							<a class="nav-link" href="{% url 'index' %}">Map</a>
 						</li>
 						<li class="nav-item">
+							<a class="nav-link" href="{% url 'concept_list' %}">Concepts</a>
+						</li>
+						<li class="nav-item">
 							<a class="nav-link" href="{% url 'person_list' %}">Persons</a>
 						</li>
 						<li class="nav-item">
@@ -165,12 +168,14 @@
 				debounceTimer = setTimeout(function() {
 					Promise.all([
 						fetch('{% url "person_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
-						fetch('{% url "extraction_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
+						fetch('{% url "extraction_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
+						fetch('{% url "concept_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
 					]).then(function(results) {
 						var persons = results[0];
 						var extractions = results[1];
+						var concepts = results[2];
 						resultsBox.innerHTML = '';
-						if (persons.length === 0 && extractions.length === 0) {
+						if (persons.length === 0 && extractions.length === 0 && concepts.length === 0) {
 							resultsBox.style.display = 'none';
 							return;
 						}
@@ -197,6 +202,19 @@
 								a.className = 'list-group-item list-group-item-action';
 								a.href = '{% url "extraction_list" %}' + e.id + '/';
 								a.innerHTML = '<strong>' + e.label + '</strong> ' + (e.quote || '');
+								resultsBox.appendChild(a);
+							});
+						}
+						if (concepts.length > 0) {
+							var h3 = document.createElement('div');
+							h3.className = 'list-group-item list-group-item-secondary small';
+							h3.textContent = 'Concepts';
+							resultsBox.appendChild(h3);
+							concepts.forEach(function(c) {
+								var a = document.createElement('a');
+								a.className = 'list-group-item list-group-item-action';
+								a.href = '{% url "concept_list" %}' + c.id + '/';
+								a.textContent = c.label;
 								resultsBox.appendChild(a);
 							});
 						}

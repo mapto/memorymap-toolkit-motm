@@ -50,7 +50,7 @@
             {% for extraction in interview.extracted_from.all %}
             <tr>
                 <td><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.quote|truncatewords:20|default:"–" }}</a></td>
-                <td>{{ extraction.concepts.label|default:"–" }}</td>
+                <td>{% if extraction.concepts %}<a href="{% url 'concept_detail' extraction.concepts.pk %}">{{ extraction.concepts.label }}</a>{% else %}–{% endif %}</td>
                 <td>{% if extraction.people_mentioned %}<a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a>{% else %}–{% endif %}</td>
                 <td>{{ extraction.timecode|default:"–" }}</td>
             </tr>

@@ -37,6 +37,9 @@ class PersonDetailView(DetailView):
         context["random_quotes"] = (
             person.relates_to_person.exclude(quote="").order_by("?")[:3]
         )
+        context["concepts"] = Concept.objects.filter(
+            relates_to_concept__people_mentioned=person
+        ).distinct()
         return context
 
 
@@ -95,6 +98,21 @@ def interview_search(request):
     results = [
         {"id": i.pk, "label": i.archive_id or "(no ID)"}
         for i in interviews
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def concept_search(request):
+    """Return matching concepts as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    concepts = Concept.objects.filter(
+        label__icontains=query
+    ).order_by("label")[:10]
+    results = [
+        {"id": c.pk, "label": c.label or "(no label)"}
+        for c in concepts
     ]
     return JsonResponse(results, safe=False)
 
@@ -171,3 +189,26 @@ class ConceptViewSet(viewsets.ModelViewSet):
     serializer_class = ConceptSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["label"]
+
+
+class ConceptListView(ListView):
+    model = Concept
+    template_name = "mmt_motm/concept_list.html"
+    context_object_name = "concepts"
+    ordering = ["label"]
+
+
+class ConceptDetailView(DetailView):
+    model = Concept
+    template_name = "mmt_motm/concept_detail.html"
+    context_object_name = "concept"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        concept = self.object
+        quotes = concept.relates_to_concept.exclude(quote="")
+        context["quotes"] = quotes
+        context["persons"] = Person.objects.filter(
+            relates_to_person__concepts=concept
+        ).distinct()
+        return context

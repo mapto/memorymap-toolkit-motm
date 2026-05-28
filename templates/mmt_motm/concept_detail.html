@@ -2,37 +2,48 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Quotes</h1>
-    <input type="text" id="extraction-search" class="form-control mb-3" placeholder="Search by quote, concept or person…">
-    <table class="table table-striped" id="extraction-table">
+    <p><a href="{% url 'concept_list' %}">&larr; Back to list</a></p>
+    <h1>{{ concept.label }}</h1>
+
+    {% if quotes %}
+    <h3>Quotes</h3>
+    <input type="text" id="quote-filter" class="form-control mb-3" placeholder="Filter quotes…">
+    <table class="table table-striped" id="quotes-table">
         <thead>
             <tr>
-                <th>Person</th>
-                <th>Concept</th>
                 <th>Quote</th>
+                <th>Person Mentioned</th>
                 <th>Interview</th>
+                <th>Timecode</th>
             </tr>
         </thead>
         <tbody>
-            {% for extraction in extractions %}
+            {% for extraction in quotes %}
             <tr>
+                <td><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.quote|truncatewords:20|default:"–" }}</a></td>
                 <td>{% if extraction.people_mentioned %}<a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a>{% else %}–{% endif %}</td>
-                <td>{% if extraction.concepts %}<a href="{% url 'concept_detail' extraction.concepts.pk %}">{{ extraction.concepts.label }}</a>{% else %}–{% endif %}</td>
-                <td><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.quote|truncatewords:15|default:"–" }}</a></td>
                 <td>{% if extraction.interview %}<a href="{% url 'interview_detail' extraction.interview.pk %}">{{ extraction.interview }}</a>{% else %}–{% endif %}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">No extractions found.</td>
+                <td>{{ extraction.timecode|default:"–" }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
+
+    {% if persons %}
+    <h3>Persons</h3>
+    <ul>
+        {% for person in persons %}
+        <li><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }} {{ person.family_name }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    var input = document.getElementById("extraction-search");
-    var rows = document.querySelectorAll("#extraction-table tbody tr");
+    var input = document.getElementById("quote-filter");
+    if (!input) return;
+    var rows = document.querySelectorAll("#quotes-table tbody tr");
     input.addEventListener("input", function () {
         var query = this.value.toLowerCase();
         rows.forEach(function (row) {
