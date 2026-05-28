@@ -7,12 +7,12 @@
     <table class="table table-striped" id="interview-table">
         <thead>
             <tr>
-                <th>Archive ID</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Place</th>
-                <th>Interviewee</th>
-                <th>Interviewer</th>
+                <th class="sortable" data-col="0">Archive ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">Type <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">Date <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">Place <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">Interviewee <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="5">Interviewer <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -20,7 +20,7 @@
             <tr>
                 <td><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a></td>
                 <td>{{ interview.interview_type|default:"–" }}</td>
-                <td>{{ interview.date|date:"Y-m-d"|default:"–" }}</td>
+                <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">{{ interview.date|date:"Y-m-d"|default:"–" }}</td>
                 <td>{{ interview.place|default:"–" }}</td>
                 <td>{% if interview.interviewee %}<a href="{% url 'person_detail' interview.interviewee.pk %}">{{ interview.interviewee }}</a>{% else %}–{% endif %}</td>
                 <td>{% if interview.interviewer %}<a href="{% url 'person_detail' interview.interviewer.pk %}">{{ interview.interviewer }}</a>{% else %}–{% endif %}</td>
@@ -33,15 +33,46 @@
         </tbody>
     </table>
 </div>
+<style>
+.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable:hover { background-color: #e9ecef; }
+.sort-arrow::after { content: "\2195"; opacity: 0.3; margin-left: 4px; }
+.sortable.asc .sort-arrow::after { content: "\25B2"; opacity: 1; }
+.sortable.desc .sort-arrow::after { content: "\25BC"; opacity: 1; }
+</style>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     var input = document.getElementById("interview-search");
-    var rows = document.querySelectorAll("#interview-table tbody tr");
+    var table = document.getElementById("interview-table");
+    var tbody = table.querySelector("tbody");
+    var headers = table.querySelectorAll("th.sortable");
+
     input.addEventListener("input", function () {
         var query = this.value.toLowerCase();
-        rows.forEach(function (row) {
-            var text = row.textContent.toLowerCase();
-            row.style.display = text.includes(query) ? "" : "none";
+        Array.from(tbody.rows).forEach(function (row) {
+            row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+        });
+    });
+
+    var currentSort = { col: -1, dir: "asc" };
+    headers.forEach(function (th) {
+        th.addEventListener("click", function () {
+            var col = parseInt(this.dataset.col);
+            var dir = (currentSort.col === col && currentSort.dir === "asc") ? "desc" : "asc";
+            currentSort = { col: col, dir: dir };
+            headers.forEach(function (h) { h.classList.remove("asc", "desc"); });
+            this.classList.add(dir);
+            var rows = Array.from(tbody.rows);
+            rows.sort(function (a, b) {
+                var av = (a.cells[col].dataset.sort !== undefined ? a.cells[col].dataset.sort : a.cells[col].textContent).trim().toLowerCase();
+                var bv = (b.cells[col].dataset.sort !== undefined ? b.cells[col].dataset.sort : b.cells[col].textContent).trim().toLowerCase();
+                if (av === "–" || av === "") av = "\uffff";
+                if (bv === "–" || bv === "") bv = "\uffff";
+                if (av < bv) return dir === "asc" ? -1 : 1;
+                if (av > bv) return dir === "asc" ? 1 : -1;
+                return 0;
+            });
+            rows.forEach(function (row) { tbody.appendChild(row); });
         });
     });
 });
