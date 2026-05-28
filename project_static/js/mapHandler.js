@@ -497,12 +497,18 @@ map.on('click', 'lines', function(e) {
 
 // Locations (mmt_motm LocationPoints)
 
-map.on('mouseenter', 'locations', function() {
+map.on('mousemove', 'locations', function(e) {
     map.getCanvas().style.cursor = 'pointer';
+    var name = e.features[0].properties.name;
+    MmtMap.hoverInteractions.smallPopup
+        .setLngLat(e.lngLat)
+        .setHTML('<p class="m-0 p-0 text-center">' + name + '</p>')
+        .addTo(map);
 });
 
 map.on('mouseleave', 'locations', function() {
     map.getCanvas().style.cursor = '';
+    MmtMap.hoverInteractions.smallPopup.remove();
 });
 
 map.on('click', 'locations', function(e) {
@@ -512,12 +518,20 @@ map.on('click', 'locations', function(e) {
 
 // Event lines (mmt_motm Events)
 
-map.on('mouseenter', 'event_lines', function() {
+map.on('mousemove', 'event_lines', function(e) {
     map.getCanvas().style.cursor = 'pointer';
+    var name = e.features[0].properties.name || '';
+    var year = e.features[0].properties.year;
+    var html = '<p class="m-0 p-0 text-center">' + name + (year ? ' <small>(' + year + ')</small>' : '') + '</p>';
+    MmtMap.hoverInteractions.smallPopup
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map);
 });
 
 map.on('mouseleave', 'event_lines', function() {
     map.getCanvas().style.cursor = '';
+    MmtMap.hoverInteractions.smallPopup.remove();
 });
 
 map.on('click', 'event_lines', function(e) {

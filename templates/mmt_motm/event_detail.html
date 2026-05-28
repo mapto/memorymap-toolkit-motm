@@ -114,14 +114,14 @@
             mmtAddGradientLine(map, 'event-line', 'event-line-layer',
                 { type: 'Feature', geometry: { type: 'LineString', coordinates: [startCoord, endCoord] } },
                 { width: 4 });
-            mmtCreateFAMarker(map, startCoord, 'fa-play-circle', '#2c3e50', { url: startUrl });
-            mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl });
+            mmtCreateFAMarker(map, startCoord, 'fa-play-circle', '#2c3e50', { url: startUrl, title: startName });
+            mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl, title: endName });
             var bounds = new mapboxgl.LngLatBounds();
             bounds.extend(startCoord);
             bounds.extend(endCoord);
             map.fitBounds(bounds, { padding: 60 });
         } else {
-            mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl });
+            mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl, title: endName });
         }
     });
 })();

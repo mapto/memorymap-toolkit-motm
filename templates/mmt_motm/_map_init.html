@@ -35,8 +35,24 @@ function mmtCreateFAMarker(map, lngLat, icon, color, opts) {
     var el = document.createElement('div');
     el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + ';font-size:' + (opts.size || '20px') + ';text-shadow:0 1px 3px rgba(0,0,0,0.4);"></i>';
     el.style.cursor = 'pointer';
+    if (opts.title) el.title = opts.title;
     var marker = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);
     if (opts.url) el.addEventListener('click', function() { window.location.href = opts.url; });
     return marker;
+}
+
+var _mmtTooltip = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, className: 'hover_popup' });
+
+function mmtAddLayerHover(map, layerId, nameField) {
+    nameField = nameField || 'name';
+    map.on('mousemove', layerId, function(e) {
+        map.getCanvas().style.cursor = 'pointer';
+        var name = e.features[0].properties[nameField] || '';
+        if (name) _mmtTooltip.setLngLat(e.lngLat).setHTML('<p class="m-0 p-0 text-center">' + name + '</p>').addTo(map);
+    });
+    map.on('mouseleave', layerId, function() {
+        map.getCanvas().style.cursor = '';
+        _mmtTooltip.remove();
+    });
 }
 </script>

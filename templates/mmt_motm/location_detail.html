@@ -124,6 +124,7 @@
             mmtAddGradientLine(map, 'loc-lines', 'loc-lines-layer',
                 { type: 'FeatureCollection', features: feats },
                 { opacity: 0.6 });
+            mmtAddLayerHover(map, 'loc-lines-layer');
 
             var bounds = new mapboxgl.LngLatBounds();
             bounds.extend(coord);

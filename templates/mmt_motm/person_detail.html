@@ -210,8 +210,7 @@
             var props = ev.features[0].properties;
             window.location.href = props.url;
         });
-        map.on('mouseenter', 'event-lines-layer', function() { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'event-lines-layer', function() { map.getCanvas().style.cursor = ''; });
+        mmtAddLayerHover(map, 'event-lines-layer', 'desc');
     });
 })();
 </script>
