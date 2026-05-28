@@ -1,0 +1,160 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <p><a href="javascript:history.back()">&larr; Back</a></p>
+    <h1>{{ location.current_name }}</h1>
+
+    <div class="row">
+    <div class="col-md-6">
+
+    {% if location.alternate_names %}
+    <p><strong>Alternate names:</strong> {{ location.alternate_names }}</p>
+    {% endif %}
+
+    {% if location.postal_address %}
+    <p><strong>Address:</strong> {{ location.postal_address }}</p>
+    {% endif %}
+
+    {% if location.description %}
+    <p>{{ location.description }}</p>
+    {% endif %}
+
+    {% if location.wikidata_id %}
+    <p><strong>Wikidata:</strong> <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}" target="_blank" rel="noopener">{{ location.wikidata_id }}</a></p>
+    {% endif %}
+
+    {% if location.geonames_id %}
+    <p><strong>GeoNames:</strong> <a href="https://www.geonames.org/{{ location.geonames_id }}" target="_blank" rel="noopener">{{ location.geonames_id }}</a></p>
+    {% endif %}
+
+    {% if location.urls.exists %}
+    <h3>References</h3>
+    <ul>
+        {% for url in location.urls.all %}
+        <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if persons_born_here %}
+    <h3>Born here</h3>
+    <ul>
+        {% for person in persons_born_here %}
+        <li><a href="{% url 'person_detail' person.pk %}">{{ person }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if persons_died_here %}
+    <h3>Died here</h3>
+    <ul>
+        {% for person in persons_died_here %}
+        <li><a href="{% url 'person_detail' person.pk %}">{{ person }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if events_starting_here %}
+    <h3>Events departing from here</h3>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Description</th><th>Date</th><th>To</th></tr></thead>
+        <tbody>
+        {% for event in events_starting_here %}
+        <tr>
+            <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:8 }}</a></td>
+            <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
+            <td>{% if event.end_location %}<a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if events_ending_here %}
+    <h3>Events arriving here</h3>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Description</th><th>Date</th><th>From</th></tr></thead>
+        <tbody>
+        {% for event in events_ending_here %}
+        <tr>
+            <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:8 }}</a></td>
+            <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
+            <td>{% if event.start_location %}<a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    </div>
+    <div class="col-md-6">
+        <div id="location-map" style="width:100%; height:400px; border:1px solid #ccc;"></div>
+    </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
+
+    {% if location.location %}
+    var coord = [{{ location.location.x }}, {{ location.location.y }}];
+    {% else %}
+    document.getElementById('location-map').innerHTML = '<p class="text-muted p-3">No coordinates available.</p>';
+    return;
+    {% endif %}
+
+    if (!mapboxgl.accessToken) return;
+
+    var map = new mapboxgl.Map({
+        container: 'location-map',
+        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
+        center: coord,
+        zoom: 12
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', function() {
+        new mapboxgl.Marker({ color: '#e74c3c' }).setLngLat(coord)
+            .setPopup(new mapboxgl.Popup().setText("{{ location.current_name|escapejs }}"))
+            .addTo(map);
+
+        // Show lines for events departing/arriving
+        var lines = [];
+        {% for event in events_starting_here %}
+        {% if event.end_location and event.end_location.location %}
+        lines.push({
+            coords: [coord, [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]],
+            name: "{{ event.description|truncatewords:6|escapejs }} → {{ event.end_location.current_name|escapejs }}"
+        });
+        {% endif %}
+        {% endfor %}
+        {% for event in events_ending_here %}
+        {% if event.start_location and event.start_location.location %}
+        lines.push({
+            coords: [[{{ event.start_location.location.x }}, {{ event.start_location.location.y }}], coord],
+            name: "{{ event.start_location.current_name|escapejs }} → {{ event.description|truncatewords:6|escapejs }}"
+        });
+        {% endif %}
+        {% endfor %}
+
+        if (lines.length > 0) {
+            var feats = lines.map(function(l) {
+                return { type: 'Feature', properties: { name: l.name }, geometry: { type: 'LineString', coordinates: l.coords } };
+            });
+            map.addSource('loc-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: feats } });
+            map.addLayer({ id: 'loc-lines-layer', type: 'line', source: 'loc-lines',
+                paint: { 'line-color': '#e74c3c', 'line-width': 2, 'line-opacity': 0.6 } });
+
+            var bounds = new mapboxgl.LngLatBounds();
+            bounds.extend(coord);
+            lines.forEach(function(l) { bounds.extend(l.coords[0]); bounds.extend(l.coords[1]); });
+            map.fitBounds(bounds, { padding: 40 });
+        }
+    });
+})();
+</script>
+{% endblock %}

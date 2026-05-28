@@ -7,13 +7,14 @@ from rest_framework import viewsets, filters
 from .models import (
     Person, LocationPoint, LocationRegion,
     RelationshipType, Relationship, Interview, Event,
-    Extraction, Concept, Timespan,
+    Extraction, Concept, Timespan, URL,
 )
 from .serializers import (
     PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
     RelationshipTypeSerializer, RelationshipSerializer,
     InterviewSerializer, InterviewDetailSerializer, EventSerializer,
     ExtractionSerializer, ConceptSerializer, TimespanSerializer,
+    URLSerializer,
 )
 
 
@@ -59,7 +60,12 @@ class PersonDetailView(DetailView):
                 'relates_to_concept',
                 filter=Q(relates_to_concept__people_mentioned=person),
             )
-        ).order_by('-mention_count')
+        ).order_by('-mention_count')[:20]
+        context["events"] = (
+            person.events.select_related(
+                'timespan', 'start_location', 'end_location'
+            ).order_by('timespan__start')
+        )
         return context
 
 
@@ -74,6 +80,37 @@ class InterviewDetailView(DetailView):
     model = Interview
     template_name = "mmt_motm/interview_detail.html"
     context_object_name = "interview"
+
+
+class EventDetailView(DetailView):
+    model = Event
+    template_name = "mmt_motm/event_detail.html"
+    context_object_name = "event"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        context["extractions"] = event.relates_to_event.prefetch_related('concepts').all()
+        return context
+
+
+class LocationDetailView(DetailView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_detail.html"
+    context_object_name = "location"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        loc = self.object
+        context["events_starting_here"] = Event.objects.filter(
+            start_location=loc
+        ).select_related('timespan', 'end_location').order_by('timespan__start')
+        context["events_ending_here"] = Event.objects.filter(
+            end_location=loc
+        ).select_related('timespan', 'start_location').order_by('timespan__start')
+        context["persons_born_here"] = loc.people_born_here.all()
+        context["persons_died_here"] = loc.people_died_here.all()
+        return context
 
 
 def person_search(request):
@@ -214,6 +251,11 @@ class ConceptViewSet(viewsets.ModelViewSet):
 class TimespanViewSet(viewsets.ModelViewSet):
     queryset = Timespan.objects.all()
     serializer_class = TimespanSerializer
+
+
+class URLViewSet(viewsets.ModelViewSet):
+    queryset = URL.objects.all()
+    serializer_class = URLSerializer
 
 
 class ConceptListView(ListView):

@@ -15,6 +15,7 @@ router.register(r"events", views.EventViewSet, basename="api-event")
 router.register(r"extractions", views.ExtractionViewSet, basename="api-extraction")
 router.register(r"concepts", views.ConceptViewSet, basename="api-concept")
 router.register(r"timespans", views.TimespanViewSet, basename="api-timespan")
+router.register(r"urls", views.URLViewSet, basename="api-url")
 
 urlpatterns = [
     path("persons/", views.PersonListView.as_view(), name="person_list"),
@@ -29,5 +30,7 @@ urlpatterns = [
     path("concepts/", views.ConceptListView.as_view(), name="concept_list"),
     path("concepts/<int:pk>/", views.ConceptDetailView.as_view(), name="concept_detail"),
     path("concepts/search/", views.concept_search, name="concept_search"),
+    path("events/<int:pk>/", views.EventDetailView.as_view(), name="event_detail"),
+    path("locations/<int:pk>/", views.LocationDetailView.as_view(), name="location_detail"),
     path("api/", include(router.urls)),
 ]

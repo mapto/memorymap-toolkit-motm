@@ -1,7 +1,7 @@
 {% extends "mmt_map/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <p><a href="{% url 'person_list' %}">&larr; Back to list</a></p>
     <h1>{{ person.given_name }} {{ person.family_name }}</h1>
 
@@ -21,25 +21,16 @@
     {% endif %}
 
     {% if person.lifespan and person.lifespan.start %}
-    <p><strong>Born:</strong> {{ person.lifespan.start }}{% if person.birth_place %} in {{ person.birth_place }}{% endif %}</p>
+    <p><strong>Born:</strong> {{ person.lifespan.start }}{% if person.birth_place %} in <a href="{% url 'location_detail' person.birth_place.pk %}">{{ person.birth_place }}</a>{% endif %}</p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.end %}
-    <p><strong>Died:</strong> {{ person.lifespan.end }}{% if person.death_place %} in {{ person.death_place }}{% endif %}</p>
+    <p><strong>Died:</strong> {{ person.lifespan.end }}{% if person.death_place %} in <a href="{% url 'location_detail' person.death_place.pk %}">{{ person.death_place }}</a>{% endif %}</p>
     {% endif %}
 
     {% if person.description %}
     <h3>Biography</h3>
     <p>{{ person.description }}</p>
-    {% endif %}
-
-    {% if person.events.exists %}
-    <h3>Events</h3>
-    <ul>
-        {% for event in person.events.all %}
-        <li>{{ event }}</li>
-        {% endfor %}
-    </ul>
     {% endif %}
 
     {% if person.urls.exists %}
@@ -50,9 +41,6 @@
         {% endfor %}
     </ul>
     {% endif %}
-
-    </div>
-    <div class="col-md-6">
 
     {% if person.relationships_from.exists or person.relationships_to.exists %}
     <h3>Relationships</h3>
@@ -84,11 +72,8 @@
     </ul>
     {% endif %}
 
-    </div>
-    </div>
-
     {% if concepts %}
-    <h3>Concepts</h3>
+    <h3>Concepts <small class="text-muted">(top 20)</small></h3>
     <p>{% for concept in concepts %}<a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>&nbsp;({{ concept.mention_count }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
     {% endif %}
 
@@ -103,5 +88,151 @@
         </div>
         {% endfor %}
     {% endif %}
+
+    </div>
+    <div class="col-md-6">
+        <div id="person-map" style="width:100%; height:400px; border:1px solid #ccc;"></div>
+    </div>
+    </div>
+
+    {% if events %}
+    <h3 class="mt-4">Events</h3>
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Start date</th>
+                <th>From</th>
+                <th>End date</th>
+                <th>To</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:10 }}</a></td>
+                <td>{% if event.timespan %}{{ event.timespan.start|default:"" }}{% endif %}</td>
+                <td>{% if event.start_location %}<a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>{% endif %}</td>
+                <td>{% if event.timespan %}{{ event.timespan.end|default:"" }}{% endif %}</td>
+                <td>{% if event.end_location %}<a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
+
+    var events = [
+        {% for event in events %}
+        {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
+        {
+            id: {{ event.pk }},
+            desc: "{{ event.description|truncatewords:6|escapejs }}",
+            url: "{% url 'event_detail' event.pk %}",
+            start: [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}],
+            end: [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}],
+            startName: "{{ event.start_location.current_name|escapejs }}",
+            endName: "{{ event.end_location.current_name|escapejs }}",
+            date: "{% if event.timespan %}{{ event.timespan|escapejs }}{% endif %}"
+        },
+        {% endif %}
+        {% endfor %}
+    ];
+
+    if (!mapboxgl.accessToken || events.length === 0) {
+        document.getElementById('person-map').innerHTML = '<p class="text-muted p-3">No geolocated events to display.</p>';
+        return;
+    }
+
+    var map = new mapboxgl.Map({
+        container: 'person-map',
+        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
+        center: [10, 48],
+        zoom: 3
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', function() {
+        // Build GeoJSON lines
+        var features = events.map(function(e) {
+            return {
+                type: 'Feature',
+                properties: { id: e.id, desc: e.desc, url: e.url, date: e.date,
+                              startName: e.startName, endName: e.endName },
+                geometry: { type: 'LineString', coordinates: [e.start, e.end] }
+            };
+        });
+
+        // Collect unique points for markers
+        var pointMap = {};
+        events.forEach(function(e) {
+            pointMap[e.start.join(',')] = { coords: e.start, name: e.startName };
+            pointMap[e.end.join(',')] = { coords: e.end, name: e.endName };
+        });
+        var pointFeatures = Object.values(pointMap).map(function(p) {
+            return {
+                type: 'Feature',
+                properties: { name: p.name },
+                geometry: { type: 'Point', coordinates: p.coords }
+            };
+        });
+
+        map.addSource('event-lines', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: features }
+        });
+        map.addSource('event-points', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: pointFeatures }
+        });
+
+        map.addLayer({
+            id: 'event-lines-layer',
+            type: 'line',
+            source: 'event-lines',
+            paint: { 'line-color': '#e74c3c', 'line-width': 2, 'line-opacity': 0.7 }
+        });
+        map.addLayer({
+            id: 'event-points-layer',
+            type: 'circle',
+            source: 'event-points',
+            paint: { 'circle-radius': 5, 'circle-color': '#2c3e50', 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' }
+        });
+        map.addLayer({
+            id: 'event-labels-layer',
+            type: 'symbol',
+            source: 'event-points',
+            layout: { 'text-field': ['get', 'name'], 'text-offset': [0, 1.2], 'text-size': 11 },
+            paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1 }
+        });
+
+        // Fit bounds
+        var bounds = new mapboxgl.LngLatBounds();
+        events.forEach(function(e) {
+            bounds.extend(e.start);
+            bounds.extend(e.end);
+        });
+        map.fitBounds(bounds, { padding: 40 });
+
+        // Popup on line click
+        map.on('click', 'event-lines-layer', function(ev) {
+            var props = ev.features[0].properties;
+            new mapboxgl.Popup()
+                .setLngLat(ev.lngLat)
+                .setHTML('<strong><a href="' + props.url + '">' + props.desc + '</a></strong>' +
+                         '<br>' + props.startName + ' &rarr; ' + props.endName +
+                         (props.date ? '<br><small>' + props.date + '</small>' : ''))
+                .addTo(map);
+        });
+        map.on('mouseenter', 'event-lines-layer', function() { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'event-lines-layer', function() { map.getCanvas().style.cursor = ''; });
+    });
+})();
+</script>
 {% endblock %}
