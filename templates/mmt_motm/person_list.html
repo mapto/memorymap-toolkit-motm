@@ -8,11 +8,11 @@
         <thead>
             <tr>
                 <th class="sortable col-group-name" data-col="0">Family Name <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-name-end" data-col="1">Given Name <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-name-end col-right-separator" data-col="1">Given Name <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-birth" data-col="2">Birth Year <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-birth-end" data-col="3">Birth Place <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-birth-end col-right-separator" data-col="3">Birth Place <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-death" data-col="4">Death Year <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-death-end" data-col="5">Death Place <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-death-end col-right-separator" data-col="5">Death Place <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="6">Interviews <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="7">Top Concepts <span class="sort-arrow"></span></th>
             </tr>
@@ -37,14 +37,6 @@
         </tbody>
     </table>
 </div>
-<style>
-.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-.sortable:hover { background-color: #e9ecef; }
-.sort-arrow::after { content: "\2195"; opacity: 0.3; margin-left: 4px; }
-.sortable.asc .sort-arrow::after { content: "\25B2"; opacity: 1; }
-.sortable.desc .sort-arrow::after { content: "\25BC"; opacity: 1; }
-.col-right-separator { border-right: 2px solid #dee2e6 !important; }
-</style>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     var input = document.getElementById("person-search");

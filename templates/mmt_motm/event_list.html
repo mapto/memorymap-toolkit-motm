@@ -7,9 +7,9 @@
     <table class="table table-sm table-striped table-hover" id="events-table">
         <thead>
             <tr>
-                <th style="cursor:pointer" data-sort="date">Date <span class="sort-arrow"></span></th>
-                <th style="cursor:pointer" data-sort="location">Location <span class="sort-arrow"></span></th>
-                <th style="cursor:pointer" data-sort="description">Description <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="0">Date <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">Location <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">Description <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -41,25 +41,25 @@
 (function() {
     var table = document.getElementById('events-table');
     if (!table) return;
-    var headers = table.querySelectorAll('th[data-sort]');
+    var headers = table.querySelectorAll('th.sortable');
     var tbody = table.querySelector('tbody');
-    var currentSort = null;
-    var currentDir = 1;
+    var currentSort = { col: 0, dir: 'asc' };
 
     headers.forEach(function(th) {
         th.addEventListener('click', function() {
-            var col = th.cellIndex;
-            if (currentSort === col) { currentDir *= -1; }
-            else { currentSort = col; currentDir = 1; }
-
-            headers.forEach(function(h) { h.querySelector('.sort-arrow').textContent = ''; });
-            th.querySelector('.sort-arrow').textContent = currentDir === 1 ? ' \u25B2' : ' \u25BC';
+            var col = parseInt(this.dataset.col);
+            var dir = (currentSort.col === col && currentSort.dir === 'asc') ? 'desc' : 'asc';
+            currentSort = { col: col, dir: dir };
+            headers.forEach(function(h) { h.classList.remove('asc', 'desc'); });
+            this.classList.add(dir);
 
             var rows = Array.from(tbody.querySelectorAll('tr'));
             rows.sort(function(a, b) {
                 var aVal = a.cells[col].getAttribute('data-value') || a.cells[col].textContent.trim().toLowerCase();
                 var bVal = b.cells[col].getAttribute('data-value') || b.cells[col].textContent.trim().toLowerCase();
-                return aVal.localeCompare(bVal) * currentDir;
+                if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+                if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+                return 0;
             });
             rows.forEach(function(r) { tbody.appendChild(r); });
         });

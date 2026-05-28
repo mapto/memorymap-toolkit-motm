@@ -9,12 +9,13 @@ class Timespan(models.Model):
         unique_together = [("start", "end")]
 
     def __str__(self):
+        fmt = "%d-%b-%Y"
         if self.start and self.end and self.start != self.end:
-            return f"{self.start} – {self.end}"
+            return f"{self.start.strftime(fmt)} – {self.end.strftime(fmt)}"
         if self.start:
-            return str(self.start)
+            return self.start.strftime(fmt)
         if self.end:
-            return str(self.end)
+            return self.end.strftime(fmt)
         return "—"
 
 
