@@ -275,7 +275,7 @@ class Extraction(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="extractions_mentioning"
+        related_name="relates_to_person"
     )
 
     # timecode
@@ -288,7 +288,7 @@ class Extraction(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="extractions"
+        related_name="relates_to_concept"
     )
 
     # zitat
@@ -302,7 +302,7 @@ class Extraction(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="extractions"
+        related_name="relates_to_event"
     )
     event_confidence = models.CharField(max_length=200, blank=True)
 
