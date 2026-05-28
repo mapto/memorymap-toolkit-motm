@@ -36,7 +36,8 @@
 
     {% if interview.extracted_from.all %}
     <h3>Quotes</h3>
-    <table class="table table-striped">
+    <input type="text" id="quote-filter" class="form-control mb-3" placeholder="Filter quotes…">
+    <table class="table table-striped" id="quotes-table">
         <thead>
             <tr>
                 <th>Quote</th>
@@ -67,4 +68,17 @@
     </ul>
     {% endif %}
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var input = document.getElementById("quote-filter");
+    var rows = document.querySelectorAll("#quotes-table tbody tr");
+    input.addEventListener("input", function () {
+        var query = this.value.toLowerCase();
+        rows.forEach(function (row) {
+            var text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? "" : "none";
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -34,7 +34,7 @@
     {% endif %}
 
     {% if extraction.interview %}
-    <p><strong>Interview:</strong> {{ extraction.interview }}</p>
+    <p><strong>Interview:</strong> <a href="{% url 'interview_detail' extraction.interview.pk %}">{{ extraction.interview }}</a></p>
     {% endif %}
 
     {% if extraction.notes %}

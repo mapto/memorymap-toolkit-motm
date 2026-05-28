@@ -5,6 +5,9 @@
     <p><a href="{% url 'person_list' %}">&larr; Back to list</a></p>
     <h1>{{ person.given_name }} {{ person.family_name }}</h1>
 
+    <div class="row">
+    <div class="col-md-6">
+
     {% if person.previous_given_name or person.previous_family_name %}
     <p><strong>Previous name:</strong> {{ person.previous_given_name }} {{ person.previous_family_name }}</p>
     {% endif %}
@@ -39,6 +42,18 @@
     </ul>
     {% endif %}
 
+    {% if person.urls.exists %}
+    <h3>References</h3>
+    <ul>
+        {% for url in person.urls.all %}
+        <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    </div>
+    <div class="col-md-6">
+
     {% if person.relationships_from.exists or person.relationships_to.exists %}
     <h3>Relationships</h3>
     <ul>
@@ -47,15 +62,6 @@
         {% endfor %}
         {% for rel in person.relationships_to.all %}
         <li>{{ rel.relationship_type }} of <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>{% if rel.start_date or rel.end_date %} ({{ rel.start_date|default:"?" }} – {{ rel.end_date|default:"?" }}){% endif %}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-
-    {% if person.urls.exists %}
-    <h3>References</h3>
-    <ul>
-        {% for url in person.urls.all %}
-        <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -78,16 +84,19 @@
     </ul>
     {% endif %}
 
+    </div>
+    </div>
+
     {% if random_quotes %}
     <h3>Quotes</h3>
-    <blockquote class="list-unstyled">
         {% for extraction in random_quotes %}
-        <li class="mb-2">
+        <div class="mb-2">
+          <blockquote class="list-unstyled">
             <em>&ldquo;{{ extraction.quote }}&rdquo;</em>
-            {% if extraction.identifier %}<br><small class="text-muted">{{ extraction.identifier }}</small>{% endif %}
-        </li>
+            {% if extraction.identifier %}<br><small class="text-muted"><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.identifier }}</a></small>{% endif %}
+          </blockquote>
+        </div>
         {% endfor %}
-    </blockquote>
     {% endif %}
 </div>
 {% endblock %}
