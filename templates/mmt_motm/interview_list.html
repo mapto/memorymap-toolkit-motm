@@ -47,12 +47,22 @@ document.addEventListener("DOMContentLoaded", function () {
     var tbody = table.querySelector("tbody");
     var headers = table.querySelectorAll("th.sortable");
 
-    input.addEventListener("input", function () {
-        var query = this.value.toLowerCase();
+    function filterRows() {
+        var query = input.value.toLowerCase();
         Array.from(tbody.rows).forEach(function (row) {
             row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
         });
-    });
+    }
+
+    input.addEventListener("input", filterRows);
+
+    // Pre-fill from URL parameter
+    var params = new URLSearchParams(window.location.search);
+    var q = params.get("q");
+    if (q) {
+        input.value = q.replace(/\+/g, " ");
+        filterRows();
+    }
 
     var currentSort = { col: -1, dir: "asc" };
     headers.forEach(function (th) {

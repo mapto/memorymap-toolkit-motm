@@ -293,7 +293,7 @@ class Interview(models.Model):
     )
 
     def __str__(self):
-        return f"Interview {self.archive_id}"
+        return self.archive_id
     
 class Extraction(models.Model):
 

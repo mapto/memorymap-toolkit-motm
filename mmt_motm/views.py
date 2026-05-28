@@ -21,7 +21,22 @@ class PersonListView(ListView):
     model = Person
     template_name = "mmt_motm/person_list.html"
     context_object_name = "persons"
-    ordering = ["family_name", "given_name"]
+
+    def get_queryset(self):
+        return Person.objects.annotate(
+            interview_count=Count('interviews_received', distinct=True)
+        ).order_by('family_name', 'given_name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for person in context['persons']:
+            person.top_concepts = list(
+                Concept.objects.filter(relates_to_concept__people_mentioned=person)
+                .annotate(cnt=Count('relates_to_concept',
+                                    filter=Q(relates_to_concept__people_mentioned=person)))
+                .order_by('-cnt')[:3]
+            )
+        return context
 
 
 class PersonDetailView(DetailView):

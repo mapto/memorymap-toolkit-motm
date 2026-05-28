@@ -13,6 +13,8 @@
                 <th class="sortable col-group-birth-end" data-col="3">Birth Place <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-death" data-col="4">Death Year <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-death-end" data-col="5">Death Place <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="6">Interviews <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="7">Top Concepts <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -24,10 +26,12 @@
                 <td class="col-group-birth-end">{% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}</td>
                 <td class="col-group-death" data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:"Y" }}{% else %}–{% endif %}</td>
                 <td class="col-group-death-end">{% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}</td>
+                <td data-sort="{{ person.interview_count }}">{% if person.interview_count %}<a href="{% url 'interview_list' %}?q={{ person.given_name }}+{{ person.family_name }}">{{ person.interview_count }}</a>{% else %}–{% endif %}</td>
+                <td>{% for c in person.top_concepts %}<a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6">No persons found.</td>
+                <td colspan="8">No persons found.</td>
             </tr>
             {% endfor %}
         </tbody>
