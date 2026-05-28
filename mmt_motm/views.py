@@ -1,4 +1,4 @@
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Subquery, OuterRef
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView
 
@@ -111,8 +111,15 @@ class LocationListView(ListView):
     context_object_name = "locations"
 
     def get_queryset(self):
+        # Subquery: dominant icon from events departing this location
+        dominant_icon = Concept.objects.filter(
+            events__start_location=OuterRef('pk'),
+            icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').values('icon')[:1]
+
         return LocationPoint.objects.select_related('region').annotate(
-            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True)
+            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True),
+            dominant_icon=Subquery(dominant_icon)
         ).order_by('current_name')
 
 
@@ -124,11 +131,19 @@ class LocationDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         loc = self.object
-        context["events"] = Event.objects.filter(
+        events = Event.objects.filter(
             Q(start_location=loc) | Q(end_location=loc)
         ).select_related('timespan', 'start_location', 'end_location').order_by('timespan__start')
+        context["events"] = events
         context["persons_born_here"] = loc.people_born_here.all()
         context["persons_died_here"] = loc.people_died_here.all()
+
+        # Dominant concept icon from departing events
+        dominant = Concept.objects.filter(
+            events__start_location=loc, icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').first()
+        context["dominant_icon"] = dominant['icon'] if dominant else ''
+
         return context
 
 

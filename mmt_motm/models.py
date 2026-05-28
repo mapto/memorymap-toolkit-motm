@@ -9,7 +9,7 @@ class Timespan(models.Model):
         unique_together = [("start", "end")]
 
     def __str__(self):
-        fmt = "%d-%b-%Y"
+        fmt = "%-d %B %Y"
         if self.start and self.end and self.start != self.end:
             return f"{self.start.strftime(fmt)} – {self.end.strftime(fmt)}"
         if self.start:
@@ -138,6 +138,13 @@ class Event(models.Model):
     # Persons related to the event
     persons = models.ManyToManyField(
         "Person",
+        blank=True,
+        related_name="events"
+    )
+
+    # Concepts associated with the event
+    concepts = models.ManyToManyField(
+        "Concept",
         blank=True,
         related_name="events"
     )
@@ -354,6 +361,18 @@ class Extraction(models.Model):
 
 class Concept(models.Model):
     label = models.CharField(max_length=200, blank=True)
+    icon = models.CharField(max_length=50, blank=True, default="")
+    parent = models.ForeignKey(
+        'self', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='children'
+    )
 
     def __str__(self):
         return f"Concept {self.label}"
+
+    def get_root(self):
+        """Walk up the parent chain to find the root category."""
+        node = self
+        while node.parent_id:
+            node = node.parent
+        return node

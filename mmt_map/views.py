@@ -132,7 +132,71 @@ def vector_tile(request, z, x, y, tile_format):
 			pbf = cursor.fetchone()[0]
 	
 		response.write(pbf.tobytes())
-	
+
+	# Add LocationPoints from mmt_motm as a separate layer
+	loc_sql = """
+		WITH
+		"bounds" AS (
+			SELECT ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s) AS "geom",
+				   ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s)::box2d AS "b2d"
+		),
+		"mvtgeom" AS (
+			SELECT ST_AsMVTGeom(ST_Transform("t"."location", 3857), "bounds"."b2d") AS "geom",
+				   "t"."id", "t"."current_name" AS "name",
+				   (
+				       SELECT "c"."icon"
+				       FROM "mmt_motm_event" "e"
+				       JOIN "mmt_motm_event_concepts" "ec" ON "ec"."event_id" = "e"."id"
+				       JOIN "mmt_motm_concept" "c" ON "c"."id" = "ec"."concept_id"
+				       WHERE "e"."start_location_id" = "t"."id" AND "c"."icon" != ''
+				       GROUP BY "c"."icon"
+				       ORDER BY COUNT(*) DESC
+				       LIMIT 1
+				   ) AS "icon"
+			FROM "mmt_motm_locationpoint" "t",
+			"bounds"
+			WHERE "t"."location" IS NOT NULL
+			  AND ST_Intersects("t"."location", ST_Transform("bounds"."geom", 4326))
+		)
+		SELECT ST_AsMVT("mvtgeom".*, 'locations') FROM "mvtgeom"
+	"""
+	params = {'xmin': env['xmin'], 'ymin': env['ymin'], 'xmax': env['xmax'], 'ymax': env['ymax'], 'segSize': env['segSize']}
+	with connection.cursor() as cursor:
+		cursor.execute(loc_sql, params)
+		pbf = cursor.fetchone()[0]
+	response.write(pbf.tobytes())
+
+	# Add event lines from mmt_motm (start_location → end_location)
+	evt_sql = """
+		WITH
+		"bounds" AS (
+			SELECT ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s) AS "geom",
+				   ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s)::box2d AS "b2d"
+		),
+		"mvtgeom" AS (
+			SELECT ST_AsMVTGeom(
+				ST_Transform(ST_MakeLine("sl"."location", "el"."location"), 3857),
+				"bounds"."b2d"
+			) AS "geom",
+			"e"."id",
+			"e"."description" AS "name"
+			FROM "mmt_motm_event" "e"
+			JOIN "mmt_motm_locationpoint" "sl" ON "e"."start_location_id" = "sl"."id"
+			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id",
+			"bounds"
+			WHERE "sl"."location" IS NOT NULL
+			  AND "el"."location" IS NOT NULL
+			  AND "e"."start_location_id" != "e"."end_location_id"
+			  AND (ST_Intersects("sl"."location", ST_Transform("bounds"."geom", 4326))
+				   OR ST_Intersects("el"."location", ST_Transform("bounds"."geom", 4326)))
+		)
+		SELECT ST_AsMVT("mvtgeom".*, 'event_lines') FROM "mvtgeom"
+	"""
+	with connection.cursor() as cursor:
+		cursor.execute(evt_sql, params)
+		pbf = cursor.fetchone()[0]
+	response.write(pbf.tobytes())
+
 	# Return the tile
 
 	return response

@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django import forms
+from django.contrib.gis import forms as gis_forms
 from django.contrib.gis.geos import Point
+from constance import config
+
+from mmt_map.widgets import MapBoxGLWidget
 
 # Register your models here.
 from .models import (
@@ -43,6 +47,10 @@ class InterviewAdmin(admin.ModelAdmin):
 class LocationPointForm(forms.ModelForm):
     latitude = forms.FloatField(required=False)
     longitude = forms.FloatField(required=False)
+    location = gis_forms.PointField(
+        widget=MapBoxGLWidget(attrs={'config': config}),
+        required=False,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

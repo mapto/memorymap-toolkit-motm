@@ -128,9 +128,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "mmt_motm/_map_init.html" %}
 <script>
 (function() {
-    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
 
     var events = [
         {% for event in events %}
@@ -149,18 +149,12 @@
         {% endfor %}
     ];
 
-    if (!mapboxgl.accessToken || events.length === 0) {
+    if (events.length === 0) {
         document.getElementById('person-map').innerHTML = '<p class="text-muted p-3">No geolocated events to display.</p>';
         return;
     }
 
-    var map = new mapboxgl.Map({
-        container: 'person-map',
-        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
-        center: [10, 48],
-        zoom: 3
-    });
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    var map = mmtCreateMap('person-map', [10, 48], 3);
 
     map.on('load', function() {
         var features = events.map(function(e) {

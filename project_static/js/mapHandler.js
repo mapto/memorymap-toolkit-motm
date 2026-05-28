@@ -308,6 +308,85 @@ map.on('load', function() {
         }
     });
 
+    // LocationPoints from mmt_motm
+    map.addLayer({
+        'id': 'locations',
+        'source': 'interactive',
+        'source-layer': 'locations',
+        'type': 'circle',
+        'paint': {
+            'circle-color': [
+                'match', ['get', 'icon'],
+                'fa-map-marker-alt', '#27ae60',
+                'fa-university', '#2980b9',
+                'fa-route', '#e67e22',
+                'fa-user', '#8e44ad',
+                'fa-clock', '#7f8c8d',
+                'fa-road', '#c0392b',
+                'fa-language', '#16a085',
+                'fa-palette', '#e84393',
+                'fa-box-open', '#f39c12',
+                'fa-sitemap', '#2c3e50',
+                '#e74c3c'
+            ],
+            'circle-radius': ["interpolate", ["linear"], ["zoom"],
+                6, 4,
+                14, 8,
+                19, 14
+            ],
+            'circle-opacity': 0.8,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+            'circle-pitch-alignment': 'map'
+        }
+    });
+
+    map.addLayer({
+        'id': 'locations_labels',
+        'source': 'interactive',
+        'source-layer': 'locations',
+        'type': 'symbol',
+        'layout': {
+            'symbol-placement': 'point',
+            'text-field': ['get', 'name'],
+            'text-font': [MmtMap.settings.font],
+            'text-size': ["interpolate", ["linear"], ["zoom"],
+                6, 10,
+                14, 12,
+                18, 16
+            ],
+            'text-anchor': 'left',
+            'text-justify': 'left',
+            'text-offset': [1, 0],
+        },
+        'paint': {
+            'text-color': '#2c2c2c',
+            'text-halo-color': 'rgba(255,255,255,0.8)',
+            'text-halo-width': 2,
+            'text-opacity': ["interpolate", ["linear"], ["zoom"],
+                6, 0.5,
+                18.5, 1
+            ]
+        }
+    });
+
+    // Event lines from mmt_motm (start_location → end_location)
+    map.addLayer({
+        'id': 'event_lines',
+        'source': 'interactive',
+        'source-layer': 'event_lines',
+        'type': 'line',
+        'paint': {
+            'line-color': '#e74c3c',
+            'line-width': ["interpolate", ["linear"], ["zoom"],
+                6, 1.5,
+                14, 3,
+                19, 5
+            ],
+            'line-opacity': 0.6
+        }
+    });
+
 });
 
 
@@ -392,5 +471,33 @@ map.on('click', 'lines', function(e) {
     MmtMap.clickInteractions.clickFeature('interactive', 'lines', e.features[0], e.features[0].properties.id, e.lngLat);
 });
 
+// Locations (mmt_motm LocationPoints)
 
+map.on('mouseenter', 'locations', function() {
+    map.getCanvas().style.cursor = 'pointer';
+});
+
+map.on('mouseleave', 'locations', function() {
+    map.getCanvas().style.cursor = '';
+});
+
+map.on('click', 'locations', function(e) {
+    var props = e.features[0].properties;
+    window.location.href = '/motm/locations/' + props.id + '/';
+});
+
+// Event lines (mmt_motm Events)
+
+map.on('mouseenter', 'event_lines', function() {
+    map.getCanvas().style.cursor = 'pointer';
+});
+
+map.on('mouseleave', 'event_lines', function() {
+    map.getCanvas().style.cursor = '';
+});
+
+map.on('click', 'event_lines', function(e) {
+    var props = e.features[0].properties;
+    window.location.href = '/motm/events/' + props.id + '/';
+});
 

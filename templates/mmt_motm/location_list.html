@@ -15,7 +15,7 @@
         <tbody>
             {% for location in locations %}
             <tr>
-                <td><a href="{% url 'location_detail' location.pk %}">{{ location.current_name }}</a></td>
+                <td><a href="{% url 'location_detail' location.pk %}">{% if location.dominant_icon %}<i class="fas {{ location.dominant_icon }}"></i> {% endif %}{{ location.current_name }}</a></td>
                 <td>{% if location.region %}{{ location.region }}{% endif %}</td>
                 <td data-value="{{ location.event_count }}">{{ location.event_count }}</td>
             </tr>

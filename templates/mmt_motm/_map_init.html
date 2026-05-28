@@ -1,0 +1,15 @@
+<script>
+mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
+var MMT_MAP_STYLE = '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json';
+
+function mmtCreateMap(containerId, center, zoom) {
+    var map = new mapboxgl.Map({
+        container: containerId,
+        style: MMT_MAP_STYLE,
+        center: center,
+        zoom: zoom || 6
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    return map;
+}
+</script>

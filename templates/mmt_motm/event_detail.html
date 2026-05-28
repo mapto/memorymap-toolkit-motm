@@ -38,6 +38,11 @@
     </ul>
     {% endif %}
 
+    {% if event.concepts.exists %}
+    <h3>Concepts</h3>
+    <p>{% for c in event.concepts.all %}<a href="{% url 'concept_detail' c.pk %}">{% if c.icon %}<i class="fas {{ c.icon }}"></i> {% endif %}{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% endif %}
+
     {% if event.urls.exists %}
     <h3>References</h3>
     <ul>
@@ -72,9 +77,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "mmt_motm/_map_init.html" %}
 <script>
 (function() {
-    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
 
     {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
     var startCoord = [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}];
@@ -96,15 +101,9 @@
     var endCoord = null;
     {% endif %}
 
-    if (!mapboxgl.accessToken || !endCoord) return;
+    if (!endCoord) return;
 
-    var map = new mapboxgl.Map({
-        container: 'event-map',
-        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
-        center: endCoord,
-        zoom: 6
-    });
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    var map = mmtCreateMap('event-map', endCoord, 6);
 
     map.on('load', function() {
         if (hasLine) {

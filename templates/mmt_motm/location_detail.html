@@ -5,7 +5,7 @@
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
     <p><a href="javascript:history.back()">&larr; Back</a></p>
-    <h1>{{ location.current_name }}</h1>
+    <h1>{% if dominant_icon %}<i class="fas {{ dominant_icon }}"></i> {% endif %}{{ location.current_name }}</h1>
 
     {% if location.alternate_names %}
     <p><strong>Alternate names:</strong> {{ location.alternate_names }}</p>
@@ -19,12 +19,12 @@
     <p>{{ location.description }}</p>
     {% endif %}
 
-    {% if location.wikidata_id %}
-    <p><strong>Wikidata:</strong> <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}" target="_blank" rel="noopener">{{ location.wikidata_id }}</a></p>
-    {% endif %}
-
-    {% if location.geonames_id %}
-    <p><strong>GeoNames:</strong> <a href="https://www.geonames.org/{{ location.geonames_id }}" target="_blank" rel="noopener">{{ location.geonames_id }}</a></p>
+    {% if location.wikidata_id or location.geonames_id %}
+    <p>
+    {% if location.wikidata_id %}<strong>Wikidata:</strong> <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}" target="_blank" rel="noopener">{{ location.wikidata_id }}</a>{% endif %}
+    {% if location.wikidata_id and location.geonames_id %} &middot; {% endif %}
+    {% if location.geonames_id %}<strong>GeoNames:</strong> <a href="https://www.geonames.org/{{ location.geonames_id }}" target="_blank" rel="noopener">{{ location.geonames_id }}</a>{% endif %}
+    </p>
     {% endif %}
 
     {% if location.urls.exists %}
@@ -88,9 +88,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% include "mmt_motm/_map_init.html" %}
 <script>
 (function() {
-    mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
 
     {% if location.location %}
     var coord = [{{ location.location.x }}, {{ location.location.y }}];
@@ -99,15 +99,8 @@
     return;
     {% endif %}
 
-    if (!mapboxgl.accessToken) return;
 
-    var map = new mapboxgl.Map({
-        container: 'location-map',
-        style: '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json',
-        center: coord,
-        zoom: 12
-    });
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    var map = mmtCreateMap('location-map', coord, 10);
 
     map.on('load', function() {
         new mapboxgl.Marker({ color: '#e74c3c' }).setLngLat(coord)
@@ -136,7 +129,11 @@
             var bounds = new mapboxgl.LngLatBounds();
             bounds.extend(coord);
             lines.forEach(function(l) { bounds.extend(l.coords[0]); bounds.extend(l.coords[1]); });
-            map.fitBounds(bounds, { padding: 40 });
+            // Keep center on location, but zoom to fit events
+            var camera = map.cameraForBounds(bounds, { padding: 40 });
+            if (camera && camera.zoom) {
+                map.setZoom(camera.zoom);
+            }
         }
     });
 })();
