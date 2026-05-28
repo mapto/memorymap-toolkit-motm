@@ -1,5 +1,23 @@
 from django.contrib.gis.db import models
 
+
+class Timespan(models.Model):
+    start = models.DateField(null=True, blank=True)
+    end = models.DateField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [("start", "end")]
+
+    def __str__(self):
+        if self.start and self.end and self.start != self.end:
+            return f"{self.start} – {self.end}"
+        if self.start:
+            return str(self.start)
+        if self.end:
+            return str(self.end)
+        return "—"
+
+
 # This class contains all URLs used in the project
 class URL(models.Model):
     url = models.URLField(unique=True)
@@ -77,8 +95,13 @@ class LocationPoint(models.Model):
 # This class contains all the various Events from a person life that are registered
 class Event(models.Model):
     
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField(null=True, blank=True)
+    timespan = models.ForeignKey(
+        "Timespan",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events"
+    )
 
     description = models.TextField(blank=True)
 
@@ -118,10 +141,10 @@ class Event(models.Model):
         related_name="events"
     )
 
-def __str__(self):
-    if self.end_time:
-        return f"Event {self.start_time} – {self.end_time}"
-    return f"Event at {self.start_time}"
+    def __str__(self):
+        if self.timespan:
+            return f"Event {self.timespan}"
+        return "Event"
     
 # This class contains all the People linked to the Project
 class Person(models.Model):
@@ -135,8 +158,13 @@ class Person(models.Model):
     previous_given_name = models.CharField(max_length=100, blank=True)
     previous_family_name = models.CharField(max_length=100, blank=True)
 
-    birth_date = models.DateField(null=True, blank=True)
-    death_date = models.DateField(null=True, blank=True)
+    lifespan = models.ForeignKey(
+        "Timespan",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="persons"
+    )
 
     gender = models.CharField(max_length=50, blank=True)
 
@@ -188,9 +216,14 @@ class Relationship(models.Model):
         related_name="relationships"
     )
 
-    # Start and end of the relationship (if applicable)
-    start_date = models.DateField(null=True, blank=True)
-    end_date = models.DateField(null=True, blank=True)
+    # Timespan of the relationship (if applicable)
+    timespan = models.ForeignKey(
+        "Timespan",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="relationships"
+    )
 
     description = models.TextField(blank=True)
 

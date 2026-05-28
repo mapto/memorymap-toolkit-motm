@@ -20,12 +20,12 @@
     <p><strong>Gender:</strong> {{ person.gender }}</p>
     {% endif %}
 
-    {% if person.birth_date %}
-    <p><strong>Born:</strong> {{ person.birth_date }}{% if person.birth_place %} in {{ person.birth_place }}{% endif %}</p>
+    {% if person.lifespan and person.lifespan.start %}
+    <p><strong>Born:</strong> {{ person.lifespan.start }}{% if person.birth_place %} in {{ person.birth_place }}{% endif %}</p>
     {% endif %}
 
-    {% if person.death_date %}
-    <p><strong>Died:</strong> {{ person.death_date }}{% if person.death_place %} in {{ person.death_place }}{% endif %}</p>
+    {% if person.lifespan and person.lifespan.end %}
+    <p><strong>Died:</strong> {{ person.lifespan.end }}{% if person.death_place %} in {{ person.death_place }}{% endif %}</p>
     {% endif %}
 
     {% if person.description %}
@@ -58,10 +58,10 @@
     <h3>Relationships</h3>
     <ul>
         {% for rel in person.relationships_from.all %}
-        <li>{{ rel.relationship_type }} is <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>{% if rel.start_date or rel.end_date %} ({{ rel.start_date|default:"?" }} – {{ rel.end_date|default:"?" }}){% endif %}</li>
+        <li>{{ rel.relationship_type }} is <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>{% if rel.timespan %} ({{ rel.timespan }}){% endif %}</li>
         {% endfor %}
         {% for rel in person.relationships_to.all %}
-        <li>{{ rel.relationship_type }} of <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>{% if rel.start_date or rel.end_date %} ({{ rel.start_date|default:"?" }} – {{ rel.end_date|default:"?" }}){% endif %}</li>
+        <li>{{ rel.relationship_type }} of <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>{% if rel.timespan %} ({{ rel.timespan }}){% endif %}</li>
         {% endfor %}
     </ul>
     {% endif %}

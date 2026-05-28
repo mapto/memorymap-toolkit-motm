@@ -7,13 +7,13 @@ from rest_framework import viewsets, filters
 from .models import (
     Person, LocationPoint, LocationRegion,
     RelationshipType, Relationship, Interview, Event,
-    Extraction, Concept,
+    Extraction, Concept, Timespan,
 )
 from .serializers import (
     PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
     RelationshipTypeSerializer, RelationshipSerializer,
     InterviewSerializer, InterviewDetailSerializer, EventSerializer,
-    ExtractionSerializer, ConceptSerializer,
+    ExtractionSerializer, ConceptSerializer, TimespanSerializer,
 )
 
 
@@ -189,6 +189,11 @@ class ConceptViewSet(viewsets.ModelViewSet):
     serializer_class = ConceptSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["label"]
+
+
+class TimespanViewSet(viewsets.ModelViewSet):
+    queryset = Timespan.objects.all()
+    serializer_class = TimespanSerializer
 
 
 class ConceptListView(ListView):

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import (
     URL,
+    Timespan,
     LocationRegion,
     LocationPoint,
     Person,
@@ -12,6 +13,12 @@ from .models import (
     Extraction,
     Concept,
 )
+
+
+class TimespanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timespan
+        fields = "__all__"
 
 
 class URLSerializer(serializers.ModelSerializer):

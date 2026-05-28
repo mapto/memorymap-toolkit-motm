@@ -14,6 +14,7 @@ router.register(r"interviews", views.InterviewViewSet, basename="api-interview")
 router.register(r"events", views.EventViewSet, basename="api-event")
 router.register(r"extractions", views.ExtractionViewSet, basename="api-extraction")
 router.register(r"concepts", views.ConceptViewSet, basename="api-concept")
+router.register(r"timespans", views.TimespanViewSet, basename="api-timespan")
 
 urlpatterns = [
     path("persons/", views.PersonListView.as_view(), name="person_list"),

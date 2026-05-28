@@ -5,6 +5,7 @@ from django.contrib.gis.geos import Point
 # Register your models here.
 from .models import (
     URL,
+    Timespan,
     LocationRegion,
     LocationPoint,
     Event,
@@ -18,9 +19,15 @@ from .models import (
 
 @admin.register(Person)
 class PersonAdmin(admin.ModelAdmin):
-    list_display = ("family_name", "given_name", "birth_date", "birth_place")
+    list_display = ("family_name", "given_name", "get_birth_date", "birth_place")
     search_fields = ("given_name", "family_name", "birth_place__current_name")
     ordering = ("family_name",)
+
+    def get_birth_date(self, obj):
+        if obj.lifespan:
+            return obj.lifespan.start
+        return None
+    get_birth_date.short_description = "Birth date"
 
 @admin.register(Interview)
 class InterviewAdmin(admin.ModelAdmin):
@@ -134,6 +141,7 @@ class RelationshipTypeAdmin(admin.ModelAdmin):
 
 admin.site.register(URL)
 admin.site.register(Event)
+admin.site.register(Timespan)
 
 @admin.register(Extraction)
 class ExtractionAdmin(admin.ModelAdmin):

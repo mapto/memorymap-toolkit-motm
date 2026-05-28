@@ -6,16 +6,53 @@ import calendar
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class Timespan:
-    start: date
-    end: date
+    """An immutable time span with optional start and end dates.
 
-    def __init__(self, start: date | None = None, end: date | None = None):
-        self.start = start
-        self.end = end if end else start
+    Attributes:
+        start: The start date (or the only known date).
+        end: The end date. When ``is_point`` is True, coincides with start.
+        is_point: True when the span represents a single moment in time
+                  (start and end are known to coincide).
+        certainty: Optional string indicating confidence level.
+                   Values: ``"certain"``, ``"probable"``, ``"uncertain"``,
+                   ``"disputed"``, or ``None`` (not set).
 
-    def as_tuple(self):
+    >>> Timespan()
+    Timespan(start=None, end=None, is_point=True, certainty=None)
+
+    >>> Timespan(date(1922, 6, 19))
+    Timespan(start=datetime.date(1922, 6, 19), end=datetime.date(1922, 6, 19), is_point=True, certainty=None)
+
+    >>> Timespan(date(1922, 6, 19), date(1945, 5, 8))
+    Timespan(start=datetime.date(1922, 6, 19), end=datetime.date(1945, 5, 8), is_point=False, certainty=None)
+
+    >>> Timespan(date(1922, 6, 19), certainty="probable")
+    Timespan(start=datetime.date(1922, 6, 19), end=datetime.date(1922, 6, 19), is_point=True, certainty='probable')
+    """
+    start: date | None = None
+    end: date | None = None
+    is_point: bool = True
+    certainty: str | None = None
+
+    def __init__(
+        self,
+        start: date | None = None,
+        end: date | None = None,
+        *,
+        is_point: bool | None = None,
+        certainty: str | None = None,
+    ):
+        object.__setattr__(self, "start", start)
+        object.__setattr__(self, "end", end if end is not None else start)
+        if is_point is None:
+            object.__setattr__(self, "is_point", start == self.end)
+        else:
+            object.__setattr__(self, "is_point", is_point)
+        object.__setattr__(self, "certainty", certainty)
+
+    def as_tuple(self) -> tuple[date | None, date | None]:
         return (self.start, self.end)
 
 
@@ -47,8 +84,8 @@ MONTHS_DE = {
 }
 
 NAMED_PERIODS = {
-    "1. weltkrieg": Timespan(date(1914, 7, 28), date(1918, 11, 11)),
-    "2. weltkrieg": Timespan(date(1939, 9, 1), date(1945, 9, 2)),
+    "1. weltkrieg": Timespan(date(1914, 7, 28), date(1918, 11, 11), is_point=False),
+    "2. weltkrieg": Timespan(date(1939, 9, 1), date(1945, 9, 2), is_point=False),
 }
 
 
@@ -84,6 +121,12 @@ def _parse_partial_date_range(s: str) -> tuple[date, date] | None:
 
     >>> _parse_partial_date_range("1930er Jahre")
     (datetime.date(1930, 1, 1), datetime.date(1939, 12, 31))
+
+    >>> _parse_partial_date_range("28.1.1890")
+    (datetime.date(1890, 1, 28), datetime.date(1890, 1, 28))
+
+    >>> _parse_partial_date_range("6.6.1896")
+    (datetime.date(1896, 6, 6), datetime.date(1896, 6, 6))
     """
     s = s.strip()
 
@@ -151,49 +194,55 @@ def parse_timespan(raw: Any) -> Timespan:
     Returns None if the string cannot be parsed.
 
     >>> parse_timespan("19. Januar 1913")
-    Timespan(start=datetime.date(1913, 1, 19), end=datetime.date(1913, 1, 19))
+    Timespan(start=datetime.date(1913, 1, 19), end=datetime.date(1913, 1, 19), is_point=True, certainty=None)
 
     >>> parse_timespan("ca. 1929–1935")
-    Timespan(start=datetime.date(1929, 1, 1), end=datetime.date(1935, 12, 31))
+    Timespan(start=datetime.date(1929, 1, 1), end=datetime.date(1935, 12, 31), is_point=False, certainty=None)
 
     >>> parse_timespan("Ende 1942- Mai 1945")
-    Timespan(start=datetime.date(1942, 12, 31), end=datetime.date(1945, 5, 31))
+    Timespan(start=datetime.date(1942, 12, 31), end=datetime.date(1945, 5, 31), is_point=False, certainty=None)
 
     >>> parse_timespan("1932/Januar 1933")
-    Timespan(start=datetime.date(1932, 1, 1), end=datetime.date(1933, 1, 31))
+    Timespan(start=datetime.date(1932, 1, 1), end=datetime.date(1933, 1, 31), is_point=False, certainty=None)
 
     >>> parse_timespan("1941-08-25")
-    Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25))
+    Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25), is_point=True, certainty=None)
 
     >>> parse_timespan("25/08/1941*")
-    Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25))
+    Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25), is_point=True, certainty=None)
 
     >>> parse_timespan("1930er Jahre")
-    Timespan(start=datetime.date(1930, 1, 1), end=datetime.date(1939, 12, 31))
+    Timespan(start=datetime.date(1930, 1, 1), end=datetime.date(1939, 12, 31), is_point=True, certainty=None)
 
     >>> parse_timespan("1. Weltkrieg")
-    Timespan(start=datetime.date(1914, 7, 28), end=datetime.date(1918, 11, 11))
+    Timespan(start=datetime.date(1914, 7, 28), end=datetime.date(1918, 11, 11), is_point=False, certainty=None)
 
     >>> parse_timespan("194?")
-    Timespan(start=datetime.date(1940, 1, 1), end=datetime.date(1949, 12, 31))
+    Timespan(start=datetime.date(1940, 1, 1), end=datetime.date(1949, 12, 31), is_point=True, certainty=None)
 
     >>> parse_timespan("Während des Dienstes")
-    Timespan(start=None, end=None)
+    Timespan(start=None, end=None, is_point=True, certainty=None)
 
     >>> parse_timespan("")
-    Timespan(start=None, end=None)
+    Timespan(start=None, end=None, is_point=True, certainty=None)
 
     >>> parse_timespan("-")
-    Timespan(start=None, end=None)
+    Timespan(start=None, end=None, is_point=True, certainty=None)
 
     >>> parse_timespan("1928-1932")
-    Timespan(start=datetime.date(1928, 1, 1), end=datetime.date(1932, 12, 31))
+    Timespan(start=datetime.date(1928, 1, 1), end=datetime.date(1932, 12, 31), is_point=False, certainty=None)
 
     >>> parse_timespan("1936-38")
-    Timespan(start=datetime.date(1936, 1, 1), end=datetime.date(1938, 12, 31))
-    
+    Timespan(start=datetime.date(1936, 1, 1), end=datetime.date(1938, 12, 31), is_point=False, certainty=None)
+
     >>> parse_timespan("1938-194?")
-    Timespan(start=datetime.date(1938, 1, 1), end=datetime.date(1949, 12, 31))
+    Timespan(start=datetime.date(1938, 1, 1), end=datetime.date(1949, 12, 31), is_point=False, certainty=None)
+
+    >>> parse_timespan("28.1.1890–1942")
+    Timespan(start=datetime.date(1890, 1, 28), end=datetime.date(1942, 12, 31), is_point=False, certainty=None)
+
+    >>> parse_timespan("22.5.1862–26.9.1942")
+    Timespan(start=datetime.date(1862, 5, 22), end=datetime.date(1942, 9, 26), is_point=False, certainty=None)
     """
     if not raw:
         return Timespan()
@@ -228,9 +277,9 @@ def parse_timespan(raw: Any) -> Timespan:
         start_range = parse_ende(left) or _parse_partial_date_range(left)
         end_range = parse_ende(right) or _parse_partial_date_range(right)
         if start_range and end_range:
-            return Timespan(start_range[0], end_range[1])
+            return Timespan(start_range[0], end_range[1], is_point=False)
         if start_range:
-            return Timespan(start_range[0], start_range[1])
+            return Timespan(start_range[0], start_range[1], is_point=False)
         return Timespan()
 
     # En dash — always a range separator
@@ -241,20 +290,20 @@ def parse_timespan(raw: Any) -> Timespan:
     # YYYY-YYYY (plain year range like 1928-1932)
     m = re.fullmatch(r"(\d{4})-(\d{4})", s_clean)
     if m:
-        return Timespan(date(int(m.group(1)), 1, 1), date(int(m.group(2)), 12, 31))
+        return Timespan(date(int(m.group(1)), 1, 1), date(int(m.group(2)), 12, 31), is_point=False)
     
     # YYYY-YY (short end year like 1936-38 → 1936-1938)
     m = re.fullmatch(r"(\d{4})-(\d{2})", s_clean)
     if m:
         century = m.group(1)[:2]
         end_year = int(century + m.group(2))
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_year, 12, 31))
+        return Timespan(date(int(m.group(1)), 1, 1), date(end_year, 12, 31), is_point=False)
     
     # YYYY-YYY? (fuzzy short end year like 1938-194? → 1938 to 1940–1949)
     m = re.fullmatch(r"(\d{4})-(\d{3})\?", s_clean)
     if m:
         end_decade = int(m.group(2) + "0")
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_decade + 9, 12, 31))
+        return Timespan(date(int(m.group(1)), 1, 1), date(end_decade + 9, 12, 31), is_point=False)
     
     # Hyphen — separator only if followed by space or letter (protects ISO dates)
     m = re.search(r"-\s+|-(?=[A-Za-zÄÖÜäöü])", s_clean)
@@ -269,12 +318,107 @@ def parse_timespan(raw: Any) -> Timespan:
             if result:
                 return result
 
-    # Single value
+    # Single value — a single expression, not a range of two dates
     single = parse_ende(s_clean) or _parse_partial_date_range(s_clean)
     if single:
-        return Timespan(single[0], single[1])
+        return Timespan(single[0], single[1], is_point=True)
 
     return Timespan()
+
+
+def parse_date(raw: Any) -> str | None:
+    """Parse a single date string into an ISO date string.
+
+    Uses the full timespan parser, returning the start date as ISO string.
+    Returns None if the string cannot be parsed.
+
+    >>> parse_date("19.06.1922")
+    '1922-06-19'
+
+    >>> parse_date("28.1.1890")
+    '1890-01-28'
+
+    >>> parse_date("1942")
+    '1942-01-01'
+
+    >>> parse_date("")
+
+    >>> parse_date("-")
+
+    >>> parse_date("15. Juni 1921")
+    '1921-06-15'
+    """
+    ts = parse_timespan(raw)
+    if ts.start is None:
+        return None
+    return ts.start.isoformat()
+
+
+def parse_date_range(raw: Any) -> tuple[str | None, str | None]:
+    """Parse a date or date range string into (start_iso, end_iso).
+
+    For ranges (e.g. "28.1.1890–1942"), returns distinct (start, end).
+    For single dates, returns (start, None) — no second date is implied.
+    Returns (None, None) if the string cannot be parsed.
+
+    >>> parse_date_range("28.1.1890–1942")
+    ('1890-01-28', '1942-01-01')
+
+    >>> parse_date_range("22.5.1862–26.9.1942")
+    ('1862-05-22', '1942-09-26')
+
+    >>> parse_date_range("17.5.1896–1923")
+    ('1896-05-17', '1923-01-01')
+
+    >>> parse_date_range("19.6.1922")
+    ('1922-06-19', None)
+
+    >>> parse_date_range("1942")
+    ('1942-01-01', None)
+
+    >>> parse_date_range("")
+    (None, None)
+
+    >>> parse_date_range("-")
+    (None, None)
+    """
+    ts = parse_timespan(raw)
+    if ts.start is None and ts.end is None:
+        return None, None
+
+    start = ts.start.isoformat() if ts.start else None
+    if ts.is_point:
+        return start, None
+    end = _range_start_iso(ts.end) if ts.end else None
+    return start, end
+
+
+def _range_start_iso(d: date) -> str:
+    """Convert date to ISO, collapsing year-end / month-end to first-of-period.
+
+    When parse_timespan expands "1942" to (1942-01-01, 1942-12-31),
+    the end represents precision, not a true second date.
+    For the Django DateField we want the canonical first day.
+
+    >>> _range_start_iso(date(1942, 12, 31))
+    '1942-01-01'
+
+    >>> _range_start_iso(date(1942, 9, 26))
+    '1942-09-26'
+
+    >>> _range_start_iso(date(1934, 1, 31))
+    '1934-01-01'
+
+    >>> _range_start_iso(date(1922, 6, 19))
+    '1922-06-19'
+    """
+    # If it's Dec 31, it was a year-only parse → use Jan 1
+    if d.month == 12 and d.day == 31:
+        return date(d.year, 1, 1).isoformat()
+    # If it's the last day of a month, it was a month-only parse → use 1st
+    if d.day == calendar.monthrange(d.year, d.month)[1] and d.day > 28:
+        return date(d.year, d.month, 1).isoformat()
+    return d.isoformat()
 
 
 if __name__ == "__main__":
