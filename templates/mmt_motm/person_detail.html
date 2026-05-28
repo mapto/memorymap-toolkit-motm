@@ -89,11 +89,7 @@
 
     {% if concepts %}
     <h3>Concepts</h3>
-    <ul>
-        {% for concept in concepts %}
-        <li><a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a></li>
-        {% endfor %}
-    </ul>
+    <p>{% for concept in concepts %}<a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>&nbsp;({{ concept.mention_count }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
     {% endif %}
 
     {% if random_quotes %}

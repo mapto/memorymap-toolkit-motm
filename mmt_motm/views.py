@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView
 
@@ -39,7 +39,12 @@ class PersonDetailView(DetailView):
         )
         context["concepts"] = Concept.objects.filter(
             relates_to_concept__people_mentioned=person
-        ).distinct()
+        ).annotate(
+            mention_count=Count(
+                'relates_to_concept',
+                filter=Q(relates_to_concept__people_mentioned=person),
+            )
+        ).order_by('-mention_count')
         return context
 
 
@@ -200,7 +205,11 @@ class ConceptListView(ListView):
     model = Concept
     template_name = "mmt_motm/concept_list.html"
     context_object_name = "concepts"
-    ordering = ["label"]
+
+    def get_queryset(self):
+        return Concept.objects.annotate(
+            quote_count=Count('relates_to_concept')
+        ).order_by('-quote_count')
 
 
 class ConceptDetailView(DetailView):

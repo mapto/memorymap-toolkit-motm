@@ -7,35 +7,76 @@
     <table class="table table-striped" id="person-table">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Birth</th>
-                <th>Death</th>
+                <th class="sortable col-group-name" data-col="0">Family Name <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-name-end" data-col="1">Given Name <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-birth" data-col="2">Birth Year <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-birth-end" data-col="3">Birth Place <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-death" data-col="4">Death Year <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-death-end" data-col="5">Death Place <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
             {% for person in persons %}
             <tr>
-                <td><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}, {{ person.given_name }}</a></td>
-                <td>{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start }}{% endif %}{% if person.birth_place %}{% if person.lifespan and person.lifespan.start %}, {% endif %}{{ person.birth_place }}{% endif %}{% if not person.lifespan or not person.lifespan.start %}{% if not person.birth_place %}–{% endif %}{% endif %}</td>
-                <td>{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end }}{% endif %}{% if person.death_place %}{% if person.lifespan and person.lifespan.end %}, {% endif %}{{ person.death_place }}{% endif %}{% if not person.lifespan or not person.lifespan.end %}{% if not person.death_place %}–{% endif %}{% endif %}</td>
+                <td class="col-group-name"><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}</a></td>
+                <td class="col-group-name-end"><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }}</a></td>
+                <td class="col-group-birth" data-sort="{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:"Y" }}{% else %}–{% endif %}</td>
+                <td class="col-group-birth-end">{% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}</td>
+                <td class="col-group-death" data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:"Y" }}{% else %}–{% endif %}</td>
+                <td class="col-group-death-end">{% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3">No persons found.</td>
+                <td colspan="6">No persons found.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+<style>
+.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable:hover { background-color: #e9ecef; }
+.sort-arrow::after { content: "\2195"; opacity: 0.3; margin-left: 4px; }
+.sortable.asc .sort-arrow::after { content: "\25B2"; opacity: 1; }
+.sortable.desc .sort-arrow::after { content: "\25BC"; opacity: 1; }
+</style>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const input = document.getElementById("person-search");
-    const rows = document.querySelectorAll("#person-table tbody tr");
+    var input = document.getElementById("person-search");
+    var table = document.getElementById("person-table");
+    var tbody = table.querySelector("tbody");
+    var headers = table.querySelectorAll("th.sortable");
+
+    // Search filter
     input.addEventListener("input", function () {
-        const query = this.value.toLowerCase();
-        rows.forEach(function (row) {
-            const name = row.cells[0].textContent.toLowerCase();
-            row.style.display = name.includes(query) ? "" : "none";
+        var query = this.value.toLowerCase();
+        Array.from(tbody.rows).forEach(function (row) {
+            var text = row.cells[0].textContent.toLowerCase() + " " + row.cells[1].textContent.toLowerCase();
+            row.style.display = text.includes(query) ? "" : "none";
+        });
+    });
+
+    // Column sorting
+    var currentSort = { col: 0, dir: "asc" };
+    headers.forEach(function (th) {
+        th.addEventListener("click", function () {
+            var col = parseInt(this.dataset.col);
+            var dir = (currentSort.col === col && currentSort.dir === "asc") ? "desc" : "asc";
+            currentSort = { col: col, dir: dir };
+            headers.forEach(function (h) { h.classList.remove("asc", "desc"); });
+            this.classList.add(dir);
+
+            var rows = Array.from(tbody.rows);
+            rows.sort(function (a, b) {
+                var av = (a.cells[col].dataset.sort !== undefined ? a.cells[col].dataset.sort : a.cells[col].textContent).trim().toLowerCase();
+                var bv = (b.cells[col].dataset.sort !== undefined ? b.cells[col].dataset.sort : b.cells[col].textContent).trim().toLowerCase();
+                if (av === "–" || av === "") av = "\uffff";
+                if (bv === "–" || bv === "") bv = "\uffff";
+                if (av < bv) return dir === "asc" ? -1 : 1;
+                if (av > bv) return dir === "asc" ? 1 : -1;
+                return 0;
+            });
+            rows.forEach(function (row) { tbody.appendChild(row); });
         });
     });
 });

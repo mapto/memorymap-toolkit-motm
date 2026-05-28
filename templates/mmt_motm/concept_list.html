@@ -3,37 +3,38 @@
 {% block content %}
 <div class="container mt-4">
     <h1>Concepts</h1>
-    <input type="text" id="concept-search" class="form-control mb-3" placeholder="Search concepts…">
-    <table class="table table-striped" id="concept-table">
-        <thead>
-            <tr>
-                <th>Concept</th>
-                <th>Quotes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for concept in concepts %}
-            <tr>
-                <td><a href="{% url 'concept_detail' concept.pk %}">{{ concept.label|default:"–" }}</a></td>
-                <td>{{ concept.relates_to_concept.count }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="2">No concepts found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <input type="text" id="concept-search" class="form-control mb-3" placeholder="Filter concepts…">
+    <div id="word-cloud" style="line-height:2.2;text-align:center;">
+        {% for concept in concepts %}
+        <a href="{% url 'concept_detail' concept.pk %}"
+           class="cloud-word d-inline-block mx-1"
+           data-count="{{ concept.quote_count }}"
+           data-label="{{ concept.label|lower }}"
+           style="text-decoration:none;">{{ concept.label }} <small class="text-muted">({{ concept.quote_count }})</small></a>
+        {% empty %}
+        <p>No concepts found.</p>
+        {% endfor %}
+    </div>
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    var words = document.querySelectorAll(".cloud-word");
+    var counts = Array.from(words).map(function(w) { return parseInt(w.dataset.count) || 0; });
+    var maxCount = Math.max.apply(null, counts) || 1;
+    var minCount = Math.min.apply(null, counts) || 0;
+    var minSize = 0.85, maxSize = 3.0;
+    words.forEach(function(w) {
+        var c = parseInt(w.dataset.count) || 0;
+        var ratio = maxCount > minCount ? (c - minCount) / (maxCount - minCount) : 0.5;
+        var size = minSize + ratio * (maxSize - minSize);
+        w.style.fontSize = size.toFixed(2) + "rem";
+    });
+
     var input = document.getElementById("concept-search");
-    var rows = document.querySelectorAll("#concept-table tbody tr");
     input.addEventListener("input", function () {
         var query = this.value.toLowerCase();
-        rows.forEach(function (row) {
-            var text = row.textContent.toLowerCase();
-            row.style.display = text.includes(query) ? "" : "none";
+        words.forEach(function (w) {
+            w.style.display = w.dataset.label.includes(query) ? "" : "none";
         });
     });
 });
