@@ -25,4 +25,7 @@ uv run jupyter execute metadati.ipynb
 echo "Importing quotes..."
 uv run jupyter execute belege.ipynb
 
+echo "Importing chronotopi..."
+uv run jupyter execute chronotopi-v4.ipynb
+
 echo "Import complete."
