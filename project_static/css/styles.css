@@ -104,6 +104,7 @@ blockquote {
 .site_container {
 	padding-left: 0px;
 	padding-right: 0px;
+	overflow-y: auto;
 }
 
 .iface_container {
