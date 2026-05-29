@@ -20,11 +20,11 @@
     {% endif %}
 
     {% if person.lifespan and person.lifespan.start %}
-    <p><strong>Born:</strong> {{ person.lifespan.start }}{% if person.birth_place %} in <a href="{% url 'location_detail' person.birth_place.pk %}">{{ person.birth_place }}</a>{% endif %}</p>
+    <p><strong>Born:</strong> {{ person.lifespan.start|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% if person.birth_place %} in <a href="{% url 'location_detail' person.birth_place.pk %}">{{ person.birth_place }}</a>{% endif %}</p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.end %}
-    <p><strong>Died:</strong> {{ person.lifespan.end }}{% if person.death_place %} in <a href="{% url 'location_detail' person.death_place.pk %}">{{ person.death_place }}</a>{% endif %}</p>
+    <p><strong>Died:</strong> {{ person.lifespan.end|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% if person.death_place %} in <a href="{% url 'location_detail' person.death_place.pk %}">{{ person.death_place }}</a>{% endif %}</p>
     {% endif %}
 
     {% if person.description %}
@@ -45,7 +45,7 @@
         <tbody>
             {% for event in events %}
             <tr>
-                <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
+                <td>{% if event.timespan %}{% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}{% endif %}</td>
                 <td>
                     {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
                         <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;

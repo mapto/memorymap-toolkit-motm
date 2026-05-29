@@ -9,9 +9,9 @@
             <tr>
                 <th class="sortable col-group-name" data-col="0">Family Name <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-name-end col-right-separator" data-col="1">Given Name <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-birth" data-col="2">Birth Year <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-birth" data-col="2">Birth Date <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-birth-end col-right-separator" data-col="3">Birth Place <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-death" data-col="4">Death Year <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-death" data-col="4">Death Date <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-death-end col-right-separator" data-col="5">Death Place <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="6">Interviews <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="7">Top Concepts <span class="sort-arrow"></span></th>
@@ -22,9 +22,9 @@
             <tr>
                 <td class="col-group-name"><a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}</a></td>
                 <td class="col-group-name-end col-right-separator"><a href="{% url 'person_detail' person.pk %}">{{ person.given_name }}</a></td>
-                <td class="col-group-birth" data-sort="{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:"Y" }}{% else %}–{% endif %}</td>
+                <td class="col-group-birth" data-sort="{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:'Y-m-d' }}{% endif %}">{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% else %}–{% endif %}</td>
                 <td class="col-group-birth-end col-right-separator">{% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}</td>
-                <td class="col-group-death" data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y' }}{% endif %}">{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:"Y" }}{% else %}–{% endif %}</td>
+                <td class="col-group-death" data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y-m-d' }}{% endif %}">{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% else %}–{% endif %}</td>
                 <td class="col-group-death-end col-right-separator">{% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}</td>
                 <td data-sort="{{ person.interview_count }}">{% if person.interview_count %}<a href="{% url 'interview_list' %}?q={{ person.given_name }}+{{ person.family_name }}">{{ person.interview_count }}</a>{% else %}–{% endif %}</td>
                 <td>{% for c in person.top_concepts %}<a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>

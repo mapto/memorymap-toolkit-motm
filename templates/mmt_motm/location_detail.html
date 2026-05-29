@@ -61,7 +61,7 @@
         <tbody>
         {% for event in events %}
         <tr>
-            <td>{% if event.timespan %}{{ event.timespan }}{% endif %}</td>
+            <td>{% if event.timespan %}{% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}{% endif %}</td>
             <td>
                 {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
                     <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;

@@ -1,22 +1,44 @@
 from django.contrib.gis.db import models
+from django.template.defaultfilters import date as date_filter
 
 
 class Timespan(models.Model):
+    CERTAINTY_CHOICES = [
+        ("certain", "Certain"),
+        ("probable", "Probable"),
+        ("uncertain", "Uncertain"),
+        ("disputed", "Disputed"),
+    ]
+
     start = models.DateField(null=True, blank=True)
     end = models.DateField(null=True, blank=True)
-
-    class Meta:
-        unique_together = [("start", "end")]
+    certainty = models.CharField(
+        max_length=20,
+        choices=CERTAINTY_CHOICES,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
-        fmt = "%-d %B %Y"
+        fmt = "j N Y"
         if self.start and self.end and self.start != self.end:
-            return f"{self.start.strftime(fmt)} – {self.end.strftime(fmt)}"
+            return f"{date_filter(self.start, fmt)} – {date_filter(self.end, fmt)}"
         if self.start:
-            return self.start.strftime(fmt)
+            return date_filter(self.start, fmt)
         if self.end:
-            return self.end.strftime(fmt)
+            return date_filter(self.end, fmt)
         return "—"
+
+    CERTAINTY_ICONS = {
+        "probable": ("fa-question-circle", "Probable date"),
+        "uncertain": ("fa-exclamation-triangle", "Uncertain date"),
+        "disputed": ("fa-balance-scale", "Disputed date"),
+    }
+
+    @property
+    def certainty_icon(self):
+        """Return (icon_class, tooltip) tuple or None if certain/unset."""
+        return self.CERTAINTY_ICONS.get(self.certainty)
 
 
 # This class contains all URLs used in the project

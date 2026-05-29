@@ -11,8 +11,8 @@
     <p>{{ event.description }}</p>
 
     {% if event.timespan %}
-    <p><strong>Date:</strong> {{ event.timespan }}
-    {% if event.is_confirmed %}<span class="badge badge-success">confirmed</span>{% else %}<span class="badge badge-secondary">unconfirmed</span>{% endif %}
+    <p><strong>Date:</strong> {% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}
+    {% if event.is_confirmed %}<i class="fas fa-check-circle text-success" title="Confirmed event" data-toggle="tooltip"></i>{% else %}<i class="fas fa-question-circle text-secondary" title="Unconfirmed event" data-toggle="tooltip"></i>{% endif %}
     </p>
     {% endif %}
 

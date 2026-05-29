@@ -20,7 +20,7 @@
             <tr>
                 <td><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a></td>
                 <td>{{ interview.interview_type|default:"–" }}</td>
-                <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">{{ interview.date|date:"Y-m-d"|default:"–" }}</td>
+                <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">{{ interview.date|date:"j N Y"|default:"–" }}</td>
                 <td>{{ interview.place|default:"–" }}</td>
                 <td>{% if interview.interviewee %}<a href="{% url 'person_detail' interview.interviewee.pk %}">{{ interview.interviewee }}</a>{% else %}–{% endif %}</td>
                 <td>{% if interview.interviewer %}<a href="{% url 'person_detail' interview.interviewer.pk %}">{{ interview.interviewer }}</a>{% else %}–{% endif %}</td>

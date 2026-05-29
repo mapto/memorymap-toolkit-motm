@@ -16,7 +16,7 @@
             {% for event in events %}
             <tr>
                 <td data-value="{% if event.timespan and event.timespan.start %}{{ event.timespan.start|date:'Y-m-d' }}{% endif %}">
-                    {% if event.timespan %}{{ event.timespan }}{% endif %}
+                    {% if event.timespan %}{% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}{% endif %}
                 </td>
                 <td>
                     {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
