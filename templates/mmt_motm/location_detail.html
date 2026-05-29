@@ -77,8 +77,7 @@
                 {% endif %}
             </td>
             <td>
-                {% if event.start_location and event.end_location
-                    and event.start_location.pk != event.end_location.pk %}
+                {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
                     <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
                     <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
                 {% elif event.end_location %}
@@ -124,9 +123,7 @@
         // Show lines for connected events
         var lines = [];
         {% for event in events %}
-        {% if event.start_location and event.start_location.location
-            and event.end_location and event.end_location.location
-            and event.start_location.pk != event.end_location.pk %}
+        {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location and event.start_location.pk != event.end_location.pk %}
         lines.push({
             coords: [
                 [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}],

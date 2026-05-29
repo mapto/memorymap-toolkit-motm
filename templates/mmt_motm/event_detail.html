@@ -105,8 +105,7 @@
 <script>
 (function() {
 
-    {% if event.start_location and event.start_location.location
-        and event.end_location and event.end_location.location %}
+    {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
     var startCoord = [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}];
     var endCoord = [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}];
     var startName = "{{ event.start_location.current_name|escapejs }}";

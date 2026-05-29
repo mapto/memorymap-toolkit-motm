@@ -30,8 +30,7 @@
                     <a href="{% url 'person_detail' person.pk %}">{{ person.given_name }}</a>
                 </td>
                 <td class="col-group-birth"
-                    data-sort="{% if person.lifespan and person.lifespan.start %}
-                        {{ person.lifespan.start|date:'Y-m-d' }}{% endif %}">
+                    data-sort="{% if person.lifespan and person.lifespan.start %}{{ person.lifespan.start|date:'Y-m-d' }}{% endif %}">
                     {% if person.lifespan and person.lifespan.start %}
                         {{ person.lifespan.start|date:"j N Y" }}
                         {% if person.lifespan.certainty_icon %}
@@ -45,8 +44,7 @@
                     {% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}
                 </td>
                 <td class="col-group-death"
-                    data-sort="{% if person.lifespan and person.lifespan.end %}
-                        {{ person.lifespan.end|date:'Y-m-d' }}{% endif %}">
+                    data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y-m-d' }}{% endif %}">
                     {% if person.lifespan and person.lifespan.end %}
                         {{ person.lifespan.end|date:"j N Y" }}
                         {% if person.lifespan.certainty_icon %}

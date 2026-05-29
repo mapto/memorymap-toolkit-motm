@@ -24,8 +24,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if event.start_location and event.end_location
-                        and event.start_location.pk != event.end_location.pk %}
+                    {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
                         <a href="{% url 'location_detail' event.start_location.pk %}">
                             {{ event.start_location }}
                         </a> &rarr;
