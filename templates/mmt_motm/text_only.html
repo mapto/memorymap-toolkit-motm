@@ -1,73 +1,209 @@
 {% extends 'mmt_map/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Text Only Site Guide</h1>
-    <p>This page lists all sections of the site. Pages marked with
-        <i class="fas fa-map text-muted"></i> are exclusively map-based
-        and may not be accessible to screen readers or text-only browsers.</p>
+<div class="container py-4">
+    <h1 class="mb-4">Site Overview</h1>
 
-    <h3>Homepage</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <i class="fas fa-map text-muted" title="Map-based page"></i>
-            <a href="{% url 'index' %}">Interactive Map</a>
-            <small class="text-muted">&mdash; interactive map with all locations and events</small>
-        </li>
-    </ul>
+    <div class="row align-items-stretch" style="text-align: left;">
+        <!-- Left column: primary data -->
+        <div class="col-md-7 pr-md-4 d-flex flex-column">
+            <h6 class="mb-2" style="color: #9f9f9f;">&nbsp;</h6>
+            <div class="dash-section dash-primary flex-grow-1 d-flex flex-column">
+                <a href="{% url 'person_list' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count">{{ persons }}</span>
+                    <span class="dash-label">
+                        <strong>People</strong>
+                        <small>Searchable and browsable table</small>
+                    </span></span>
+                </a>
+                <a href="{% url 'event_list' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count">{{ events }}</span>
+                    <span class="dash-label">
+                        <strong>Events</strong>
+                        <small>Searchable table of all events</small>
+                    </span></span>
+                </a>
+                <a href="{% url 'location_list' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count">{{ locations }}</span>
+                    <span class="dash-label">
+                        <strong>Locations</strong>
+                        <small>All locations as a list</small>
+                    </span></span>
+                </a>
+            </div>
+        </div>
 
-    <h3>Concepts</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <a href="{% url 'concept_list' %}">Concepts</a>
-            <small class="text-muted">&mdash; list of all concepts and themes</small>
-        </li>
-        <li class="mb-2">
-            <a href="{% url 'concept_taxonomy' %}">Concept Taxonomy</a>
-            <small class="text-muted">&mdash; hierarchical concept tree</small>
-        </li>
-    </ul>
+        <!-- Right column: secondary groups -->
+        <div class="col-md-5 pl-md-4">
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Concepts &amp; Themes</h6>
+            <div class="dash-section mb-3">
+                <div class="dash-span-group">
+                    <span class="dash-count-span">{{ concepts }}</span>
+                    <div class="dash-span-links">
+                        <a href="{% url 'concept_list' %}" class="dash-span-row">
+                            <strong>Concepts</strong>
+                            <small>Word cloud</small>
+                        </a>
+                        <a href="{% url 'concept_taxonomy' %}" class="dash-span-row">
+                            <strong>Taxonomy</strong>
+                            <small>Hierarchy</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-    <h3>People</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <a href="{% url 'person_list' %}">People</a>
-            <small class="text-muted">&mdash; searchable and browsable table of all people</small>
-        </li>
-    </ul>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Interviews &amp; Quotes</h6>
+            <div class="dash-section mb-3">
+                <a href="{% url 'interview_list' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count">{{ interviews }}</span>
+                    <span class="dash-label">
+                        <strong>Interviews</strong>
+                        <small>Recorded</small>
+                    </span></span>
+                </a>
+                <a href="{% url 'extraction_list' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count">{{ extractions }}</span>
+                    <span class="dash-label">
+                        <strong>Quotes</strong>
+                        <small>Extractions</small>
+                    </span></span>
+                </a>
+            </div>
 
-    <h3>Locations</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <a href="{% url 'location_list' %}">Locations</a>
-            <small class="text-muted">&mdash; table of all locations</small>
-        </li>
-        <li class="mb-2">
-            <i class="fas fa-map text-muted" title="Map-based page"></i>
-            <a href="{% url 'location_map' %}">Locations Map</a>
-            <small class="text-muted">&mdash; all locations on an interactive map</small>
-        </li>
-    </ul>
-
-    <h3>Events</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <a href="{% url 'event_list' %}">Events</a>
-            <small class="text-muted">&mdash; searchable table of all events</small>
-        </li>
-    </ul>
-
-    <h3>Quotes</h3>
-    <ul class="list-unstyled ml-3">
-        <li class="mb-2">
-            <a href="{% url 'interview_list' %}">Interviews</a>
-            <small class="text-muted">&mdash; list of all recorded interviews</small>
-        </li>
-        <li class="mb-2">
-            <a href="{% url 'extraction_list' %}">Quotes</a>
-            <small class="text-muted">&mdash; searchable table of interview extractions</small>
-        </li>
-    </ul>
-
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">
+                <i class="fas fa-map"></i> Map-based pages
+            </h6>
+            <div class="dash-section">
+                <a href="{% url 'index' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count"><i class="fas fa-globe"></i></span>
+                    <span class="dash-label">
+                        <strong>Interactive Map</strong>
+                        <small>Locations &amp; events</small>
+                    </span></span>
+                </a>
+                <a href="{% url 'location_map' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count"><i class="fas fa-map-marked-alt"></i></span>
+                    <span class="dash-label">
+                        <strong>Locations Map</strong>
+                        <small>Map view</small>
+                    </span></span>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+.dash-section {
+    border: 1px solid #c1c1c1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0 1rem;
+}
+.dash-primary .dash-row {
+    padding: 1.5rem 2rem;
+    flex: 1;
+}
+.dash-primary .dash-count {
+    width: 5rem;
+    font-size: 2.8rem;
+}
+.dash-primary .dash-label strong {
+    font-size: 1.4rem;
+}
+.dash-primary .dash-label small {
+    font-size: 0.95rem;
+}
+.dash-row {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.5rem;
+    color: #333333;
+    text-decoration: none !important;
+    border-bottom: 1px solid #ededed;
+}
+.dash-inner {
+    display: flex;
+    align-items: center;
+}
+.dash-row:last-child {
+    border-bottom: none;
+}
+.dash-row:hover {
+    background-color: #e8e5d1;
+    color: #333333;
+    text-decoration: none !important;
+}
+.dash-row:visited, .dash-row:focus {
+    color: #333333;
+    text-decoration: none !important;
+}
+.dash-count {
+    width: 3.5rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #747474;
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+.dash-row:hover .dash-count {
+    color: #333333;
+}
+.dash-label {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    text-align: left;
+}
+.dash-label small {
+    color: #9f9f9f;
+}
+.dash-span-group {
+    display: flex;
+    align-items: stretch;
+}
+.dash-count-span {
+    width: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #747474;
+    flex-shrink: 0;
+    margin-left: 1.5rem;
+    margin-right: 0.5rem;
+}
+.dash-span-links {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.dash-span-row {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    padding: 0.5rem 1.5rem 0.5rem 0;
+    color: #333333;
+    text-decoration: none !important;
+    line-height: 1.3;
+    border-bottom: 1px solid #ededed;
+}
+.dash-span-row:last-child {
+    border-bottom: none;
+}
+.dash-span-row:hover {
+    background-color: #e8e5d1;
+    color: #333333;
+    text-decoration: none !important;
+}
+.dash-span-row:visited, .dash-span-row:focus {
+    color: #333333;
+    text-decoration: none !important;
+}
+.dash-span-row small {
+    color: #9f9f9f;
+}
+</style>
 {% endblock %}

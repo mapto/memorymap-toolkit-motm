@@ -53,7 +53,16 @@ def index(request):
 
 def text_only_feature_list(request):
 	"""A text only overview page listing all available sections of the site."""
-	return render(request, 'mmt_motm/text_only.html')
+	from mmt_motm.models import Person, LocationPoint, Event, Interview, Extraction, Concept
+	counts = {
+		'persons': Person.objects.count(),
+		'locations': LocationPoint.objects.count(),
+		'events': Event.objects.count(),
+		'interviews': Interview.objects.count(),
+		'extractions': Extraction.objects.count(),
+		'concepts': Concept.objects.count(),
+	}
+	return render(request, 'mmt_motm/text_only.html', counts)
 
 
 # Vector tiles are optionally cached to stop the database being spammed too heavily.
