@@ -213,9 +213,18 @@
         return;
     }
 
-    var map = mmtCreateMap('person-map', [10, 48], 3);
+    var bounds = new mapboxgl.LngLatBounds();
+    events.forEach(function(e) {
+        bounds.extend(e.start);
+        bounds.extend(e.end);
+    });
+    var center = bounds.getCenter();
+
+    var map = mmtCreateMap('person-map', [center.lng, center.lat], 5);
 
     map.on('load', function() {
+        map.fitBounds(bounds, { padding: 40 });
+
         var features = events.map(function(e) {
             return {
                 type: 'Feature',
@@ -264,13 +273,6 @@
             layout: { 'text-field': ['get', 'name'], 'text-offset': [0, 1.2], 'text-size': 11 },
             paint: { 'text-color': '#333', 'text-halo-color': '#fff', 'text-halo-width': 1 }
         });
-
-        var bounds = new mapboxgl.LngLatBounds();
-        events.forEach(function(e) {
-            bounds.extend(e.start);
-            bounds.extend(e.end);
-        });
-        map.fitBounds(bounds, { padding: 40 });
 
         map.on('click', 'event-lines-layer', function(ev) {
             var props = ev.features[0].properties;

@@ -398,6 +398,24 @@ map.on('load', function() {
         maxSlider.addEventListener('input', applyYearFilter);
     }
 
+    // Fit map to content bounds once tiles are loaded
+    map.once('idle', function() {
+        var bounds = new mapboxgl.LngLatBounds();
+        var found = false;
+        ['locations', 'points'].forEach(function(layer) {
+            var features = map.querySourceFeatures('interactive', {sourceLayer: layer});
+            features.forEach(function(f) {
+                if (f.geometry && f.geometry.coordinates) {
+                    bounds.extend(f.geometry.coordinates);
+                    found = true;
+                }
+            });
+        });
+        if (found) {
+            map.fitBounds(bounds, { padding: 50 });
+        }
+    });
+
 });
 
 

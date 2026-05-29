@@ -52,12 +52,8 @@ def index(request):
 
 
 def text_only_feature_list(request):
-	"""A text only representation of features to provide access to memory map content for blind and partially-sighted users"""
-
-	themes = Theme.objects.all()
-	tag_lists = TagList.objects.filter(published=True).order_by('order')
-
-	return render(request, 'mmt_map/feature_list.html', {'themes': themes, 'tag_lists': tag_lists})
+	"""A text only overview page listing all available sections of the site."""
+	return render(request, 'mmt_motm/text_only.html')
 
 
 # Vector tiles are optionally cached to stop the database being spammed too heavily.

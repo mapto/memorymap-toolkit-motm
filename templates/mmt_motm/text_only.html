@@ -1,0 +1,73 @@
+{% extends 'mmt_map/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Text Only Site Guide</h1>
+    <p>This page lists all sections of the site. Pages marked with
+        <i class="fas fa-map text-muted"></i> are exclusively map-based
+        and may not be accessible to screen readers or text-only browsers.</p>
+
+    <h3>Homepage</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <i class="fas fa-map text-muted" title="Map-based page"></i>
+            <a href="{% url 'index' %}">Interactive Map</a>
+            <small class="text-muted">&mdash; interactive map with all locations and events</small>
+        </li>
+    </ul>
+
+    <h3>Concepts</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <a href="{% url 'concept_list' %}">Concepts</a>
+            <small class="text-muted">&mdash; list of all concepts and themes</small>
+        </li>
+        <li class="mb-2">
+            <a href="{% url 'concept_taxonomy' %}">Concept Taxonomy</a>
+            <small class="text-muted">&mdash; hierarchical concept tree</small>
+        </li>
+    </ul>
+
+    <h3>People</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <a href="{% url 'person_list' %}">People</a>
+            <small class="text-muted">&mdash; searchable and browsable table of all people</small>
+        </li>
+    </ul>
+
+    <h3>Locations</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <a href="{% url 'location_list' %}">Locations</a>
+            <small class="text-muted">&mdash; table of all locations</small>
+        </li>
+        <li class="mb-2">
+            <i class="fas fa-map text-muted" title="Map-based page"></i>
+            <a href="{% url 'location_map' %}">Locations Map</a>
+            <small class="text-muted">&mdash; all locations on an interactive map</small>
+        </li>
+    </ul>
+
+    <h3>Events</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <a href="{% url 'event_list' %}">Events</a>
+            <small class="text-muted">&mdash; searchable table of all events</small>
+        </li>
+    </ul>
+
+    <h3>Quotes</h3>
+    <ul class="list-unstyled ml-3">
+        <li class="mb-2">
+            <a href="{% url 'interview_list' %}">Interviews</a>
+            <small class="text-muted">&mdash; list of all recorded interviews</small>
+        </li>
+        <li class="mb-2">
+            <a href="{% url 'extraction_list' %}">Quotes</a>
+            <small class="text-muted">&mdash; searchable table of interview extractions</small>
+        </li>
+    </ul>
+
+</div>
+{% endblock %}
