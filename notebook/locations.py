@@ -1,6 +1,7 @@
 import requests
 from urllib.parse import urlparse
 import regex as re
+import time
 
 
 GEONAMES_USERNAME = "mapto"
@@ -61,14 +62,25 @@ def extract_urls(text: str) -> list[tuple[str, dict[str, str]]]:
 
 def extract_geonames_coordinates(url: str) -> dict | None:
     """
-    Extract coordinates from a GeoNames entity URL.
-    e.g. https://www.geonames.org/6550600/finsterwalde.html
+    Extract coordinates from a GeoNames URL.
 
-    Fetches the entity via the GeoNames API using the numeric ID.
-    Returns dict with 'lat' and 'lng', or None if not found.
+    Handles two URL formats:
+    - Entity URL (e.g. https://www.geonames.org/6550600/finsterwalde.html)
+      → fetches via GeoNames API using the numeric ID
+    - Map URL (e.g. https://www.geonames.org/maps/google_52.4863_13.3602.html)
+      → extracts coordinates directly from the URL
 
-    Requires a free GeoNames account username: https://www.geonames.org/login
+    Returns dict with 'lat' and 'long', or None if not found.
     """
+    # Map URL with embedded coordinates
+    map_match = re.search(r"geonames\.org/maps/google_([-\d.]+)_([-\d.]+)", url)
+    if map_match:
+        try:
+            return {"lat": float(map_match.group(1)), "long": float(map_match.group(2))}
+        except ValueError:
+            return None
+
+    # Entity URL with numeric ID
     match = re.search(r"geonames\.org/(\d+)", url)
     if not match:
         return None
@@ -157,3 +169,17 @@ print(locs)
 #     } | v]
 pd.DataFrame(rows).to_excel("locations.xlsx", index=False)
 """
+
+GEOCODER_URL = "http://localhost:3000/at"
+
+def query_geocoder(name):
+    try:
+        time.sleep(1.1)
+        resp = requests.get(GEOCODER_URL, params={"name": name}, timeout=5)
+        resp.raise_for_status()
+        parts = resp.text.strip().split(",")
+        if len(parts) >= 2:
+            return {"lat": float(parts[0]), "long": float(parts[1])}
+    except Exception:
+        pass
+    return None
