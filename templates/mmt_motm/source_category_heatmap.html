@@ -1,0 +1,59 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h1>Sources &times; Categories</h1>
+    <div class="table-responsive">
+    <table class="table table-bordered table-sm text-center" id="heatmap-table">
+        <thead>
+            <tr>
+                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">Category \ Source</th>
+                {% for interview in interviews %}
+                <th class="heatmap-header" style="white-space:nowrap;writing-mode:vertical-rl;text-orientation:mixed;max-width:2rem;">
+                    <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in grid %}
+            <tr>
+                <td class="text-left font-weight-bold" style="position:sticky;left:0;background:#fff;z-index:1;">
+                    {% if row.category.icon %}<i class="fas {{ row.category.icon }}"></i> {% endif %}
+                    <a href="{% url 'concept_detail' row.category.pk %}">{{ row.category.label }}</a>
+                </td>
+                {% for count in row.cells %}
+                <td class="heatmap-cell" data-count="{{ count }}">
+                    {% if count %}{{ count }}{% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+<style>
+#heatmap-table { border-collapse: collapse; }
+.heatmap-cell { padding: 0.25rem; transition: background 0.2s; }
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var cells = document.querySelectorAll(".heatmap-cell");
+    var maxCount = {{ max_count }};
+    cells.forEach(function (cell) {
+        var count = parseInt(cell.dataset.count) || 0;
+        if (count > 0) {
+            var ratio = count / maxCount;
+            var size = 0.7 + ratio * 1.3;
+            cell.style.fontSize = size.toFixed(2) + "rem";
+            // Green heatmap: light to dark
+            var r = Math.round(255 - ratio * 200);
+            var g = Math.round(255 - ratio * 80);
+            var b = Math.round(255 - ratio * 200);
+            cell.style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
+        }
+    });
+});
+</script>
+{% endblock %}

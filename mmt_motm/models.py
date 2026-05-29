@@ -112,6 +112,15 @@ class LocationPoint(models.Model):
         related_name="points"
     )
 
+    # Corresponding concept (e.g. from GO taxonomy)
+    concept = models.OneToOneField(
+        "Concept",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="location_point"
+    )
+
     def __str__(self):
         return self.current_name
     

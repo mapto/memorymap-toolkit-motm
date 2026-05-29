@@ -42,7 +42,7 @@ class LocationPointSerializer(serializers.ModelSerializer):
         fields = [
             "id", "current_name", "alternate_names", "postal_address",
             "description", "location", "wikidata_id", "geonames_id",
-            "region", "urls", "latitude", "longitude",
+            "region", "urls", "latitude", "longitude", "concept",
         ]
         extra_kwargs = {"location": {"read_only": True}}
 

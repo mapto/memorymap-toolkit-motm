@@ -5,6 +5,22 @@
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
     <p><a href="javascript:history.back()">&larr; Back</a></p>
+    {% if ancestors %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-light">
+            {% for a in ancestors %}
+            <li class="breadcrumb-item">
+                <a href="{% url 'concept_detail' a.pk %}">
+                    {% if a.icon %}<i class="fas {{ a.icon }}"></i> {% endif %}
+                    {{ a.label }}</a>
+            </li>
+            {% endfor %}
+            {% if location.concept %}
+            <li class="breadcrumb-item active" aria-current="page">{{ location.concept.label }}</li>
+            {% endif %}
+        </ol>
+    </nav>
+    {% endif %}
     <h1>{% if dominant_icon %}<i class="fas {{ dominant_icon }}"></i> {% endif %}{{ location.current_name }}</h1>
 
     {% if location.alternate_names %}

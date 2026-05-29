@@ -122,8 +122,18 @@
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'event_list' %}">Events</a>
 						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="{% url 'extraction_list' %}">Quotes</a>
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle"
+								href="{% url 'extraction_list' %}"
+								id="quotesDropdown"
+								role="button"
+								data-toggle="dropdown"
+								aria-haspopup="true"
+								aria-expanded="false">Quotes</a>
+							<div class="dropdown-menu" aria-labelledby="quotesDropdown">
+								<a class="dropdown-item" href="{% url 'extraction_list' %}">List</a>
+								<a class="dropdown-item" href="{% url 'source_category_heatmap' %}">Heatmap</a>
+							</div>
 						</li>
 						&nbsp;
 						<li class="nav-item dropdown">

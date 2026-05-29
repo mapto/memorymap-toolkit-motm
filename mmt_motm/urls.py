@@ -22,6 +22,7 @@ urlpatterns = [
     path("persons/<int:pk>/", views.PersonDetailView.as_view(), name="person_detail"),
     path("persons/search/", views.person_search, name="person_search"),
     path("interviews/", views.InterviewListView.as_view(), name="interview_list"),
+    path("interviews/heatmap/", views.SourceCategoryHeatmapView.as_view(), name="source_category_heatmap"),
     path("interviews/<int:pk>/", views.InterviewDetailView.as_view(), name="interview_detail"),
     path("interviews/search/", views.interview_search, name="interview_search"),
     path("extractions/", views.ExtractionListView.as_view(), name="extraction_list"),
