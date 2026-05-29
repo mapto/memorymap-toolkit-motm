@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <p><a href="{% url 'interview_list' %}">&larr; Back to list</a></p>
-    <h1>Interview {{ interview.archive_id|default:"" }}</h1>
+    <h1>Source {{ interview.archive_id|default:"" }}</h1>
 
     {% if interview.interview_type %}
     <p><strong>Type:</strong> {{ interview.interview_type }}</p>
@@ -38,6 +38,12 @@
     {% if interview.description %}
     <h3>Description</h3>
     <p>{{ interview.description }}</p>
+    {% endif %}
+
+    {% if language_summary %}
+    <p><strong>Languages:</strong>
+        {% for lang in language_summary %}{{ lang.label }} ({{ lang.count }}){% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
     {% endif %}
 
     {% if interview.extracted_from.all %}

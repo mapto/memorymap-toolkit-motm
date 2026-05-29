@@ -2,8 +2,8 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Locations</h1>
-    <input type="text" id="location-search" class="form-control mb-3" placeholder="Filter locations…">
+    <h1>Places</h1>
+    <input type="text" id="location-search" class="form-control mb-3" placeholder="Filter places…">
     <div id="word-cloud" style="line-height:2.2;text-align:center;">
         {% for location in locations %}
         <a href="{% url 'location_detail' location.pk %}"
@@ -18,7 +18,7 @@
             <small class="text-muted">({{ location.event_count }})</small>
         </a>
         {% empty %}
-        <p>No locations found.</p>
+        <p>No places found.</p>
         {% endfor %}
     </div>
 </div>

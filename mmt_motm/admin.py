@@ -153,7 +153,7 @@ admin.site.register(Timespan)
 
 @admin.register(Extraction)
 class ExtractionAdmin(admin.ModelAdmin):
-    list_display = ("identifier", "people_mentioned", "classification", "interview")
+    list_display = ("identifier", "people_mentioned", "classification", "interview", "language")
     search_fields = ("identifier", "quote", "notes")
     ordering = ("identifier",)
 

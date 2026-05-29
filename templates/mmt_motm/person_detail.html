@@ -60,7 +60,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Location</th>
+                <th>Place</th>
                 <th>Description</th>
             </tr>
         </thead>
@@ -104,6 +104,12 @@
     </p>
     {% endif %}
 
+    {% if language_summary %}
+    <p><strong>Languages:</strong>
+        {% for lang in language_summary %}{{ lang.label }} ({{ lang.count }}){% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+
     {% if person.urls.exists %}
     <h3>References</h3>
     <ul>
@@ -134,7 +140,7 @@
     {% endif %}
 
     {% if interviews_as_interviewer %}
-    <h3>Interviews conducted</h3>
+    <h3>Sources conducted</h3>
     <ul>
         {% for interview in interviews_as_interviewer %}
         <li>
@@ -147,7 +153,7 @@
     {% endif %}
 
     {% if interviews_as_interviewee %}
-    <h3>Interviews given</h3>
+    <h3>Sources given</h3>
     <ul>
         {% for interview in interviews_as_interviewee %}
         <li>

@@ -26,8 +26,8 @@
                 <a href="{% url 'location_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ locations }}</span>
                     <span class="dash-label">
-                        <strong>Locations</strong>
-                        <small>All locations as a list</small>
+                        <strong>Places</strong>
+                        <small>All places as a list</small>
                     </span></span>
                 </a>
             </div>
@@ -52,12 +52,12 @@
                 </div>
             </div>
 
-            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Interviews &amp; Quotes</h6>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Sources &amp; Quotes</h6>
             <div class="dash-section mb-3">
                 <a href="{% url 'interview_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ interviews }}</span>
                     <span class="dash-label">
-                        <strong>Interviews</strong>
+                        <strong>Sources</strong>
                         <small>Recorded</small>
                     </span></span>
                 </a>
@@ -78,13 +78,13 @@
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-globe"></i></span>
                     <span class="dash-label">
                         <strong>Interactive Map</strong>
-                        <small>Locations &amp; events</small>
+                        <small>Places &amp; events</small>
                     </span></span>
                 </a>
                 <a href="{% url 'location_map' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-map-marked-alt"></i></span>
                     <span class="dash-label">
-                        <strong>Locations Map</strong>
+                        <strong>Places Map</strong>
                         <small>Map view</small>
                     </span></span>
                 </a>
@@ -145,7 +145,7 @@
     font-weight: 300;
     color: #747474;
     flex-shrink: 0;
-    margin-right: 1rem;
+    margin-right: 0.5rem;
 }
 .dash-row:hover .dash-count {
     color: #333333;

@@ -370,6 +370,9 @@ class Extraction(models.Model):
     # notizien
     notes = models.TextField(blank=True)
 
+    # ISO 639-1 language code detected from quote text
+    language = models.CharField(max_length=10, blank=True)
+
     interview = models.ForeignKey(
         "Interview",
         on_delete=models.SET_NULL,
@@ -380,6 +383,23 @@ class Extraction(models.Model):
 
     def __str__(self):
         return f"Extraction {self.identifier}"
+
+    @property
+    def language_label(self):
+        """Return a human-readable language name for the ISO code."""
+        if not self.language:
+            return ""
+        _LANG_NAMES = {
+            "de": "German", "en": "English", "fr": "French", "it": "Italian",
+            "es": "Spanish", "pt": "Portuguese", "nl": "Dutch", "pl": "Polish",
+            "cs": "Czech", "ru": "Russian", "uk": "Ukrainian", "he": "Hebrew",
+            "yi": "Yiddish", "ar": "Arabic", "tr": "Turkish", "hu": "Hungarian",
+            "ro": "Romanian", "bg": "Bulgarian", "hr": "Croatian", "sr": "Serbian",
+            "sk": "Slovak", "sl": "Slovenian", "el": "Greek", "da": "Danish",
+            "sv": "Swedish", "no": "Norwegian", "fi": "Finnish", "ja": "Japanese",
+            "zh": "Chinese", "ko": "Korean",
+        }
+        return _LANG_NAMES.get(self.language, self.language)
 
 class Concept(models.Model):
     label = models.CharField(max_length=200, blank=True)

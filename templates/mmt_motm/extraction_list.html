@@ -11,7 +11,8 @@
                 <th class="sortable" data-col="0">Person <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="1">Concept <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="2">Quote <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">Interview <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">Source <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">Language <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -40,10 +41,11 @@
                             {{ extraction.interview }}</a>
                     {% else %}–{% endif %}
                 </td>
+                <td>{{ extraction.language_label|default:"–" }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4">No extractions found.</td>
+                <td colspan="5">No extractions found.</td>
             </tr>
             {% endfor %}
         </tbody>

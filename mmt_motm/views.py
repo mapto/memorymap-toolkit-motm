@@ -74,6 +74,17 @@ class PersonDetailView(DetailView):
                 )
             ).order_by('timespan__start')
         )
+        lang_counts = (
+            Extraction.objects.filter(people_mentioned=person)
+            .exclude(language="")
+            .values("language")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+        context["language_summary"] = [
+            {"code": lc["language"], "label": Extraction(language=lc["language"]).language_label, "count": lc["count"]}
+            for lc in lang_counts
+        ]
         return context
 
 
@@ -88,6 +99,22 @@ class InterviewDetailView(DetailView):
     model = Interview
     template_name = "mmt_motm/interview_detail.html"
     context_object_name = "interview"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        interview = self.object
+        lang_counts = (
+            interview.extracted_from
+            .exclude(language="")
+            .values("language")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+        context["language_summary"] = [
+            {"code": lc["language"], "label": Extraction(language=lc["language"]).language_label, "count": lc["count"]}
+            for lc in lang_counts
+        ]
+        return context
 
 
 class EventDetailView(DetailView):
