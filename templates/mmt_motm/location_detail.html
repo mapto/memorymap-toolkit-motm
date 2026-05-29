@@ -112,18 +112,19 @@
         {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location and event.start_location.pk != event.end_location.pk %}
         lines.push({
             coords: [[{{ event.start_location.location.x }}, {{ event.start_location.location.y }}], [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]],
-            name: "{{ event.start_location.current_name|escapejs }} \u2192 {{ event.end_location.current_name|escapejs }}"
+            name: "{{ event.start_location.current_name|escapejs }} \u2192 {{ event.end_location.current_name|escapejs }}",
+            icon: "{{ event.dominant_icon|default:'' }}"
         });
         {% endif %}
         {% endfor %}
 
         if (lines.length > 0) {
             var feats = lines.map(function(l) {
-                return { type: 'Feature', properties: { name: l.name }, geometry: { type: 'LineString', coordinates: l.coords } };
+                return { type: 'Feature', properties: { name: l.name, color: mmtCategoryColor(l.icon) }, geometry: { type: 'LineString', coordinates: l.coords } };
             });
-            mmtAddGradientLine(map, 'loc-lines', 'loc-lines-layer',
+            mmtAddLine(map, 'loc-lines', 'loc-lines-layer',
                 { type: 'FeatureCollection', features: feats },
-                { opacity: 0.6 });
+                { opacity: 0.6, color: ['get', 'color'] });
             mmtAddLayerHover(map, 'loc-lines-layer');
 
             var bounds = new mapboxgl.LngLatBounds();

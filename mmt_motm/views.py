@@ -64,6 +64,14 @@ class PersonDetailView(DetailView):
         context["events"] = (
             person.events.select_related(
                 'timespan', 'start_location', 'end_location'
+            ).annotate(
+                dominant_icon=Subquery(
+                    Concept.objects.filter(
+                        events=OuterRef('pk')
+                    ).exclude(icon='').values('icon').annotate(
+                        cnt=Count('id')
+                    ).order_by('-cnt').values('icon')[:1]
+                )
             ).order_by('timespan__start')
         )
         return context
@@ -91,6 +99,9 @@ class EventDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         event = self.object
         context["extractions"] = event.relates_to_event.prefetch_related('concepts').all()
+        icons = event.concepts.exclude(icon='').values('icon').annotate(
+            cnt=Count('id')).order_by('-cnt')
+        context["dominant_icon"] = icons[0]['icon'] if icons else ''
         return context
 
 
@@ -133,7 +144,17 @@ class LocationDetailView(DetailView):
         loc = self.object
         events = Event.objects.filter(
             Q(start_location=loc) | Q(end_location=loc)
-        ).select_related('timespan', 'start_location', 'end_location').order_by('timespan__start')
+        ).select_related(
+            'timespan', 'start_location', 'end_location'
+        ).annotate(
+            dominant_icon=Subquery(
+                Concept.objects.filter(
+                    events=OuterRef('pk')
+                ).exclude(icon='').values('icon').annotate(
+                    cnt=Count('id')
+                ).order_by('-cnt').values('icon')[:1]
+            )
+        ).order_by('timespan__start')
         context["events"] = events
         context["persons_born_here"] = loc.people_born_here.all()
         context["persons_died_here"] = loc.people_died_here.all()

@@ -13,21 +13,40 @@ function mmtCreateMap(containerId, center, zoom) {
     return map;
 }
 
-function mmtAddGradientLine(map, sourceId, layerId, data, opts) {
+var MMT_CATEGORY_COLORS = {
+    'fa-map-marker-alt': '#504cf1',
+    'fa-university': '#3cee42',
+    'fa-route': '#fc4743',
+    'fa-user': '#52e1f4',
+    'fa-clock': '#eee33e',
+    'fa-road': '#5b6752',
+    'fa-language': '#ec74fe',
+    'fa-palette': '#a1a8ac',
+    'fa-box-open': '#aa4098',
+    'fa-sitemap': '#94b63d'
+};
+
+function mmtCategoryColor(icon) {
+    return MMT_CATEGORY_COLORS[icon] || '#e74c3c';
+}
+
+function mmtAddLine(map, sourceId, layerId, data, opts) {
     opts = opts || {};
     map.addSource(sourceId, { type: 'geojson', lineMetrics: true, data: data });
-    map.addLayer({
-        id: layerId, type: 'line', source: sourceId,
-        paint: {
-            'line-width': opts.width || 3,
-            'line-opacity': opts.opacity || 0.7,
-            'line-gradient': [
-                'interpolate', ['linear'], ['line-progress'],
-                0, '#2c3e50',
-                1, '#e74c3c'
-            ]
-        }
-    });
+    var paint = {
+        'line-width': opts.width || 3,
+        'line-opacity': opts.opacity || 0.7
+    };
+    if (opts.color) {
+        paint['line-color'] = opts.color;
+    } else {
+        paint['line-gradient'] = [
+            'interpolate', ['linear'], ['line-progress'],
+            0, '#2c3e50',
+            1, '#e74c3c'
+        ];
+    }
+    map.addLayer({ id: layerId, type: 'line', source: sourceId, paint: paint });
 }
 
 function mmtCreateFAMarker(map, lngLat, icon, color, opts) {

@@ -143,7 +143,8 @@
             end: [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}],
             startName: "{{ event.start_location.current_name|escapejs }}",
             endName: "{{ event.end_location.current_name|escapejs }}",
-            date: "{% if event.timespan %}{{ event.timespan|escapejs }}{% endif %}"
+            date: "{% if event.timespan %}{{ event.timespan|escapejs }}{% endif %}",
+            icon: "{{ event.dominant_icon|default:'' }}"
         },
         {% endif %}
         {% endfor %}
@@ -161,7 +162,8 @@
             return {
                 type: 'Feature',
                 properties: { id: e.id, desc: e.desc, url: e.url, date: e.date,
-                              startName: e.startName, endName: e.endName },
+                              startName: e.startName, endName: e.endName,
+                              color: mmtCategoryColor(e.icon) },
                 geometry: { type: 'LineString', coordinates: [e.start, e.end] }
             };
         });
@@ -179,8 +181,9 @@
             };
         });
 
-        mmtAddGradientLine(map, 'event-lines', 'event-lines-layer',
-            { type: 'FeatureCollection', features: features });
+        mmtAddLine(map, 'event-lines', 'event-lines-layer',
+            { type: 'FeatureCollection', features: features },
+            { color: ['get', 'color'] });
         map.addSource('event-points', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: pointFeatures }

@@ -205,7 +205,16 @@ def _append_motm_layers(response, env):
 			) AS "geom",
 			"e"."id",
 			"e"."description" AS "name",
-			COALESCE(EXTRACT(YEAR FROM "ts"."start"), EXTRACT(YEAR FROM "ts"."end"))::int AS "year"
+			COALESCE(EXTRACT(YEAR FROM "ts"."start"), EXTRACT(YEAR FROM "ts"."end"))::int AS "year",
+			(
+			    SELECT "c"."icon"
+			    FROM "mmt_motm_event_concepts" "ec"
+			    JOIN "mmt_motm_concept" "c" ON "c"."id" = "ec"."concept_id"
+			    WHERE "ec"."event_id" = "e"."id" AND "c"."icon" != ''
+			    GROUP BY "c"."icon"
+			    ORDER BY COUNT(*) DESC
+			    LIMIT 1
+			) AS "icon"
 			FROM "mmt_motm_event" "e"
 			JOIN "mmt_motm_locationpoint" "sl" ON "e"."start_location_id" = "sl"."id"
 			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id"

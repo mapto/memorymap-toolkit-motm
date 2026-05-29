@@ -107,13 +107,14 @@
 
     if (!endCoord) return;
 
+    var lineColor = mmtCategoryColor("{{ dominant_icon }}");
     var map = mmtCreateMap('event-map', endCoord, 6);
 
     map.on('load', function() {
         if (hasLine) {
-            mmtAddGradientLine(map, 'event-line', 'event-line-layer',
+            mmtAddLine(map, 'event-line', 'event-line-layer',
                 { type: 'Feature', geometry: { type: 'LineString', coordinates: [startCoord, endCoord] } },
-                { width: 4 });
+                { width: 4, color: lineColor });
             mmtCreateFAMarker(map, startCoord, 'fa-play-circle', '#2c3e50', { url: startUrl, title: startName });
             mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl, title: endName });
             var bounds = new mapboxgl.LngLatBounds();
