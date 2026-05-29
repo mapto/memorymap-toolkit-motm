@@ -1,0 +1,54 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-0 px-0">
+    <div id="locations-map" style="width:100%; height:calc(100vh - 56px);"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "mmt_motm/_map_init.html" %}
+<script>
+(function() {
+    var locations = [
+        {% for loc in locations %}
+        {% if loc.location %}
+        {
+            id: {{ loc.pk }},
+            name: "{{ loc.current_name|escapejs }}",
+            lng: {{ loc.location.x }},
+            lat: {{ loc.location.y }},
+            icon: "{{ loc.dominant_icon|default:'' }}",
+            events: {{ loc.event_count }}
+        },
+        {% endif %}
+        {% endfor %}
+    ];
+
+    if (locations.length === 0) {
+        document.getElementById('locations-map').innerHTML = '<p class="text-muted p-3">No locations with coordinates found.</p>';
+        return;
+    }
+
+    var bounds = new mapboxgl.LngLatBounds();
+    locations.forEach(function(l) { bounds.extend([l.lng, l.lat]); });
+    var center = bounds.getCenter();
+
+    var map = mmtCreateMap('locations-map', [center.lng, center.lat], 5);
+
+    map.on('load', function() {
+        map.fitBounds(bounds, { padding: 50 });
+
+        locations.forEach(function(loc) {
+            var color = mmtCategoryColor(loc.icon);
+            var icon = loc.icon || 'fa-map-marker-alt';
+            mmtCreateFAMarker(map, [loc.lng, loc.lat], icon, color, {
+                title: loc.name + ' (' + loc.events + ' events)',
+                url: '/motm/locations/' + loc.id + '/',
+                size: '22px'
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

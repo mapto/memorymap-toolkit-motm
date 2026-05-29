@@ -80,14 +80,22 @@
 							<a class="nav-link" href="{% url 'index' %}">Map</a>
 						</li>
 						&nbsp;
-						<li class="nav-item">
-							<a class="nav-link" href="{% url 'concept_list' %}">Concepts</a>
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle" href="{% url 'concept_list' %}" id="conceptsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Concepts</a>
+							<div class="dropdown-menu" aria-labelledby="conceptsDropdown">
+								<a class="dropdown-item" href="{% url 'concept_list' %}">Word Cloud</a>
+								<a class="dropdown-item" href="{% url 'concept_taxonomy' %}">Taxonomy</a>
+							</div>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link" href="{% url 'person_list' %}">People</a>
 						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="{% url 'location_list' %}">Locations</a>
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle" href="{% url 'location_list' %}" id="locationsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Locations</a>
+							<div class="dropdown-menu" aria-labelledby="locationsDropdown">
+								<a class="dropdown-item" href="{% url 'location_list' %}">Word Cloud</a>
+								<a class="dropdown-item" href="{% url 'location_map' %}">Map</a>
+							</div>
 						</li>
 						&nbsp;
 						<li class="nav-item">
@@ -102,8 +110,6 @@
 							About
 							</a>
 							<div class="dropdown-menu" id="pages" aria-labelledby="navbarDropdown">
-								<a class="dropdown-item" href="{% url 'concept_taxonomy' %}">Concept Taxonomy</a>
-								<div class="dropdown-divider"></div>
 								<a class="dropdown-item" href="{% url 'text_only' %}">Text Only Site</a>
 							</div>
 						</li>

@@ -1,3 +1,5 @@
+{% load static %}
+<script src="{% static 'js/mmtCategoryColors.js' %}"></script>
 <script>
 mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
 var MMT_MAP_STYLE = '{{ config_base_map_style_url }}' || 'https://demotiles.maplibre.org/style.json';
@@ -11,23 +13,6 @@ function mmtCreateMap(containerId, center, zoom) {
     });
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     return map;
-}
-
-var MMT_CATEGORY_COLORS = {
-    'fa-map-marker-alt': '#504cf1',
-    'fa-university': '#3cee42',
-    'fa-route': '#fc4743',
-    'fa-user': '#52e1f4',
-    'fa-clock': '#eee33e',
-    'fa-road': '#5b6752',
-    'fa-language': '#ec74fe',
-    'fa-palette': '#a1a8ac',
-    'fa-box-open': '#aa4098',
-    'fa-sitemap': '#94b63d'
-};
-
-function mmtCategoryColor(icon) {
-    return MMT_CATEGORY_COLORS[icon] || '#e74c3c';
 }
 
 function mmtAddLine(map, sourceId, layerId, data, opts) {

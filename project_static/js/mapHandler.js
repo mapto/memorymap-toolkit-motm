@@ -315,20 +315,7 @@ map.on('load', function() {
         'source-layer': 'locations',
         'type': 'circle',
         'paint': {
-            'circle-color': [
-                'match', ['get', 'icon'],
-                'fa-map-marker-alt', '#504cf1',
-                'fa-university', '#3cee42',
-                'fa-route', '#fc4743',
-                'fa-user', '#52e1f4',
-                'fa-clock', '#eee33e',
-                'fa-road', '#5b6752',
-                'fa-language', '#ec74fe',
-                'fa-palette', '#a1a8ac',
-                'fa-box-open', '#aa4098',
-                'fa-sitemap', '#94b63d',
-                '#888888'
-            ],
+            'circle-color': mmtCategoryColorMatch(),
             'circle-radius': ["interpolate", ["linear"], ["zoom"],
                 6, 4,
                 14, 8,
@@ -377,20 +364,7 @@ map.on('load', function() {
         'source-layer': 'event_lines',
         'type': 'line',
         'paint': {
-            'line-color': [
-                'match', ['get', 'icon'],
-                'fa-map-marker-alt', '#504cf1',
-                'fa-university', '#3cee42',
-                'fa-route', '#fc4743',
-                'fa-user', '#52e1f4',
-                'fa-clock', '#eee33e',
-                'fa-road', '#5b6752',
-                'fa-language', '#ec74fe',
-                'fa-palette', '#a1a8ac',
-                'fa-box-open', '#aa4098',
-                'fa-sitemap', '#94b63d',
-                '#888888'
-            ],
+            'line-color': mmtCategoryColorMatch(),
             'line-width': ["interpolate", ["linear"], ["zoom"],
                 6, 1.5,
                 14, 3,

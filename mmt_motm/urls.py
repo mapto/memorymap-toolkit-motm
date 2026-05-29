@@ -35,6 +35,7 @@ urlpatterns = [
     path("events/<int:pk>/", views.EventDetailView.as_view(), name="event_detail"),
     path("events/search/", views.event_search, name="event_search"),
     path("locations/", views.LocationListView.as_view(), name="location_list"),
+    path("locations/map/", views.LocationMapView.as_view(), name="location_map"),
     path("locations/<int:pk>/", views.LocationDetailView.as_view(), name="location_detail"),
     path("api/", include(router.urls)),
 ]

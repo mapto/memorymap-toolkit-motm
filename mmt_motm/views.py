@@ -134,6 +134,23 @@ class LocationListView(ListView):
         ).order_by('current_name')
 
 
+class LocationMapView(ListView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_map.html"
+    context_object_name = "locations"
+
+    def get_queryset(self):
+        dominant_icon = Concept.objects.filter(
+            events__start_location=OuterRef('pk'),
+            icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').values('icon')[:1]
+
+        return LocationPoint.objects.annotate(
+            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True),
+            dominant_icon=Subquery(dominant_icon)
+        ).exclude(location__isnull=True).order_by('current_name')
+
+
 class LocationDetailView(DetailView):
     model = LocationPoint
     template_name = "mmt_motm/location_detail.html"
