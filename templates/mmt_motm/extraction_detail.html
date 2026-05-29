@@ -6,7 +6,11 @@
     <h1>Quote {{ extraction.identifier|default:"" }}</h1>
 
     {% if extraction.people_mentioned %}
-    <p><strong>Person mentioned:</strong> <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a></p>
+    <p><strong>Person mentioned:</strong>
+        <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">
+            {{ extraction.people_mentioned }}
+        </a>
+    </p>
     {% endif %}
 
     {% if extraction.timecode %}
@@ -38,7 +42,11 @@
     {% endif %}
 
     {% if extraction.interview %}
-    <p><strong>Interview:</strong> <a href="{% url 'interview_detail' extraction.interview.pk %}">{{ extraction.interview }}</a></p>
+    <p><strong>Interview:</strong>
+        <a href="{% url 'interview_detail' extraction.interview.pk %}">
+            {{ extraction.interview }}
+        </a>
+    </p>
     {% endif %}
 
     {% if extraction.notes %}

@@ -10,7 +10,10 @@
            class="cloud-word d-inline-block mx-1"
            data-count="{{ concept.quote_count }}"
            data-label="{{ concept.label|lower }}"
-           style="text-decoration:none;">{{ concept.label }} <small class="text-muted">({{ concept.quote_count }})</small></a>
+           style="text-decoration:none;">
+            {{ concept.label }}
+            <small class="text-muted">({{ concept.quote_count }})</small>
+        </a>
         {% empty %}
         <p>No concepts found.</p>
         {% endfor %}

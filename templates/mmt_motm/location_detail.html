@@ -21,9 +21,17 @@
 
     {% if location.wikidata_id or location.geonames_id %}
     <p>
-    {% if location.wikidata_id %}<strong>Wikidata:</strong> <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}" target="_blank" rel="noopener">{{ location.wikidata_id }}</a>{% endif %}
+    {% if location.wikidata_id %}
+        <strong>Wikidata:</strong>
+        <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}"
+           target="_blank" rel="noopener">{{ location.wikidata_id }}</a>
+    {% endif %}
     {% if location.wikidata_id and location.geonames_id %} &middot; {% endif %}
-    {% if location.geonames_id %}<strong>GeoNames:</strong> <a href="https://www.geonames.org/{{ location.geonames_id }}" target="_blank" rel="noopener">{{ location.geonames_id }}</a>{% endif %}
+    {% if location.geonames_id %}
+        <strong>GeoNames:</strong>
+        <a href="https://www.geonames.org/{{ location.geonames_id }}"
+           target="_blank" rel="noopener">{{ location.geonames_id }}</a>
+    {% endif %}
     </p>
     {% endif %}
 
@@ -61,9 +69,16 @@
         <tbody>
         {% for event in events %}
         <tr>
-            <td>{% if event.timespan %}{% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}{% endif %}</td>
             <td>
-                {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
+                {% if event.timespan %}
+                    {% with timespan=event.timespan %}
+                        {% include "mmt_motm/_timespan.html" %}
+                    {% endwith %}
+                {% endif %}
+            </td>
+            <td>
+                {% if event.start_location and event.end_location
+                    and event.start_location.pk != event.end_location.pk %}
                     <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
                     <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
                 {% elif event.end_location %}
@@ -109,10 +124,16 @@
         // Show lines for connected events
         var lines = [];
         {% for event in events %}
-        {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location and event.start_location.pk != event.end_location.pk %}
+        {% if event.start_location and event.start_location.location
+            and event.end_location and event.end_location.location
+            and event.start_location.pk != event.end_location.pk %}
         lines.push({
-            coords: [[{{ event.start_location.location.x }}, {{ event.start_location.location.y }}], [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]],
-            name: "{{ event.start_location.current_name|escapejs }} \u2192 {{ event.end_location.current_name|escapejs }}",
+            coords: [
+                [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}],
+                [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]
+            ],
+            name: "{{ event.start_location.current_name|escapejs }}"
+                + " \u2192 {{ event.end_location.current_name|escapejs }}",
             icon: "{{ event.dominant_icon|default:'' }}"
         });
         {% endif %}
@@ -120,7 +141,11 @@
 
         if (lines.length > 0) {
             var feats = lines.map(function(l) {
-                return { type: 'Feature', properties: { name: l.name, color: mmtCategoryColor(l.icon) }, geometry: { type: 'LineString', coordinates: l.coords } };
+                return {
+                    type: 'Feature',
+                    properties: { name: l.name, color: mmtCategoryColor(l.icon) },
+                    geometry: { type: 'LineString', coordinates: l.coords }
+                };
             });
             mmtAddLine(map, 'loc-lines', 'loc-lines-layer',
                 { type: 'FeatureCollection', features: feats },

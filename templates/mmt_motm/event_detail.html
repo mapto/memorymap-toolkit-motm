@@ -11,8 +11,17 @@
     <p>{{ event.description }}</p>
 
     {% if event.timespan %}
-    <p><strong>Date:</strong> {% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}
-    {% if event.is_confirmed %}<i class="fas fa-check-circle text-success" title="Confirmed event" data-toggle="tooltip"></i>{% else %}<i class="fas fa-question-circle text-secondary" title="Unconfirmed event" data-toggle="tooltip"></i>{% endif %}
+    <p><strong>Date:</strong>
+        {% with timespan=event.timespan %}
+            {% include "mmt_motm/_timespan.html" %}
+        {% endwith %}
+    {% if event.is_confirmed %}
+        <i class="fas fa-check-circle text-success"
+           title="Confirmed event" data-toggle="tooltip"></i>
+    {% else %}
+        <i class="fas fa-question-circle text-secondary"
+           title="Unconfirmed event" data-toggle="tooltip"></i>
+    {% endif %}
     </p>
     {% endif %}
 
@@ -40,7 +49,14 @@
 
     {% if event.concepts.exists %}
     <h3>Concepts</h3>
-    <p>{% for c in event.concepts.all %}<a href="{% url 'concept_detail' c.pk %}">{% if c.icon %}<i class="fas {{ c.icon }}"></i> {% endif %}{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    <p>
+        {% for c in event.concepts.all %}
+            <a href="{% url 'concept_detail' c.pk %}">
+                {% if c.icon %}<i class="fas {{ c.icon }}"></i> {% endif %}
+                {{ c.label }}</a>
+            {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
     {% if event.urls.exists %}
@@ -58,9 +74,17 @@
     <div class="card mb-2">
         <div class="card-body">
             {% if extraction.concepts.exists %}
-            <p><strong>Concepts:</strong> {% for c in extraction.concepts.all %}<a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+            <p><strong>Concepts:</strong>
+                {% for c in extraction.concepts.all %}
+                    <a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>
+                    {% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </p>
             {% endif %}
-            {% if extraction.quote %}<p><strong>Quote:</strong> <em>&ldquo;{{ extraction.quote }}&rdquo;</em></p>{% endif %}
+            {% if extraction.quote %}
+                <p><strong>Quote:</strong>
+                    <em>&ldquo;{{ extraction.quote }}&rdquo;</em></p>
+            {% endif %}
             {% if extraction.timecode %}<p><strong>Timecode:</strong> {{ extraction.timecode }}</p>{% endif %}
             {% if extraction.notes %}<p><strong>Notes:</strong> {{ extraction.notes }}</p>{% endif %}
         </div>
@@ -81,7 +105,8 @@
 <script>
 (function() {
 
-    {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
+    {% if event.start_location and event.start_location.location
+        and event.end_location and event.end_location.location %}
     var startCoord = [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}];
     var endCoord = [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}];
     var startName = "{{ event.start_location.current_name|escapejs }}";

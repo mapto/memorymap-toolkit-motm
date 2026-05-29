@@ -10,7 +10,13 @@
            class="cloud-word d-inline-block mx-1"
            data-count="{{ location.event_count }}"
            data-label="{{ location.current_name|lower }}"
-           style="text-decoration:none;">{% if location.dominant_icon %}<i class="fas {{ location.dominant_icon }}"></i> {% endif %}{{ location.current_name }} <small class="text-muted">({{ location.event_count }})</small></a>
+           style="text-decoration:none;">
+            {% if location.dominant_icon %}
+                <i class="fas {{ location.dominant_icon }}"></i>
+            {% endif %}
+            {{ location.current_name }}
+            <small class="text-muted">({{ location.event_count }})</small>
+        </a>
         {% empty %}
         <p>No locations found.</p>
         {% endfor %}

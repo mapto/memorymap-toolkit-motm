@@ -20,11 +20,33 @@
     {% endif %}
 
     {% if person.lifespan and person.lifespan.start %}
-    <p><strong>Born:</strong> {{ person.lifespan.start|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% if person.birth_place %} in <a href="{% url 'location_detail' person.birth_place.pk %}">{{ person.birth_place }}</a>{% endif %}</p>
+    <p><strong>Born:</strong>
+        {{ person.lifespan.start|date:"j N Y" }}
+        {% if person.lifespan.certainty_icon %}
+            <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning"
+               title="{{ person.lifespan.certainty_icon.1 }}"
+               data-toggle="tooltip"></i>
+        {% endif %}
+        {% if person.birth_place %}
+            in <a href="{% url 'location_detail' person.birth_place.pk %}">
+                {{ person.birth_place }}</a>
+        {% endif %}
+    </p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.end %}
-    <p><strong>Died:</strong> {{ person.lifespan.end|date:"j N Y" }}{% if person.lifespan.certainty_icon %} <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning" title="{{ person.lifespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}{% if person.death_place %} in <a href="{% url 'location_detail' person.death_place.pk %}">{{ person.death_place }}</a>{% endif %}</p>
+    <p><strong>Died:</strong>
+        {{ person.lifespan.end|date:"j N Y" }}
+        {% if person.lifespan.certainty_icon %}
+            <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning"
+               title="{{ person.lifespan.certainty_icon.1 }}"
+               data-toggle="tooltip"></i>
+        {% endif %}
+        {% if person.death_place %}
+            in <a href="{% url 'location_detail' person.death_place.pk %}">
+                {{ person.death_place }}</a>
+        {% endif %}
+    </p>
     {% endif %}
 
     {% if person.description %}
@@ -45,10 +67,19 @@
         <tbody>
             {% for event in events %}
             <tr>
-                <td>{% if event.timespan %}{% with timespan=event.timespan %}{% include "mmt_motm/_timespan.html" %}{% endwith %}{% endif %}</td>
                 <td>
-                    {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
-                        <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
+                    {% if event.timespan %}
+                        {% with timespan=event.timespan %}
+                            {% include "mmt_motm/_timespan.html" %}
+                        {% endwith %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if event.start_location and event.end_location
+                        and event.start_location.pk != event.end_location.pk %}
+                        <a href="{% url 'location_detail' event.start_location.pk %}">
+                            {{ event.start_location }}
+                        </a> &rarr;
                         <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
                     {% elif event.end_location %}
                         <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
@@ -65,7 +96,13 @@
 
     {% if concepts %}
     <h3>Concepts <small class="text-muted">(top 20)</small></h3>
-    <p>{% for concept in concepts %}<a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>&nbsp;({{ concept.mention_count }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    <p>
+        {% for concept in concepts %}
+            <a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>
+            &nbsp;({{ concept.mention_count }})
+            {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
     {% if person.urls.exists %}
@@ -81,10 +118,18 @@
     <h3>Relationships</h3>
     <ul>
         {% for rel in person.relationships_from.all %}
-        <li>{{ rel.relationship_type }} is <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>{% if rel.timespan %} ({{ rel.timespan }}){% endif %}</li>
+        <li>
+            {{ rel.relationship_type }} is
+            <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>
+            {% if rel.timespan %} ({{ rel.timespan }}){% endif %}
+        </li>
         {% endfor %}
         {% for rel in person.relationships_to.all %}
-        <li>{{ rel.relationship_type }} of <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>{% if rel.timespan %} ({{ rel.timespan }}){% endif %}</li>
+        <li>
+            {{ rel.relationship_type }} of
+            <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>
+            {% if rel.timespan %} ({{ rel.timespan }}){% endif %}
+        </li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -93,7 +138,11 @@
     <h3>Interviews conducted</h3>
     <ul>
         {% for interview in interviews_as_interviewer %}
-        <li><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>{% if interview.date %} ({{ interview.date }}){% endif %}{% if interview.interviewee %} &mdash; with {{ interview.interviewee }}{% endif %}</li>
+        <li>
+            <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
+            {% if interview.date %} ({{ interview.date }}){% endif %}
+            {% if interview.interviewee %} &mdash; with {{ interview.interviewee }}{% endif %}
+        </li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -102,7 +151,11 @@
     <h3>Interviews given</h3>
     <ul>
         {% for interview in interviews_as_interviewee %}
-        <li><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>{% if interview.date %} ({{ interview.date }}){% endif %}{% if interview.interviewer %} &mdash; by {{ interview.interviewer }}{% endif %}</li>
+        <li>
+            <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
+            {% if interview.date %} ({{ interview.date }}){% endif %}
+            {% if interview.interviewer %} &mdash; by {{ interview.interviewer }}{% endif %}
+        </li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -113,7 +166,12 @@
         <div class="mb-2">
           <blockquote class="list-unstyled">
             <em>&ldquo;{{ extraction.quote }}&rdquo;</em>
-            {% if extraction.identifier %}<br><small class="text-muted"><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.identifier }}</a></small>{% endif %}
+            {% if extraction.identifier %}
+                <br><small class="text-muted">
+                    <a href="{% url 'extraction_detail' extraction.pk %}">
+                        {{ extraction.identifier }}</a>
+                </small>
+            {% endif %}
           </blockquote>
         </div>
         {% endfor %}
@@ -134,7 +192,8 @@
 
     var events = [
         {% for event in events %}
-        {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
+        {% if event.start_location and event.start_location.location
+            and event.end_location and event.end_location.location %}
         {
             id: {{ event.pk }},
             desc: "{{ event.description|truncatewords:6|escapejs }}",
@@ -151,7 +210,8 @@
     ];
 
     if (events.length === 0) {
-        document.getElementById('person-map').innerHTML = '<p class="text-muted p-3">No geolocated events to display.</p>';
+        document.getElementById('person-map').innerHTML =
+            '<p class="text-muted p-3">No geolocated events to display.</p>';
         return;
     }
 
@@ -192,7 +252,12 @@
             id: 'event-points-layer',
             type: 'circle',
             source: 'event-points',
-            paint: { 'circle-radius': 5, 'circle-color': '#2c3e50', 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' }
+            paint: {
+                'circle-radius': 5,
+                'circle-color': '#2c3e50',
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#fff'
+            }
         });
         map.addLayer({
             id: 'event-labels-layer',

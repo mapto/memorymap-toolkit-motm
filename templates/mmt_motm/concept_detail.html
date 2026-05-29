@@ -7,7 +7,11 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb bg-light">
             {% for a in ancestors %}
-            <li class="breadcrumb-item"><a href="{% url 'concept_detail' a.pk %}">{% if a.icon %}<i class="fas {{ a.icon }}"></i> {% endif %}{{ a.label }}</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'concept_detail' a.pk %}">
+                    {% if a.icon %}<i class="fas {{ a.icon }}"></i> {% endif %}
+                    {{ a.label }}</a>
+            </li>
             {% endfor %}
             <li class="breadcrumb-item active" aria-current="page">{{ concept.label }}</li>
         </ol>
@@ -17,7 +21,13 @@
 
     {% if persons %}
     <h3>People</h3>
-    <p>{% for person in persons %}<a href="{% url 'person_detail' person.pk %}">{{ person.given_name }} {{ person.family_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    <p>
+        {% for person in persons %}
+            <a href="{% url 'person_detail' person.pk %}">
+                {{ person.given_name }} {{ person.family_name }}</a>
+            {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </p>
     {% endif %}
 
     {% if quotes %}
@@ -35,9 +45,22 @@
         <tbody>
             {% for extraction in quotes %}
             <tr>
-                <td><a href="{% url 'extraction_detail' extraction.pk %}">{{ extraction.quote|truncatewords:20|default:"–" }}</a></td>
-                <td>{% if extraction.people_mentioned %}<a href="{% url 'person_detail' extraction.people_mentioned.pk %}">{{ extraction.people_mentioned }}</a>{% else %}–{% endif %}</td>
-                <td>{% if extraction.interview %}<a href="{% url 'interview_detail' extraction.interview.pk %}">{{ extraction.interview }}</a>{% else %}–{% endif %}</td>
+                <td>
+                    <a href="{% url 'extraction_detail' extraction.pk %}">
+                        {{ extraction.quote|truncatewords:20|default:"–" }}</a>
+                </td>
+                <td>
+                    {% if extraction.people_mentioned %}
+                        <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">
+                            {{ extraction.people_mentioned }}</a>
+                    {% else %}–{% endif %}
+                </td>
+                <td>
+                    {% if extraction.interview %}
+                        <a href="{% url 'interview_detail' extraction.interview.pk %}">
+                            {{ extraction.interview }}</a>
+                    {% else %}–{% endif %}
+                </td>
                 <td>{{ extraction.timecode|default:"–" }}</td>
             </tr>
             {% endfor %}

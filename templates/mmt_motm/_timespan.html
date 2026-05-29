@@ -1,1 +1,5 @@
-{{ timespan }}{% if timespan.certainty_icon %} <i class="fas {{ timespan.certainty_icon.0 }} text-warning" title="{{ timespan.certainty_icon.1 }}" data-toggle="tooltip"></i>{% endif %}
+{{ timespan }}{% if timespan.certainty_icon %}
+  <i class="fas {{ timespan.certainty_icon.0 }} text-warning"
+     title="{{ timespan.certainty_icon.1 }}"
+     data-toggle="tooltip"></i>
+{% endif %}

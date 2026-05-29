@@ -37,7 +37,10 @@ function mmtAddLine(map, sourceId, layerId, data, opts) {
 function mmtCreateFAMarker(map, lngLat, icon, color, opts) {
     opts = opts || {};
     var el = document.createElement('div');
-    el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + ';font-size:' + (opts.size || '20px') + ';text-shadow:0 1px 3px rgba(0,0,0,0.4);"></i>';
+    el.innerHTML = '<i class="fas ' + icon + '"'
+        + ' style="color:' + color
+        + ';font-size:' + (opts.size || '20px')
+        + ';text-shadow:0 1px 3px rgba(0,0,0,0.4);"></i>';
     el.style.cursor = 'pointer';
     if (opts.title) el.title = opts.title;
     var marker = new mapboxgl.Marker({ element: el }).setLngLat(lngLat).addTo(map);

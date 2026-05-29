@@ -20,10 +20,22 @@
             <tr>
                 <td><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a></td>
                 <td>{{ interview.interview_type|default:"–" }}</td>
-                <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">{{ interview.date|date:"j N Y"|default:"–" }}</td>
+                <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">
+                    {{ interview.date|date:"j N Y"|default:"–" }}
+                </td>
                 <td>{{ interview.place|default:"–" }}</td>
-                <td>{% if interview.interviewee %}<a href="{% url 'person_detail' interview.interviewee.pk %}">{{ interview.interviewee }}</a>{% else %}–{% endif %}</td>
-                <td>{% if interview.interviewer %}<a href="{% url 'person_detail' interview.interviewer.pk %}">{{ interview.interviewer }}</a>{% else %}–{% endif %}</td>
+                <td>
+                    {% if interview.interviewee %}
+                        <a href="{% url 'person_detail' interview.interviewee.pk %}">
+                            {{ interview.interviewee }}</a>
+                    {% else %}–{% endif %}
+                </td>
+                <td>
+                    {% if interview.interviewer %}
+                        <a href="{% url 'person_detail' interview.interviewer.pk %}">
+                            {{ interview.interviewer }}</a>
+                    {% else %}–{% endif %}
+                </td>
             </tr>
             {% empty %}
             <tr>
@@ -67,8 +79,12 @@ document.addEventListener("DOMContentLoaded", function () {
             this.classList.add(dir);
             var rows = Array.from(tbody.rows);
             rows.sort(function (a, b) {
-                var av = (a.cells[col].dataset.sort !== undefined ? a.cells[col].dataset.sort : a.cells[col].textContent).trim().toLowerCase();
-                var bv = (b.cells[col].dataset.sort !== undefined ? b.cells[col].dataset.sort : b.cells[col].textContent).trim().toLowerCase();
+                var av = (a.cells[col].dataset.sort !== undefined
+                    ? a.cells[col].dataset.sort
+                    : a.cells[col].textContent).trim().toLowerCase();
+                var bv = (b.cells[col].dataset.sort !== undefined
+                    ? b.cells[col].dataset.sort
+                    : b.cells[col].textContent).trim().toLowerCase();
                 if (av === "–" || av === "") av = "\uffff";
                 if (bv === "–" || bv === "") bv = "\uffff";
                 if (av < bv) return dir === "asc" ? -1 : 1;
