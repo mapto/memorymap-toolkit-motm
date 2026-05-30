@@ -109,6 +109,15 @@ def clean_str(val):
     return s
 
 
+# Alias for backward compatibility
+clean = clean_str
+
+
+def is_empty(val) -> bool:
+    """Check if a value is None, empty, nan, or a dash placeholder."""
+    return val is None or str(val).strip() in ("", "nan", "-", "\u2013", "\u2014")
+
+
 def extract_urls_from_text(text):
     """Extract URLs from a text field."""
     if not text or str(text).strip() in ("", "nan"):
@@ -124,9 +133,35 @@ _concept_cache = {}
 
 
 def get_or_create_concept(label):
+    """Get or create a concept.  If *label* contains ' > ' it is treated as a
+    hierarchy, e.g. "Gegenstand > Grammophon" creates parent "Gegenstand" and
+    child "Grammophon" with the parent relationship set."""
     label = label.strip()
     if not label or label == "nan":
         return None
+
+    # Handle hierarchical labels like "Parent > Child"
+    if " > " in label:
+        parts = [p.strip() for p in label.split(" > ", 1)]
+        parent_id = get_or_create_concept(parts[0])
+        child_label = parts[1]
+        child_key = child_label.lower()
+        if child_key in _concept_cache:
+            return _concept_cache[child_key]
+        existing = api_get("concepts", params={"search": child_label})
+        match = next((c for c in existing if c["label"].lower() == child_key), None)
+        if match:
+            _concept_cache[child_key] = match["id"]
+            if parent_id and match.get("parent") != parent_id:
+                api_patch("concepts", match["id"], {"parent": parent_id})
+            return match["id"]
+        payload = {"label": child_label}
+        if parent_id:
+            payload["parent"] = parent_id
+        created = api_post("concepts", payload)
+        _concept_cache[child_key] = created["id"]
+        return created["id"]
+
     key = label.lower()
     if key in _concept_cache:
         return _concept_cache[key]
@@ -195,6 +230,18 @@ def get_or_create_location(
 _person_cache = {}
 
 
+def find_person_by_identifier(identifier):
+    """Find a Person by identifier (lookup only, does not create).
+
+    Returns the person's API id or None.
+    """
+    if is_empty(identifier):
+        return None
+    existing = api_get("persons", params={"search": identifier})
+    match = next((p for p in existing if p.get("identifier") == identifier), None)
+    return match["id"] if match else None
+
+
 def get_person_id(protagonist_col, name_col):
     """Get or create a Person from the protagonist + name columns."""
     raw_name = clean_str(name_col)
@@ -219,6 +266,49 @@ def get_person_id(protagonist_col, name_col):
     created = api_post("persons", {"given_name": given, "family_name": family})
     _person_cache[key] = created["id"]
     return created["id"]
+
+
+# ---------------------------------------------------------------------------
+# Interviews
+# ---------------------------------------------------------------------------
+
+
+def parse_interview_id_from_quelle(quelle):
+    """Extract the interview ID from a quelle Markdown link.
+
+    The quelle column format is:
+        Interviewer Name – [IS_E_00124](https://dgd.ids-mannheim.de/...)
+    Returns the link caption (e.g. 'IS_E_00124') or None.
+    """
+    if is_empty(quelle):
+        return None
+    m = re.search(r"\[([A-Z]+_[A-Z]_\d+)\]", quelle)
+    return m.group(1) if m else None
+
+
+def get_interview_id(archive_id, quelle=None):
+    """Find an Interview by archive_id.
+
+    Falls back to parsing quelle if archive_id is empty or not found.
+    Returns the interview's API id or None.
+    """
+    if is_empty(archive_id) and quelle:
+        archive_id = parse_interview_id_from_quelle(quelle)
+    if is_empty(archive_id):
+        return None
+    existing = api_get("interviews", params={"search": archive_id})
+    match = next((i for i in existing if i["archive_id"] == archive_id), None)
+    if match:
+        return match["id"]
+    # archive_id from the explicit column didn't match; try quelle as fallback
+    if quelle:
+        fallback_id = parse_interview_id_from_quelle(quelle)
+        if fallback_id and fallback_id != archive_id:
+            existing = api_get("interviews", params={"search": fallback_id})
+            match = next((i for i in existing if i["archive_id"] == fallback_id), None)
+            if match:
+                return match["id"]
+    return None
 
 
 # ---------------------------------------------------------------------------
