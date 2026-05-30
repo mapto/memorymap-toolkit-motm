@@ -9,10 +9,11 @@ from __future__ import annotations
 import os
 import re
 import time
-from typing import Any
 
 import requests
 from requests.exceptions import ConnectionError as ReqConnectionError
+
+from utils import clean_str, is_empty
 
 
 # ---------------------------------------------------------------------------
@@ -94,35 +95,53 @@ def api_patch(endpoint, obj_id, payload):
     return resp.json()
 
 
+def api_bulk_upsert(endpoint, items):
+    """Create or update many objects in one request.
+
+    Uses the ``bulk_upsert`` action on the viewset.  Each item is matched
+    by the viewset's ``bulk_lookup_field``; matched records are updated,
+    others are created.
+
+    Returns the parsed response dict with ``created``, ``updated``, ``errors``,
+    ``created_items``, and ``updated_items``.
+    """
+    resp = _retry(
+        SESSION.post, f"{BASE_URL}/{endpoint}/bulk_upsert/", json={"items": items}
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def api_bulk_update(endpoint, items):
+    """Update many objects by ID in one request.
+
+    Each item in *items* must include an ``id`` field and any fields to update.
+
+    Returns the parsed response dict with ``updated``, ``errors``,
+    ``updated_items``.
+    """
+    resp = _retry(
+        SESSION.patch, f"{BASE_URL}/{endpoint}/bulk_update/", json={"items": items}
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def api_bulk_create(endpoint, items):
+    """Create many objects in one request (no matching/upsert).
+
+    Returns the parsed response dict with ``created``, ``errors``, ``items``.
+    """
+    resp = _retry(
+        SESSION.post, f"{BASE_URL}/{endpoint}/bulk_create/", json={"items": items}
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 # ---------------------------------------------------------------------------
-# String utilities
+# String utilities  (canonical definitions live in utils.py)
 # ---------------------------------------------------------------------------
-
-
-def clean_str(val):
-    """Return cleaned string or empty string for nan/blank values."""
-    s = str(val).strip()
-    if s in ("", "nan"):
-        return ""
-    if s.endswith(".0") and s[:-2].isdigit():
-        s = s[:-2]
-    return s
-
-
-# Alias for backward compatibility
-clean = clean_str
-
-
-def is_empty(val) -> bool:
-    """Check if a value is None, empty, nan, or a dash placeholder."""
-    return val is None or str(val).strip() in ("", "nan", "-", "\u2013", "\u2014")
-
-
-def extract_urls_from_text(text):
-    """Extract URLs from a text field."""
-    if not text or str(text).strip() in ("", "nan"):
-        return []
-    return re.findall(r"https?://[^\s<>\"{}|\\^`\[\]]+", str(text))
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +156,7 @@ def get_or_create_concept(label):
     hierarchy, e.g. "Gegenstand > Grammophon" creates parent "Gegenstand" and
     child "Grammophon" with the parent relationship set."""
     label = label.strip()
-    if not label or label == "nan":
+    if not label or label in ("nan", "None"):
         return None
 
     # Handle hierarchical labels like "Parent > Child"
@@ -176,70 +195,10 @@ def get_or_create_concept(label):
 
 
 # ---------------------------------------------------------------------------
-# Locations (API layer — uses locations_db for coordinates)
-# ---------------------------------------------------------------------------
-
-_location_cache = {}
-
-
-def get_or_create_location(
-    name, wikidata_qid=None, geonames_id=None, *, locations_db=None, normalize_fn=None
-):
-    """Create or retrieve a LocationPoint, using locations_db for coordinates."""
-    if not name or str(name).strip() in ("", "nan"):
-        return None
-    name = str(name).strip()
-    norm = normalize_fn or (lambda n: n.lower())
-    key = norm(name)
-    if key in _location_cache:
-        return _location_cache[key]
-    existing = api_get("locations", params={"search": name})
-    match = next((loc for loc in existing if norm(loc["current_name"]) == key), None)
-    if match:
-        _location_cache[key] = match["id"]
-        return match["id"]
-    db_entry = (locations_db or {}).get(key, {})
-    payload: dict[str, Any] = {"current_name": name}
-    lat = db_entry.get("lat")
-    lng = db_entry.get("long")
-    if lat and lng:
-        try:
-            payload["latitude"] = float(lat)
-            payload["longitude"] = float(lng)
-        except (ValueError, TypeError):
-            pass
-    wid = db_entry.get("wikidata_id") or (
-        wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
-    )
-    gid = db_entry.get("geonames_id") or (
-        geonames_id if geonames_id and geonames_id not in ("", "nan") else None
-    )
-    if wid:
-        payload["wikidata_id"] = wid
-    if gid:
-        payload["geonames_id"] = gid
-    created = api_post("locations", payload)
-    _location_cache[key] = created["id"]
-    return created["id"]
-
-
-# ---------------------------------------------------------------------------
 # Persons
 # ---------------------------------------------------------------------------
 
 _person_cache = {}
-
-
-def find_person_by_identifier(identifier):
-    """Find a Person by identifier (lookup only, does not create).
-
-    Returns the person's API id or None.
-    """
-    if is_empty(identifier):
-        return None
-    existing = api_get("persons", params={"search": identifier})
-    match = next((p for p in existing if p.get("identifier") == identifier), None)
-    return match["id"] if match else None
 
 
 def get_person_id(protagonist_col, name_col):
@@ -284,31 +243,6 @@ def parse_interview_id_from_quelle(quelle):
         return None
     m = re.search(r"\[([A-Z]+_[A-Z]_\d+)\]", quelle)
     return m.group(1) if m else None
-
-
-def get_interview_id(archive_id, quelle=None):
-    """Find an Interview by archive_id.
-
-    Falls back to parsing quelle if archive_id is empty or not found.
-    Returns the interview's API id or None.
-    """
-    if is_empty(archive_id) and quelle:
-        archive_id = parse_interview_id_from_quelle(quelle)
-    if is_empty(archive_id):
-        return None
-    existing = api_get("interviews", params={"search": archive_id})
-    match = next((i for i in existing if i["archive_id"] == archive_id), None)
-    if match:
-        return match["id"]
-    # archive_id from the explicit column didn't match; try quelle as fallback
-    if quelle:
-        fallback_id = parse_interview_id_from_quelle(quelle)
-        if fallback_id and fallback_id != archive_id:
-            existing = api_get("interviews", params={"search": fallback_id})
-            match = next((i for i in existing if i["archive_id"] == fallback_id), None)
-            if match:
-                return match["id"]
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -362,80 +296,3 @@ def get_or_create_url(url_str):
     except Exception as e:
         print(f"  URL creation failed for {url_str}: {e}")
         return None
-
-
-# ---------------------------------------------------------------------------
-# Regions — link locations to super-regions via the API
-# ---------------------------------------------------------------------------
-
-_region_cache = {}  # region_name_lower -> region_id
-
-
-def _get_or_create_region(name):
-    """Get or create a LocationRegion."""
-    key = name.strip().lower()
-    if key in _region_cache:
-        return _region_cache[key]
-    existing = api_get("regions", params={"search": name})
-    for r in existing:
-        if r["name"].strip().lower() == key:
-            _region_cache[key] = r["id"]
-            return r["id"]
-    created = api_post("regions", {"name": name.strip()})
-    _region_cache[key] = created["id"]
-    return created["id"]
-
-
-def link_locations_to_regions(locations_db):
-    """Create LocationRegions from super_region data and link LocationPoints."""
-    import openpyxl as _xl
-    import os
-
-    xlsx_path = os.path.join(
-        os.path.dirname(__file__) if "__file__" in dir() else ".",
-        "locations.xlsx",
-    )
-    if not os.path.exists(xlsx_path):
-        print("  locations.xlsx not found, skipping region linking")
-        return
-
-    wb = _xl.load_workbook(xlsx_path)
-    ws = wb.active
-    assert ws is not None, "locations.xlsx has no active sheet"
-    headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
-    sr_col = (headers.index("super_region") + 1) if "super_region" in headers else None
-    if not sr_col:
-        print("  No super_region column in locations.xlsx, skipping")
-        return
-
-    # Collect location→super_region pairs
-    pairs = []
-    for r in range(2, ws.max_row + 1):
-        name = ws.cell(r, 1).value
-        sr = ws.cell(r, sr_col).value
-        if name and sr and str(sr).strip() not in ("", "nan"):
-            pairs.append((str(name).strip(), str(sr).strip()))
-
-    # Create regions and link locations
-    linked = 0
-    for loc_name, region_name in pairs:
-        # Find the location in the API
-        existing_locs = api_get("locations", params={"search": loc_name})
-        loc_match = next(
-            (
-                loc
-                for loc in existing_locs
-                if loc["current_name"].strip().lower() == loc_name.strip().lower()
-            ),
-            None,
-        )
-        if not loc_match:
-            continue
-        region_id = _get_or_create_region(region_name)
-        if loc_match.get("region") != region_id:
-            api_patch("locations", loc_match["id"], {"region": region_id})
-            linked += 1
-
-    print(
-        f"  Linked {linked} locations to regions ({len(_region_cache)} regions created/found)"
-    )

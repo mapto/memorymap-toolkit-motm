@@ -88,8 +88,13 @@ def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
             continue  # skip the root node itself
 
         indent = len(line) - len(line.lstrip())
-        # Remove backtick escaping
-        label = stripped.strip("`").strip()
+        # Extract label from bracket notation ["..."] or backtick escaping
+        label = stripped
+        m = re.search(r'\["(.+?)"\]', label)
+        if m:
+            label = m.group(1)
+        else:
+            label = label.strip("`").strip()
         if not label:
             continue
 
@@ -119,7 +124,9 @@ def load_taxonomy(
     ``taxonomy.json`` format.
     """
     if mmd_path is None:
-        mmd_path = Path(__file__).resolve().parent.parent / "docs" / "mqda_coding_taxonomy.mmd"
+        mmd_path = (
+            Path(__file__).resolve().parent.parent / "docs" / "mqda_coding_taxonomy.mmd"
+        )
     tree = parse_mermaid_mindmap(mmd_path)
 
     categories: dict[str, dict] = {}
@@ -162,8 +169,32 @@ def _walk_leaves(tree: dict[str, list], node: str) -> list[str]:
     return leaves
 
 
+def _walk_all_nodes(
+    tree: dict[str, list], node: str, root: str, out: dict[str, str]
+) -> None:
+    """Recursively map every descendant of *node* to *root*."""
+    for child in tree.get(node, []):
+        out[child] = root
+        _walk_all_nodes(tree, child, root, out)
+
+
+def parse_mmd_taxonomy(path: str | Path) -> dict[str, str]:
+    """Parse a Mermaid mindmap and return {label: top_level_label}.
+
+    Every node in the tree is mapped to its root-level ancestor's label.
+    This is a convenience wrapper around :func:`parse_mermaid_mindmap`.
+    """
+    tree = parse_mermaid_mindmap(path)
+    mapping: dict[str, str] = {}
+    for root_label in tree["__roots__"]:
+        mapping[root_label] = root_label
+        _walk_all_nodes(tree, root_label, root_label, mapping)
+    return mapping
+
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
     tax = load_taxonomy()
     print(f"Categories: {len(tax['categories'])}")

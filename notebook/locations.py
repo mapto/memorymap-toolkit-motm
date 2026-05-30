@@ -1,65 +1,16 @@
 import requests
-from urllib.parse import urlparse
 import regex as re
 import os
 import time
 import openpyxl
+from typing import Any
+
+from utils import extract_id_from_url, is_empty
 
 
 GEONAMES_USERNAME = "mapto"
 
 domains = ["geonames.org", "wikidata.org"]
-
-
-def search_location(query, max_rows=10):
-    url = "http://api.geonames.org/searchJSON"
-    params = {"q": query, "maxRows": max_rows, "username": GEONAMES_USERNAME}
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
-
-
-def extract_url_map(text: str) -> tuple[dict[str, str], str]:
-    pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
-    urls = re.findall(pattern, text)
-    url_map = {urlparse(u).hostname: u for u in urls}
-    remaining = re.sub(pattern, "", text).strip()
-    return url_map, remaining.strip()
-
-
-def extract_urls(text: str) -> list[tuple[str, dict[str, str]]]:
-    """
-    >>> extract_urls("Allenstein")
-    [('Allenstein', {})]
-    """
-    pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
-
-    # Normalize: treat newlines as spaces
-    text = text.replace("\n", " ")
-
-    parts = re.split(pattern, text)
-    urls = re.findall(pattern, text)
-
-    pairs: list[tuple[str, dict[str, str]]] = []
-    for i, substring in enumerate(parts):
-        substring = substring.strip()
-        if i < len(urls):
-            adjacent_urls: list[str] = [urls[i]]
-            while i + 1 < len(urls) and parts[i + 1].strip() == "":
-                i += 1
-                adjacent_urls += [urls[i]]
-            url_map = {}
-            for u in adjacent_urls:
-                h = urlparse(u).hostname
-                # assert h not in url_map, f"{h} repeated in {urls}"
-                if h not in url_map:
-                    url_map[h] = []
-                url_map[h] += [u]
-            pairs += [(substring, {k: " | ".join(v) for k, v in url_map.items()})]
-        elif substring:
-            pairs += [(substring, {})]
-
-    return pairs
 
 
 def extract_geonames_coordinates(url: str) -> dict | None:
@@ -138,40 +89,7 @@ def extract_wikidata_coordinates(url: str) -> dict | None:
         return None
 
 
-"""
-# locs = {n:l for l, n in df["location"].apply(lambda x: extract_urls(x)).to_list()}
-locs = {}
-for row in tqdm(df["location"]):
-    # print(row)
-    # print(extract_urls(row))
-    for name, urls in extract_urls(row):
-        urls["location"] = name
-        
-        coords = {}
-        if "www.geonames.org" in urls:
-            coords = extract_geonames_coordinates(urls["www.geonames.org"])
-        elif "www.wikidata.org" in urls:
-            coords = extract_wikidata_coordinates(urls["www.wikidata.org"])
-
-        print(urls)
-        print(coords)
-        print()
-        urls |= coords
-        locs[name] = urls
-print(locs)    
-# pd.DataFrame.from_dict(locs, orient="index").to_excel("locations.xlsx")
-# rows = []
-# for k, v in locs.items():
-#     coords = None
-#     if "www.geonames.org" in 
-#     coords = extract_geonames_coordinates(
-#     rows += [{
-#         "location": k,
-#         "lat"
-#     } | v]
-pd.DataFrame(rows).to_excel("locations.xlsx", index=False)
-"""
-
+# Using https://github.com/mapto/whereami with container port exposed at port 3000
 GEOCODER_URL = "http://localhost:3000/at"
 
 
@@ -294,22 +212,6 @@ def enrich_locations_xlsx(xlsx_path):
 _locations_db = {}  # normalize_location(name) -> {name, lat, long, ...}
 
 
-def _extract_id_from_url(url, prefix=None):
-    """Extract ID from a URL like https://www.wikidata.org/wiki/Q1794 -> Q1794"""
-    if not url:
-        return None
-    url = str(url).strip()
-    if not url or url == "nan":
-        return None
-    idx = url.rfind("/")
-    return url[idx + 1 :] if idx >= 0 else url
-
-
-def _is_empty(value):
-    """Check if a cell value is effectively empty."""
-    return value is None or str(value).strip() in ("", "nan", "None")
-
-
 def normalize_location(name):
     """Normalize a location name for matching: lowercase, no punctuation, sorted words."""
     name = str(name).strip().lower()
@@ -343,8 +245,8 @@ def load_locations_db(xlsx_path=None):
             "lat": ws.cell(r, 4).value,
             "long": ws.cell(r, 5).value,
             "label": str(ws.cell(r, 6).value or "").strip(),
-            "wikidata_id": _extract_id_from_url(wikidata_url),
-            "geonames_id": _extract_id_from_url(geonames_url),
+            "wikidata_id": extract_id_from_url(wikidata_url),
+            "geonames_id": extract_id_from_url(geonames_url),
             "wikidata_url": wikidata_url
             if wikidata_url and wikidata_url != "nan"
             else "",
@@ -402,9 +304,9 @@ def save_locations_db(xlsx_path=None):
                 for col_idx, field in FIELD_COL.items():
                     if col_idx == 1:
                         continue
-                    if _is_empty(ws.cell(row_num, col_idx).value):
+                    if is_empty(ws.cell(row_num, col_idx).value):
                         new_val = loc.get(field)
-                        if not _is_empty(new_val):
+                        if not is_empty(new_val):
                             ws.cell(row_num, col_idx).value = new_val
             else:
                 ws.append(
@@ -494,3 +396,114 @@ def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
         else "",
         "extra_url": "",
     }
+
+
+# ---------------------------------------------------------------------------
+# Location API operations (get-or-create, region linking)
+# ---------------------------------------------------------------------------
+
+_location_cache = {}
+
+
+def get_or_create_location(
+    name, wikidata_qid=None, geonames_id=None, *, locations_db=None, normalize_fn=None
+):
+    """Create or retrieve a LocationPoint, using locations_db for coordinates."""
+    from api_client import api_get, api_post
+
+    if not name or str(name).strip() in ("", "nan"):
+        return None
+    name = str(name).strip()
+    norm = normalize_fn or (lambda n: n.lower())
+    key = norm(name)
+    if key in _location_cache:
+        return _location_cache[key]
+    existing = api_get("locations", params={"search": name})
+    match = next((loc for loc in existing if norm(loc["current_name"]) == key), None)
+    if match:
+        _location_cache[key] = match["id"]
+        return match["id"]
+    db_entry = (locations_db or {}).get(key, {})
+    payload: dict[str, Any] = {"current_name": name}
+    lat = db_entry.get("lat")
+    lng = db_entry.get("long")
+    if lat and lng:
+        try:
+            payload["latitude"] = float(lat)
+            payload["longitude"] = float(lng)
+        except (ValueError, TypeError):
+            pass
+    wid = db_entry.get("wikidata_id") or (
+        wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
+    )
+    gid = db_entry.get("geonames_id") or (
+        geonames_id if geonames_id and geonames_id not in ("", "nan") else None
+    )
+    if wid:
+        payload["wikidata_id"] = wid
+    if gid:
+        payload["geonames_id"] = gid
+    created = api_post("locations", payload)
+    _location_cache[key] = created["id"]
+    return created["id"]
+
+
+def link_locations_to_regions(locations_db):
+    """Create LocationRegions from super_region data and link LocationPoints."""
+    from api_client import api_get, api_bulk_upsert, api_bulk_update
+
+    xlsx_path = os.path.join(
+        os.path.dirname(__file__) if "__file__" in dir() else ".",
+        "locations.xlsx",
+    )
+    if not os.path.exists(xlsx_path):
+        print("  locations.xlsx not found, skipping region linking")
+        return
+
+    wb = openpyxl.load_workbook(xlsx_path)
+    ws = wb.active
+    assert ws is not None, "locations.xlsx has no active sheet"
+    headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
+    sr_col = (headers.index("super_region") + 1) if "super_region" in headers else None
+    if not sr_col:
+        print("  No super_region column in locations.xlsx, skipping")
+        return
+
+    # Collect location→super_region pairs
+    pairs = []
+    for r in range(2, ws.max_row + 1):
+        name = ws.cell(r, 1).value
+        sr = ws.cell(r, sr_col).value
+        if name and sr and str(sr).strip() not in ("", "nan"):
+            pairs.append((str(name).strip(), str(sr).strip()))
+
+    # Bulk-upsert all unique regions
+    unique_regions = sorted(set(sr for _, sr in pairs))
+    if unique_regions:
+        region_items = [{"name": rn} for rn in unique_regions]
+        api_bulk_upsert("regions", region_items)
+
+    # Build region name→id map
+    all_regions = api_get("regions")
+    region_map = {r["name"].strip().lower(): r["id"] for r in all_regions}
+
+    # Build location name→id map
+    all_locs = api_get("locations")
+    loc_map = {loc["current_name"].strip().lower(): loc for loc in all_locs}
+
+    # Bulk-update locations with region IDs
+    updates = []
+    for loc_name, region_name in pairs:
+        loc = loc_map.get(loc_name.strip().lower())
+        region_id = region_map.get(region_name.strip().lower())
+        if loc and region_id and loc.get("region") != region_id:
+            updates.append({"id": loc["id"], "region": region_id})
+
+    if updates:
+        result = api_bulk_update("locations", updates)
+        print(
+            f"  Linked {result['updated']} locations to regions "
+            f"({len(unique_regions)} regions)"
+        )
+    else:
+        print("  No region updates needed")

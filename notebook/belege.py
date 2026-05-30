@@ -13,15 +13,13 @@ from openpyxl import load_workbook
 from tqdm.auto import tqdm
 
 from api_client import (
+    api_bulk_update,
+    api_bulk_upsert,
     api_get,
-    api_patch,
-    api_post,
-    clean,
-    find_person_by_identifier,
-    get_interview_id,
     get_or_create_concept,
-    is_empty,
+    parse_interview_id_from_quelle,
 )
+from utils import clean_str, is_empty
 
 
 def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int]:
@@ -34,56 +32,57 @@ def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int
     all_rows = list(sheet.iter_rows(values_only=True))
     data_rows = [r for r in all_rows[3:] if r and not all(cell is None for cell in r)]
 
-    results: list[int] = []
+    # Pre-fetch lookup tables once
+    existing_extractions = {e["identifier"] for e in api_get("extractions")}
+    all_persons = api_get("persons")
+    person_map = {p["identifier"]: p["id"] for p in all_persons if p.get("identifier")}
+    all_interviews = api_get("interviews")
+    interview_map = {
+        i["archive_id"]: i["id"] for i in all_interviews if i.get("archive_id")
+    }
+
+    payloads: list[dict] = []
+    interviewee_updates: dict[int, int] = {}  # interview_id → person_id
     errors: list[str] = []
 
     for row in tqdm(data_rows, desc=xlsx_path.stem, unit="row"):
         cells = (list(row) + [None] * 13)[:13]
-        beleg_id = clean(cells[0])  # identifier
-        quelle = clean(cells[1])  # source reference (Markdown link)
-        interview_id = clean(cells[2])  # interview archive_id
+        beleg_id = clean_str(cells[0])  # identifier
+        quelle = clean_str(cells[1])  # source reference (Markdown link)
+        interview_id = clean_str(cells[2])  # interview archive_id
         # cells[3]: interview_datum (informational only)
-        quelle_sprecher = clean(cells[4])  # speaker → Interview.interviewee
-        betrifft = clean(cells[5])  # people mentioned (person identifiers)
-        timecode = clean(cells[6])  # timecode
-        themen = clean(cells[7])  # topics/concepts
-        zitat = clean(cells[8])  # quote
-        markierung = clean(cells[9])  # classification
+        quelle_sprecher = clean_str(cells[4])  # speaker → Interview.interviewee
+        betrifft = clean_str(cells[5])  # people mentioned (person identifiers)
+        timecode = clean_str(cells[6])  # timecode
+        themen = clean_str(cells[7])  # topics/concepts
+        zitat = clean_str(cells[8])  # quote
+        markierung = clean_str(cells[9])  # classification
         # cells[10]: event_ids (not yet linked)
-        event_confidence = clean(cells[11])
-        notizen = clean(cells[12])  # notes
+        event_confidence = clean_str(cells[11])
+        notizen = clean_str(cells[12])  # notes
 
-        if is_empty(beleg_id):
-            continue
-
-        # Check if already imported
-        existing = api_get("extractions", params={"search": beleg_id})
-        if any(e["identifier"] == beleg_id for e in existing):
+        if is_empty(beleg_id) or beleg_id in existing_extractions:
             continue
 
         # Resolve person mentioned (first identifier)
         person_id = None
         if betrifft:
-            first_person_id = betrifft.split(",")[0].strip()
-            person_id = find_person_by_identifier(first_person_id)
+            first_pid = betrifft.split(",")[0].strip()
+            person_id = person_map.get(first_pid)
 
-        # Resolve interview
-        interview_db_id = get_interview_id(interview_id, quelle=quelle)
+        # Resolve interview from pre-fetched map
+        archive_id = interview_id if not is_empty(interview_id) else None
+        if not archive_id and quelle:
+            archive_id = parse_interview_id_from_quelle(quelle)
+        interview_db_id = interview_map.get(archive_id) if archive_id else None
 
-        # Link speaker → Person → Interview.interviewee
+        # Collect speaker → interviewee links for batch update
         if not is_empty(quelle_sprecher) and interview_db_id:
-            speaker_person_id = find_person_by_identifier(quelle_sprecher)
+            speaker_person_id = person_map.get(quelle_sprecher)
             if speaker_person_id:
-                try:
-                    api_patch(
-                        "interviews",
-                        interview_db_id,
-                        {"interviewee": speaker_person_id},
-                    )
-                except Exception as e:
-                    errors.append(f"interviewee {interview_id}: {e}")
+                interviewee_updates[interview_db_id] = speaker_person_id
 
-        # Resolve all concepts
+        # Resolve all concepts (uses internal cache)
         concept_ids = []
         if themen:
             for topic in themen.split(","):
@@ -116,11 +115,29 @@ def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int
         if concept_ids:
             payload["concepts"] = concept_ids
 
+        payloads.append(payload)
+
+    # Bulk-upsert all extractions
+    results: list[int] = []
+    if payloads:
+        BATCH = 200
+        for i in range(0, len(payloads), BATCH):
+            batch = payloads[i : i + BATCH]
+            try:
+                resp = api_bulk_upsert("extractions", batch)
+                results.extend(item["id"] for item in resp.get("items", []))
+            except Exception as e:
+                errors.append(f"bulk batch {i}: {e}")
+
+    # Bulk-update interview.interviewee links
+    if interviewee_updates:
+        updates = [
+            {"id": iid, "interviewee": pid} for iid, pid in interviewee_updates.items()
+        ]
         try:
-            created = api_post("extractions", payload)
-            results.append(created["id"])
+            api_bulk_update("interviews", updates)
         except Exception as e:
-            errors.append(f"{beleg_id}: {e}")
+            errors.append(f"interviewee bulk update: {e}")
 
     if errors:
         print(f"\n\u26a0 {len(errors)} errors:")
@@ -128,47 +145,3 @@ def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int
             print(f"  \u274c {err}")
     print(f"\u2705 Imported {len(results)} extractions from {xlsx_path.name}")
     return results
-
-
-def import_all_belege(directory: str | Path | None = None) -> list[int]:
-    """Find and import all belege_*.xlsx files from the data directory."""
-    if directory is None:
-        directory = Path.cwd().parent / "data" / "schede mappatura"
-    directory = Path(directory)
-    all_results: list[int] = []
-    for xlsx_path in sorted(directory.rglob("belege_*.xlsx")):
-        print(f"\nProcessing: {xlsx_path.name}")
-        try:
-            ids = import_belege(xlsx_path)
-            all_results.extend(ids)
-        except Exception as e:
-            print(f"\u274c ERROR: {e}")
-    print(f"\n\u2705 Total imported: {len(all_results)} extractions")
-    return all_results
-
-
-def backfill_languages(
-    min_chars: int = 20, min_confidence: float = 0.7
-) -> tuple[int, int]:
-    """Detect and set language on extractions that don't have one yet."""
-    extractions = api_get("extractions")
-    updated = 0
-    skipped = 0
-
-    for ext in tqdm(extractions, desc="Language detect", unit="ext"):
-        if ext.get("language", ""):
-            continue
-        quote = ext.get("quote", "").strip()
-        if len(quote) < min_chars:
-            skipped += 1
-            continue
-        result = detect_language(quote)
-        if result and float(result[0]["score"]) > min_confidence:
-            lang = str(result[0]["lang"])
-            api_patch("extractions", ext["id"], {"language": lang})
-            updated += 1
-        else:
-            skipped += 1
-
-    print(f"\u2705 Updated {updated} extractions, skipped {skipped}")
-    return updated, skipped

@@ -22,4 +22,5 @@ dependencies = [
     "pyright>=1.1.400",
     "fast-langdetect>=1.0.1",
     "fuzzywuzzy>=0.18.0",
+    "jupyter-ruff>=0.3.1",
 ]

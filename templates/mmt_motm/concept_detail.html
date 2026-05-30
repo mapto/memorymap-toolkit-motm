@@ -1,6 +1,7 @@
 {% extends "mmt_map/base.html" %}
 
 {% block content %}
+<style>.comma-list a + a::before { content: ", "; }</style>
 <div class="container mt-4">
     <p><a href="{% url 'concept_list' %}">&larr; Back to list</a></p>
     {% include "mmt_motm/_breadcrumb.html" %}
@@ -48,10 +49,10 @@
                             {{ extraction.interview }}</a>
                     {% else %}–{% endif %}
                 </td>
-                <td>
+                <td class="comma-list">
                     {% for c in extraction.concepts.all %}
                         {% if c.pk != concept.pk %}
-                        <a href="{% url 'concept_detail' c.pk %}" class="badge badge-secondary">{{ c.label }}</a>
+                        <a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>
                         {% endif %}
                     {% empty %}
                         –
