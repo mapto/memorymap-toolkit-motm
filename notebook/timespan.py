@@ -84,13 +84,45 @@ MONTHS_DE = {
 }
 
 NAMED_PERIODS = {
-    "1. weltkrieg": Timespan(date(1914, 7, 28), date(1918, 11, 11), is_point=False),
-    "2. weltkrieg": Timespan(date(1939, 9, 1), date(1945, 9, 2), is_point=False),
+    "1. weltkrieg": Timespan(date(1914, 7, 28), date(1918, 11, 11), is_point=False, certainty="estimated"),
+    "2. weltkrieg": Timespan(date(1939, 9, 1), date(1945, 9, 2), is_point=False, certainty="estimated"),
 }
 
 
 def _last_day(year: int, month: int) -> date:
     return date(year, month, calendar.monthrange(year, month)[1])
+
+
+def _is_estimated_expr(s: str) -> bool:
+    """True if a single date expression lacks day-level precision.
+
+    >>> _is_estimated_expr("194?")
+    True
+    >>> _is_estimated_expr("1930er Jahre")
+    True
+    >>> _is_estimated_expr("1923")
+    True
+    >>> _is_estimated_expr("Januar 1934")
+    True
+    >>> _is_estimated_expr("19. Januar 1913")
+    False
+    >>> _is_estimated_expr("1941-08-25")
+    False
+    >>> _is_estimated_expr("28.1.1890")
+    False
+    """
+    s = s.strip()
+    if re.fullmatch(r"(\d{3})\?", s):
+        return True
+    s = s.rstrip("*").rstrip("?").strip()
+    s = re.sub(r"\s+", " ", s)
+    if re.fullmatch(r"(\d{4})er\s+jahre", s, re.IGNORECASE):
+        return True
+    if re.fullmatch(r"(\d{4})", s):
+        return True
+    if re.fullmatch(r"([a-zäöü]+\.?)\s+(\d{4})", s, re.IGNORECASE):
+        return True
+    return False
 
 
 def _parse_partial_date_range(s: str) -> tuple[date, date] | None:
@@ -197,13 +229,13 @@ def parse_timespan(raw: Any) -> Timespan:
     Timespan(start=datetime.date(1913, 1, 19), end=datetime.date(1913, 1, 19), is_point=True, certainty=None)
 
     >>> parse_timespan("ca. 1929–1935")
-    Timespan(start=datetime.date(1929, 1, 1), end=datetime.date(1935, 12, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1929, 1, 1), end=datetime.date(1935, 12, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("Ende 1942- Mai 1945")
-    Timespan(start=datetime.date(1942, 12, 31), end=datetime.date(1945, 5, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1942, 12, 31), end=datetime.date(1945, 5, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("1932/Januar 1933")
-    Timespan(start=datetime.date(1932, 1, 1), end=datetime.date(1933, 1, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1932, 1, 1), end=datetime.date(1933, 1, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("1941-08-25")
     Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25), is_point=True, certainty=None)
@@ -212,13 +244,13 @@ def parse_timespan(raw: Any) -> Timespan:
     Timespan(start=datetime.date(1941, 8, 25), end=datetime.date(1941, 8, 25), is_point=True, certainty=None)
 
     >>> parse_timespan("1930er Jahre")
-    Timespan(start=datetime.date(1930, 1, 1), end=datetime.date(1939, 12, 31), is_point=True, certainty=None)
+    Timespan(start=datetime.date(1930, 1, 1), end=datetime.date(1939, 12, 31), is_point=True, certainty='estimated')
 
     >>> parse_timespan("1. Weltkrieg")
-    Timespan(start=datetime.date(1914, 7, 28), end=datetime.date(1918, 11, 11), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1914, 7, 28), end=datetime.date(1918, 11, 11), is_point=False, certainty='estimated')
 
     >>> parse_timespan("194?")
-    Timespan(start=datetime.date(1940, 1, 1), end=datetime.date(1949, 12, 31), is_point=True, certainty=None)
+    Timespan(start=datetime.date(1940, 1, 1), end=datetime.date(1949, 12, 31), is_point=True, certainty='estimated')
 
     >>> parse_timespan("Während des Dienstes")
     Timespan(start=None, end=None, is_point=True, certainty=None)
@@ -230,16 +262,16 @@ def parse_timespan(raw: Any) -> Timespan:
     Timespan(start=None, end=None, is_point=True, certainty=None)
 
     >>> parse_timespan("1928-1932")
-    Timespan(start=datetime.date(1928, 1, 1), end=datetime.date(1932, 12, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1928, 1, 1), end=datetime.date(1932, 12, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("1936-38")
-    Timespan(start=datetime.date(1936, 1, 1), end=datetime.date(1938, 12, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1936, 1, 1), end=datetime.date(1938, 12, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("1938-194?")
-    Timespan(start=datetime.date(1938, 1, 1), end=datetime.date(1949, 12, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1938, 1, 1), end=datetime.date(1949, 12, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("28.1.1890–1942")
-    Timespan(start=datetime.date(1890, 1, 28), end=datetime.date(1942, 12, 31), is_point=False, certainty=None)
+    Timespan(start=datetime.date(1890, 1, 28), end=datetime.date(1942, 12, 31), is_point=False, certainty='estimated')
 
     >>> parse_timespan("22.5.1862–26.9.1942")
     Timespan(start=datetime.date(1862, 5, 22), end=datetime.date(1942, 9, 26), is_point=False, certainty=None)
@@ -252,18 +284,27 @@ def parse_timespan(raw: Any) -> Timespan:
     if not s or s in ("-", "?"):
         return Timespan()
 
-    # Named periods
+    # Named periods (already carry certainty)
     if s.lower() in NAMED_PERIODS:
         return NAMED_PERIODS[s.lower()]
 
-    # Strip qualifiers
+    # Detect qualifier-based vagueness
     qualifiers = (
         r"^(ca\.\s*|ab\s+|vor\s+|nach\s+dem\s+|nach\s+|bis\s+|während\s+des\s+\w+\s*)"
     )
+    estimated = bool(re.match(qualifiers, s, re.IGNORECASE))
     s_clean = re.sub(qualifiers, "", s, flags=re.IGNORECASE).strip()
 
     # Strip trailing annotations like "(ca. 2 Monate)"
     s_clean = re.sub(r"\(.*?\)", "", s_clean).strip()
+
+    def _certainty(*parts: str) -> str | None:
+        if estimated:
+            return "estimated"
+        for p in parts:
+            if _is_estimated_expr(p) or re.match(r"(?i)ende\s+\d{4}", p.strip()):
+                return "estimated"
+        return None
 
     # "Ende YYYY" → last day of that year
     def parse_ende(part: str) -> tuple[date, date] | None:
@@ -276,10 +317,11 @@ def parse_timespan(raw: Any) -> Timespan:
     def try_range(left: str, right: str) -> Timespan:
         start_range = parse_ende(left) or _parse_partial_date_range(left)
         end_range = parse_ende(right) or _parse_partial_date_range(right)
+        cert = _certainty(left, right)
         if start_range and end_range:
-            return Timespan(start_range[0], end_range[1], is_point=False)
+            return Timespan(start_range[0], end_range[1], is_point=False, certainty=cert)
         if start_range:
-            return Timespan(start_range[0], start_range[1], is_point=False)
+            return Timespan(start_range[0], start_range[1], is_point=False, certainty=cert)
         return Timespan()
 
     # En dash — always a range separator
@@ -290,20 +332,21 @@ def parse_timespan(raw: Any) -> Timespan:
     # YYYY-YYYY (plain year range like 1928-1932)
     m = re.fullmatch(r"(\d{4})-(\d{4})", s_clean)
     if m:
-        return Timespan(date(int(m.group(1)), 1, 1), date(int(m.group(2)), 12, 31), is_point=False)
+        cert = _certainty(m.group(1), m.group(2))
+        return Timespan(date(int(m.group(1)), 1, 1), date(int(m.group(2)), 12, 31), is_point=False, certainty=cert)
     
     # YYYY-YY (short end year like 1936-38 → 1936-1938)
     m = re.fullmatch(r"(\d{4})-(\d{2})", s_clean)
     if m:
         century = m.group(1)[:2]
         end_year = int(century + m.group(2))
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_year, 12, 31), is_point=False)
+        return Timespan(date(int(m.group(1)), 1, 1), date(end_year, 12, 31), is_point=False, certainty=_certainty(m.group(1), m.group(2)))
     
     # YYYY-YYY? (fuzzy short end year like 1938-194? → 1938 to 1940–1949)
     m = re.fullmatch(r"(\d{4})-(\d{3})\?", s_clean)
     if m:
         end_decade = int(m.group(2) + "0")
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_decade + 9, 12, 31), is_point=False)
+        return Timespan(date(int(m.group(1)), 1, 1), date(end_decade + 9, 12, 31), is_point=False, certainty="estimated")
     
     # Hyphen — separator only if followed by space or letter (protects ISO dates)
     m = re.search(r"-\s+|-(?=[A-Za-zÄÖÜäöü])", s_clean)
@@ -321,7 +364,8 @@ def parse_timespan(raw: Any) -> Timespan:
     # Single value — a single expression, not a range of two dates
     single = parse_ende(s_clean) or _parse_partial_date_range(s_clean)
     if single:
-        return Timespan(single[0], single[1], is_point=True)
+        cert = _certainty(s_clean)
+        return Timespan(single[0], single[1], is_point=True, certainty=cert)
 
     return Timespan()
 
