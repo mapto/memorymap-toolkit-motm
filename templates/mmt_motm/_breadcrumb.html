@@ -1,0 +1,25 @@
+{% comment %}
+Reusable breadcrumb component.
+
+Context variables:
+  breadcrumb_items: list of dicts, each with:
+    - label (str): display text
+    - url (str|None): link target (None = plain text)
+    - icon (str|None): Font Awesome icon class (e.g. "fa-globe")
+  breadcrumb_items must NOT include the current page — only ancestors.
+{% endcomment %}
+{% if breadcrumb_items %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-light">
+        {% for item in breadcrumb_items %}
+        <li class="breadcrumb-item">
+            {% if item.url %}
+            <a href="{{ item.url }}">{% if item.icon %}<i class="fas {{ item.icon }}"></i> {% endif %}{{ item.label }}</a>
+            {% else %}
+            {% if item.icon %}<i class="fas {{ item.icon }}"></i> {% endif %}{{ item.label }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}

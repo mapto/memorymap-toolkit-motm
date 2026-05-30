@@ -2,6 +2,7 @@ import json
 
 from django.db.models import Q, Count, Subquery, OuterRef
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.generic import ListView, DetailView
 
 from rest_framework import viewsets, filters
@@ -201,25 +202,31 @@ class LocationDetailView(DetailView):
         ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').first()
         context["dominant_icon"] = dominant['icon'] if dominant else ''
 
-        # Breadcrumb: walk up region hierarchy
-        region_ancestors = []
+        # Breadcrumb: region hierarchy + concept hierarchy merged
+        breadcrumb_items = []
         if loc.region:
+            region_chain = []
             node = loc.region
             while node:
-                region_ancestors.append(node)
+                region_chain.append(node)
                 node = node.part_of
-            region_ancestors.reverse()
-        context["region_ancestors"] = region_ancestors
-
-        # Concept breadcrumb: walk up concept hierarchy if location has a linked concept
-        ancestors = []
+            region_chain.reverse()
+            for r in region_chain:
+                breadcrumb_items.append({"label": r.name, "url": None, "icon": "fa-globe"})
         if loc.concept:
+            concept_chain = []
             node = loc.concept.parent
             while node:
-                ancestors.append(node)
+                concept_chain.append(node)
                 node = node.parent
-            ancestors.reverse()
-        context["ancestors"] = ancestors
+            concept_chain.reverse()
+            for c in concept_chain:
+                breadcrumb_items.append({
+                    "label": c.label,
+                    "url": reverse("concept_detail", args=[c.pk]),
+                    "icon": c.icon or None,
+                })
+        context["breadcrumb_items"] = breadcrumb_items
 
         return context
 
@@ -552,18 +559,22 @@ class ConceptDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         concept = self.object
         quotes = concept.relates_to_concept.exclude(quote="")
-        context["quotes"] = quotes
+        context["quotes"] = quotes.prefetch_related("concepts")
         context["persons"] = Person.objects.filter(
             relates_to_person__concepts=concept
         ).distinct()
-        # Build ancestor path (excluding self)
-        ancestors = []
+        # Build ancestor breadcrumb (excluding self)
+        breadcrumb_items = []
         node = concept.parent
         while node:
-            ancestors.append(node)
+            breadcrumb_items.append({
+                "label": node.label,
+                "url": reverse("concept_detail", args=[node.pk]),
+                "icon": node.icon or None,
+            })
             node = node.parent
-        ancestors.reverse()
-        context["ancestors"] = ancestors
+        breadcrumb_items.reverse()
+        context["breadcrumb_items"] = breadcrumb_items
         return context
 
 

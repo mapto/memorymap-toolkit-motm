@@ -3,20 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <p><a href="{% url 'concept_list' %}">&larr; Back to list</a></p>
-    {% if ancestors %}
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-light">
-            {% for a in ancestors %}
-            <li class="breadcrumb-item">
-                <a href="{% url 'concept_detail' a.pk %}">
-                    {% if a.icon %}<i class="fas {{ a.icon }}"></i> {% endif %}
-                    {{ a.label }}</a>
-            </li>
-            {% endfor %}
-            <li class="breadcrumb-item active" aria-current="page">{{ concept.label }}</li>
-        </ol>
-    </nav>
-    {% endif %}
+    {% include "mmt_motm/_breadcrumb.html" %}
     <h1>{% if concept.icon %}<i class="fas {{ concept.icon }}"></i> {% endif %}{{ concept.label }}</h1>
 
     {% if persons %}
@@ -39,7 +26,7 @@
                 <th>Quote</th>
                 <th>Person Mentioned</th>
                 <th>Source</th>
-                <th>Timecode</th>
+                <th>Related Concepts</th>
             </tr>
         </thead>
         <tbody>
@@ -61,7 +48,15 @@
                             {{ extraction.interview }}</a>
                     {% else %}–{% endif %}
                 </td>
-                <td>{{ extraction.timecode|default:"–" }}</td>
+                <td>
+                    {% for c in extraction.concepts.all %}
+                        {% if c.pk != concept.pk %}
+                        <a href="{% url 'concept_detail' c.pk %}" class="badge badge-secondary">{{ c.label }}</a>
+                        {% endif %}
+                    {% empty %}
+                        –
+                    {% endfor %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
