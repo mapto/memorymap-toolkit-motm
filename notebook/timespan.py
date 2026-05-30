@@ -31,6 +31,7 @@ class Timespan:
     >>> Timespan(date(1922, 6, 19), certainty="probable")
     Timespan(start=datetime.date(1922, 6, 19), end=datetime.date(1922, 6, 19), is_point=True, certainty='probable')
     """
+
     start: date | None = None
     end: date | None = None
     is_point: bool = True
@@ -84,8 +85,12 @@ MONTHS_DE = {
 }
 
 NAMED_PERIODS = {
-    "1. weltkrieg": Timespan(date(1914, 7, 28), date(1918, 11, 11), is_point=False, certainty="estimated"),
-    "2. weltkrieg": Timespan(date(1939, 9, 1), date(1945, 9, 2), is_point=False, certainty="estimated"),
+    "1. weltkrieg": Timespan(
+        date(1914, 7, 28), date(1918, 11, 11), is_point=False, certainty="estimated"
+    ),
+    "2. weltkrieg": Timespan(
+        date(1939, 9, 1), date(1945, 9, 2), is_point=False, certainty="estimated"
+    ),
 }
 
 
@@ -319,35 +324,54 @@ def parse_timespan(raw: Any) -> Timespan:
         end_range = parse_ende(right) or _parse_partial_date_range(right)
         cert = _certainty(left, right)
         if start_range and end_range:
-            return Timespan(start_range[0], end_range[1], is_point=False, certainty=cert)
+            return Timespan(
+                start_range[0], end_range[1], is_point=False, certainty=cert
+            )
         if start_range:
-            return Timespan(start_range[0], start_range[1], is_point=False, certainty=cert)
+            return Timespan(
+                start_range[0], start_range[1], is_point=False, certainty=cert
+            )
         return Timespan()
 
     # En dash — always a range separator
     m = re.search(r"\s*–\s*", s_clean)
     if m:
         return try_range(s_clean[: m.start()], s_clean[m.end() :])
-    
+
     # YYYY-YYYY (plain year range like 1928-1932)
     m = re.fullmatch(r"(\d{4})-(\d{4})", s_clean)
     if m:
         cert = _certainty(m.group(1), m.group(2))
-        return Timespan(date(int(m.group(1)), 1, 1), date(int(m.group(2)), 12, 31), is_point=False, certainty=cert)
-    
+        return Timespan(
+            date(int(m.group(1)), 1, 1),
+            date(int(m.group(2)), 12, 31),
+            is_point=False,
+            certainty=cert,
+        )
+
     # YYYY-YY (short end year like 1936-38 → 1936-1938)
     m = re.fullmatch(r"(\d{4})-(\d{2})", s_clean)
     if m:
         century = m.group(1)[:2]
         end_year = int(century + m.group(2))
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_year, 12, 31), is_point=False, certainty=_certainty(m.group(1), m.group(2)))
-    
+        return Timespan(
+            date(int(m.group(1)), 1, 1),
+            date(end_year, 12, 31),
+            is_point=False,
+            certainty=_certainty(m.group(1), m.group(2)),
+        )
+
     # YYYY-YYY? (fuzzy short end year like 1938-194? → 1938 to 1940–1949)
     m = re.fullmatch(r"(\d{4})-(\d{3})\?", s_clean)
     if m:
         end_decade = int(m.group(2) + "0")
-        return Timespan(date(int(m.group(1)), 1, 1), date(end_decade + 9, 12, 31), is_point=False, certainty="estimated")
-    
+        return Timespan(
+            date(int(m.group(1)), 1, 1),
+            date(end_decade + 9, 12, 31),
+            is_point=False,
+            certainty="estimated",
+        )
+
     # Hyphen — separator only if followed by space or letter (protects ISO dates)
     m = re.search(r"-\s+|-(?=[A-Za-zÄÖÜäöü])", s_clean)
     if m:

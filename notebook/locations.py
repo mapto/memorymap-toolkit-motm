@@ -174,6 +174,7 @@ pd.DataFrame(rows).to_excel("locations.xlsx", index=False)
 
 GEOCODER_URL = "http://localhost:3000/at"
 
+
 def query_geocoder(name):
     try:
         time.sleep(1.1)
@@ -189,10 +190,11 @@ def query_geocoder(name):
 
 # --- Bag-of-words & super-region logic ---
 
+
 def tokenize_location(name):
     """Tokenize a location name into a set of lowercase words, stripping punctuation."""
     name = str(name).strip().lower()
-    name = re.sub(r'[^\w\s]', '', name)
+    name = re.sub(r"[^\w\s]", "", name)
     return set(name.split()) - {""}
 
 
@@ -223,8 +225,10 @@ def enrich_locations_xlsx(xlsx_path):
     Only adds information; never removes existing data.
     """
     import openpyxl as _xl
+
     wb = _xl.load_workbook(xlsx_path)
     ws = wb.active
+    assert ws is not None
 
     # Read header row
     headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
@@ -240,7 +244,7 @@ def enrich_locations_xlsx(xlsx_path):
     if bow_col is None:
         bow_col = 2  # insert after column 1
         ws.insert_cols(2)
-        ws.cell(1, 2).value = "bag_of_words"
+        ws.cell(1, 2).value = "bag_of_words"  # type: ignore[reportAttributeAccessIssue]
         # Shift sr_col if it existed
         if sr_col is not None:
             sr_col += 1
@@ -250,7 +254,7 @@ def enrich_locations_xlsx(xlsx_path):
     if sr_col is None:
         sr_col = bow_col + 1
         ws.insert_cols(sr_col)
-        ws.cell(1, sr_col).value = "super_region"
+        ws.cell(1, sr_col).value = "super_region"  # type: ignore[reportAttributeAccessIssue]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
 
     # Build bag-of-words for all locations
@@ -260,7 +264,7 @@ def enrich_locations_xlsx(xlsx_path):
         if not name:
             continue
         bow = tokenize_location(name)
-        ws.cell(r, bow_col).value = " ".join(sorted(bow))
+        ws.cell(r, bow_col).value = " ".join(sorted(bow))  # type: ignore[reportAttributeAccessIssue]
         loc_bows[r] = (str(name).strip(), bow)
 
     # Compute super-regions
@@ -298,7 +302,7 @@ def _extract_id_from_url(url, prefix=None):
     if not url or url == "nan":
         return None
     idx = url.rfind("/")
-    return url[idx + 1:] if idx >= 0 else url
+    return url[idx + 1 :] if idx >= 0 else url
 
 
 def _is_empty(value):
@@ -309,8 +313,8 @@ def _is_empty(value):
 def normalize_location(name):
     """Normalize a location name for matching: lowercase, no punctuation, sorted words."""
     name = str(name).strip().lower()
-    name = re.sub(r'[^\w\s]', '', name)
-    return ' '.join(sorted(name.split()))
+    name = re.sub(r"[^\w\s]", "", name)
+    return " ".join(sorted(name.split()))
 
 
 def load_locations_db(xlsx_path=None):
@@ -325,6 +329,7 @@ def load_locations_db(xlsx_path=None):
         return _locations_db
     wb = openpyxl.load_workbook(xlsx_path)
     ws = wb.active
+    assert ws is not None
     for r in range(2, ws.max_row + 1):
         name = ws.cell(r, 1).value
         if not name:
@@ -340,8 +345,12 @@ def load_locations_db(xlsx_path=None):
             "label": str(ws.cell(r, 6).value or "").strip(),
             "wikidata_id": _extract_id_from_url(wikidata_url),
             "geonames_id": _extract_id_from_url(geonames_url),
-            "wikidata_url": wikidata_url if wikidata_url and wikidata_url != "nan" else "",
-            "geonames_url": geonames_url if geonames_url and geonames_url != "nan" else "",
+            "wikidata_url": wikidata_url
+            if wikidata_url and wikidata_url != "nan"
+            else "",
+            "geonames_url": geonames_url
+            if geonames_url and geonames_url != "nan"
+            else "",
             "extra_url": extra_url if extra_url and extra_url != "nan" else "",
         }
     print(f"  Loaded {len(_locations_db)} locations from locations.xlsx")
@@ -356,18 +365,30 @@ def save_locations_db(xlsx_path=None):
             "locations.xlsx",
         )
     HEADERS = [
-        "location", "bag_of_words", "super_region",
-        "lat", "long", "label",
-        "www.geonames.org", "www.wikidata.org", "www.giessen.de",
+        "location",
+        "bag_of_words",
+        "super_region",
+        "lat",
+        "long",
+        "label",
+        "www.geonames.org",
+        "www.wikidata.org",
+        "www.giessen.de",
     ]
     FIELD_COL = {
-        1: "name", 4: "lat", 5: "long", 6: "label",
-        7: "geonames_url", 8: "wikidata_url", 9: "extra_url",
+        1: "name",
+        4: "lat",
+        5: "long",
+        6: "label",
+        7: "geonames_url",
+        8: "wikidata_url",
+        9: "extra_url",
     }
 
     if os.path.exists(xlsx_path):
         wb = openpyxl.load_workbook(xlsx_path)
         ws = wb.active
+        assert ws is not None
         existing_rows = {}
         for r in range(2, ws.max_row + 1):
             name = ws.cell(r, 1).value
@@ -386,31 +407,46 @@ def save_locations_db(xlsx_path=None):
                         if not _is_empty(new_val):
                             ws.cell(row_num, col_idx).value = new_val
             else:
-                ws.append([
-                    loc["name"], "", "",
-                    loc.get("lat") or "", loc.get("long") or "",
-                    loc.get("label", ""),
-                    loc.get("geonames_url", ""), loc.get("wikidata_url", ""),
-                    loc.get("extra_url", ""),
-                ])
+                ws.append(
+                    [
+                        loc["name"],
+                        "",
+                        "",
+                        loc.get("lat") or "",
+                        loc.get("long") or "",
+                        loc.get("label", ""),
+                        loc.get("geonames_url", ""),
+                        loc.get("wikidata_url", ""),
+                        loc.get("extra_url", ""),
+                    ]
+                )
                 added += 1
     else:
         wb = openpyxl.Workbook()
         ws = wb.active
+        assert ws is not None
         ws.append(HEADERS)
         added = 0
         for key in sorted(_locations_db.keys()):
             loc = _locations_db[key]
-            ws.append([
-                loc["name"], "", "",
-                loc.get("lat") or "", loc.get("long") or "",
-                loc.get("label", ""),
-                loc.get("geonames_url", ""), loc.get("wikidata_url", ""),
-                loc.get("extra_url", ""),
-            ])
+            ws.append(
+                [
+                    loc["name"],
+                    "",
+                    "",
+                    loc.get("lat") or "",
+                    loc.get("long") or "",
+                    loc.get("label", ""),
+                    loc.get("geonames_url", ""),
+                    loc.get("wikidata_url", ""),
+                    loc.get("extra_url", ""),
+                ]
+            )
             added += 1
     wb.save(xlsx_path)
-    print(f"  Saved locations.xlsx: {added} new rows added, {len(_locations_db)} total in db")
+    print(
+        f"  Saved locations.xlsx: {added} new rows added, {len(_locations_db)} total in db"
+    )
 
 
 def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
@@ -420,19 +456,41 @@ def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
     name = str(name).strip()
     key = normalize_location(name)
     if key in _locations_db:
-        if wikidata_qid and wikidata_qid not in ("", "nan") and not _locations_db[key].get("wikidata_id"):
+        if (
+            wikidata_qid
+            and wikidata_qid not in ("", "nan")
+            and not _locations_db[key].get("wikidata_id")
+        ):
             _locations_db[key]["wikidata_id"] = wikidata_qid
-            _locations_db[key]["wikidata_url"] = f"https://www.wikidata.org/wiki/{wikidata_qid}"
-        if geonames_id and geonames_id not in ("", "nan") and not _locations_db[key].get("geonames_id"):
+            _locations_db[key]["wikidata_url"] = (
+                f"https://www.wikidata.org/wiki/{wikidata_qid}"
+            )
+        if (
+            geonames_id
+            and geonames_id not in ("", "nan")
+            and not _locations_db[key].get("geonames_id")
+        ):
             _locations_db[key]["geonames_id"] = geonames_id
-            _locations_db[key]["geonames_url"] = f"https://www.geonames.org/{geonames_id}"
+            _locations_db[key]["geonames_url"] = (
+                f"https://www.geonames.org/{geonames_id}"
+            )
         return
     _locations_db[key] = {
         "name": name,
-        "lat": None, "long": None, "label": "",
-        "wikidata_id": wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else "",
-        "geonames_id": geonames_id if geonames_id and geonames_id not in ("", "nan") else "",
-        "wikidata_url": f"https://www.wikidata.org/wiki/{wikidata_qid}" if wikidata_qid and wikidata_qid not in ("", "nan") else "",
-        "geonames_url": f"https://www.geonames.org/{geonames_id}" if geonames_id and geonames_id not in ("", "nan") else "",
+        "lat": None,
+        "long": None,
+        "label": "",
+        "wikidata_id": wikidata_qid
+        if wikidata_qid and wikidata_qid not in ("", "nan")
+        else "",
+        "geonames_id": geonames_id
+        if geonames_id and geonames_id not in ("", "nan")
+        else "",
+        "wikidata_url": f"https://www.wikidata.org/wiki/{wikidata_qid}"
+        if wikidata_qid and wikidata_qid not in ("", "nan")
+        else "",
+        "geonames_url": f"https://www.geonames.org/{geonames_id}"
+        if geonames_id and geonames_id not in ("", "nan")
+        else "",
         "extra_url": "",
     }

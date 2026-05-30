@@ -4,9 +4,12 @@ Provides session management, CRUD helpers, and domain-specific
 get_or_create_* functions for concepts, locations, persons, timespans, and URLs.
 """
 
+from __future__ import annotations
+
 import os
 import re
 import time
+from typing import Any
 
 import requests
 from requests.exceptions import ConnectionError as ReqConnectionError
@@ -25,30 +28,39 @@ _MAX_RETRIES = 5
 _RETRY_DELAY = 3  # seconds
 
 
-def _retry(fn, *args, **kwargs):
+def _retry(fn, *args, **kwargs):  # type: ignore[no-untyped-def]
     """Retry *fn* on connection errors (e.g. Django auto-reload)."""
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
             return fn(*args, **kwargs)
-        except (ReqConnectionError, requests.exceptions.ChunkedEncodingError,
-                ConnectionResetError) as exc:
+        except (
+            ReqConnectionError,
+            requests.exceptions.ChunkedEncodingError,
+            ConnectionResetError,
+        ) as exc:
             if attempt == _MAX_RETRIES:
                 raise
-            print(f"  ↻ connection lost (attempt {attempt}/{_MAX_RETRIES}), "
-                  f"retrying in {_RETRY_DELAY}s … ({exc.__class__.__name__})")
+            print(
+                f"  \u21bb connection lost (attempt {attempt}/{_MAX_RETRIES}), "
+                f"retrying in {_RETRY_DELAY}s \u2026 ({exc.__class__.__name__})"
+            )
             time.sleep(_RETRY_DELAY)
+    raise RuntimeError("unreachable")  # keeps pyright happy
 
 
 def login(username="admin", password="admin"):
     """Authenticate with the Django admin and configure CSRF headers."""
     SESSION.get(LOGIN_URL)
-    SESSION.post(LOGIN_URL, data={
-        "username": username,
-        "password": password,
-        "csrfmiddlewaretoken": SESSION.cookies["csrftoken"],
-        "next": "/admin/",
-    })
-    SESSION.headers["X-CSRFToken"] = SESSION.cookies.get("csrftoken", "")
+    SESSION.post(
+        LOGIN_URL,
+        data={
+            "username": username,
+            "password": password,
+            "csrfmiddlewaretoken": SESSION.cookies["csrftoken"],
+            "next": "/admin/",
+        },
+    )
+    SESSION.headers["X-CSRFToken"] = SESSION.cookies.get("csrftoken") or ""
     SESSION.headers["Referer"] = LOGIN_URL
     ok = bool(SESSION.cookies.get("sessionid"))
     print("Authenticated" if ok else "Login failed")
@@ -58,6 +70,7 @@ def login(username="admin", password="admin"):
 # ---------------------------------------------------------------------------
 # Generic REST helpers
 # ---------------------------------------------------------------------------
+
 
 def api_get(endpoint, params=None):
     if params is None:
@@ -84,6 +97,7 @@ def api_patch(endpoint, obj_id, payload):
 # ---------------------------------------------------------------------------
 # String utilities
 # ---------------------------------------------------------------------------
+
 
 def clean_str(val):
     """Return cleaned string or empty string for nan/blank values."""
@@ -133,8 +147,9 @@ def get_or_create_concept(label):
 _location_cache = {}
 
 
-def get_or_create_location(name, wikidata_qid=None, geonames_id=None,
-                           *, locations_db=None, normalize_fn=None):
+def get_or_create_location(
+    name, wikidata_qid=None, geonames_id=None, *, locations_db=None, normalize_fn=None
+):
     """Create or retrieve a LocationPoint, using locations_db for coordinates."""
     if not name or str(name).strip() in ("", "nan"):
         return None
@@ -149,7 +164,7 @@ def get_or_create_location(name, wikidata_qid=None, geonames_id=None,
         _location_cache[key] = match["id"]
         return match["id"]
     db_entry = (locations_db or {}).get(key, {})
-    payload = {"current_name": name}
+    payload: dict[str, Any] = {"current_name": name}
     lat = db_entry.get("lat")
     lng = db_entry.get("long")
     if lat and lng:
@@ -158,8 +173,12 @@ def get_or_create_location(name, wikidata_qid=None, geonames_id=None,
             payload["longitude"] = float(lng)
         except (ValueError, TypeError):
             pass
-    wid = db_entry.get("wikidata_id") or (wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None)
-    gid = db_entry.get("geonames_id") or (geonames_id if geonames_id and geonames_id not in ("", "nan") else None)
+    wid = db_entry.get("wikidata_id") or (
+        wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
+    )
+    gid = db_entry.get("geonames_id") or (
+        geonames_id if geonames_id and geonames_id not in ("", "nan") else None
+    )
     if wid:
         payload["wikidata_id"] = wid
     if gid:
@@ -191,7 +210,10 @@ def get_person_id(protagonist_col, name_col):
     family = " ".join(parts[1:]) if len(parts) > 1 else raw_name
     existing = api_get("persons", params={"search": raw_name})
     for p in existing:
-        if p["given_name"].lower() == given.lower() and p["family_name"].lower() == family.lower():
+        if (
+            p["given_name"].lower() == given.lower()
+            and p["family_name"].lower() == family.lower()
+        ):
             _person_cache[key] = p["id"]
             return p["id"]
     created = api_post("persons", {"given_name": given, "family_name": family})
@@ -289,6 +311,7 @@ def link_locations_to_regions(locations_db):
 
     wb = _xl.load_workbook(xlsx_path)
     ws = wb.active
+    assert ws is not None, "locations.xlsx has no active sheet"
     headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
     sr_col = (headers.index("super_region") + 1) if "super_region" in headers else None
     if not sr_col:
@@ -309,7 +332,11 @@ def link_locations_to_regions(locations_db):
         # Find the location in the API
         existing_locs = api_get("locations", params={"search": loc_name})
         loc_match = next(
-            (l for l in existing_locs if l["current_name"].strip().lower() == loc_name.strip().lower()),
+            (
+                loc
+                for loc in existing_locs
+                if loc["current_name"].strip().lower() == loc_name.strip().lower()
+            ),
             None,
         )
         if not loc_match:
@@ -319,4 +346,6 @@ def link_locations_to_regions(locations_db):
             api_patch("locations", loc_match["id"], {"region": region_id})
             linked += 1
 
-    print(f"  Linked {linked} locations to regions ({len(_region_cache)} regions created/found)")
+    print(
+        f"  Linked {linked} locations to regions ({len(_region_cache)} regions created/found)"
+    )
