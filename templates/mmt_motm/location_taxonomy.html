@@ -1,28 +1,80 @@
 {% extends "mmt_map/base.html" %}
 
 {% block content %}
+<style>
+    .file-tree {
+        font-family: monospace;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .file-tree ul.tree-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+    .file-tree ul.tree-list ul.tree-list {
+        padding-left: 1.5em;
+    }
+    .file-tree .tree-item {
+        position: relative;
+    }
+    /* Vertical connector line */
+    .file-tree ul.tree-list ul.tree-list > .tree-item::before {
+        content: "";
+        position: absolute;
+        left: -1em;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid #aaa;
+    }
+    .file-tree ul.tree-list ul.tree-list > .tree-item:last-child::before {
+        bottom: 50%;
+    }
+    /* Horizontal branch */
+    .file-tree ul.tree-list ul.tree-list > .tree-item::after {
+        content: "";
+        position: absolute;
+        left: -1em;
+        top: 0.8em;
+        width: 0.8em;
+        border-bottom: 1px solid #aaa;
+    }
+    .file-tree .tree-label {
+        padding-left: 0.2em;
+    }
+    .file-tree .tree-label a {
+        text-decoration: none;
+    }
+    .file-tree .tree-label a:hover {
+        text-decoration: underline;
+    }
+</style>
+
 <div class="container mt-4">
-    <h1>Location Taxonomy</h1>
+    <h1>Places Taxonomy</h1>
+    <div class="file-tree">
+        <ul class="tree-list">
+        {% for node in region_tree %}
+            {% include "mmt_motm/_region_node.html" with node=node %}
+        {% endfor %}
 
-    {% for node in region_tree %}
-        {% include "mmt_motm/_region_node.html" with node=node %}
-    {% endfor %}
-
-    {% if unassigned %}
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="mb-0"><i class="fas fa-map-pin"></i> Other Locations</h3>
-        </div>
-        <div class="card-body">
-            <ul class="list-unstyled mb-0">
+        {% if unassigned %}
+        <li class="tree-item">
+            <span class="tree-label">
+                <i class="fas fa-map-pin"></i> Other Places
+            </span>
+            <ul class="tree-list">
                 {% for loc in unassigned %}
-                <li>
-                    <a href="{% url 'location_detail' loc.pk %}">{{ loc.current_name }}</a>
+                <li class="tree-item">
+                    <span class="tree-label">
+                        <a href="{% url 'location_detail' loc.pk %}">{{ loc.current_name }}</a>
+                    </span>
                 </li>
                 {% endfor %}
             </ul>
-        </div>
+        </li>
+        {% endif %}
+        </ul>
     </div>
-    {% endif %}
 </div>
 {% endblock %}

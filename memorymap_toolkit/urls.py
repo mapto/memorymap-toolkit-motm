@@ -21,7 +21,6 @@ from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import GenericSitemap
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from mmt_map.models import Point, Polygon, Line
-from mmt_pages.models import Page
 
 point_dict = {
     'queryset': Point.objects.filter(published=True)

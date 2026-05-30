@@ -1,28 +1,63 @@
 {% extends "mmt_map/base.html" %}
 
 {% block content %}
+<style>
+    .file-tree {
+        font-family: monospace;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .file-tree ul.tree-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+    .file-tree ul.tree-list ul.tree-list {
+        padding-left: 1.5em;
+    }
+    .file-tree .tree-item {
+        position: relative;
+    }
+    /* Vertical connector line */
+    .file-tree ul.tree-list ul.tree-list > .tree-item::before {
+        content: "";
+        position: absolute;
+        left: -1em;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid #aaa;
+    }
+    .file-tree ul.tree-list ul.tree-list > .tree-item:last-child::before {
+        bottom: 50%;
+    }
+    /* Horizontal branch */
+    .file-tree ul.tree-list ul.tree-list > .tree-item::after {
+        content: "";
+        position: absolute;
+        left: -1em;
+        top: 0.8em;
+        width: 0.8em;
+        border-bottom: 1px solid #aaa;
+    }
+    .file-tree .tree-label {
+        padding-left: 0.2em;
+    }
+    .file-tree .tree-label a {
+        text-decoration: none;
+    }
+    .file-tree .tree-label a:hover {
+        text-decoration: underline;
+    }
+</style>
+
 <div class="container mt-4">
     <h1>Concept Taxonomy</h1>
-    {% for root in roots %}
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="mb-0">
-                {% if root.icon %}<i class="fas {{ root.icon }}"></i> {% endif %}
-                <a href="{% url 'concept_detail' root.pk %}">{{ root.label }}</a>
-            </h3>
-        </div>
-        {% if root.children.all %}
-        <div class="card-body">
-            <ul class="list-unstyled mb-0">
-                {% for child in root.children.all %}
-                <li>
-                    <a href="{% url 'concept_detail' child.pk %}">{{ child.label }}</a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
+    <div class="file-tree">
+        <ul class="tree-list">
+        {% for root in roots %}
+            {% include "mmt_motm/_concept_node.html" with node=root %}
+        {% endfor %}
+        </ul>
     </div>
-    {% endfor %}
 </div>
 {% endblock %}

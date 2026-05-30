@@ -8,7 +8,7 @@ from easy_thumbnails.files import get_thumbnailer
 from filer.models import File
 
 # Memory Map Toolkit
-from .models import Theme, AbstractFeature, AbstractAttachment, Document, Image, AudioFile, feature_directory_path
+from .models import Theme, Document, Image, AudioFile
 from .models import Point as MmtPoint
 from .models import Line as MmtLine
 from .models import Polygon as MmtPolygon

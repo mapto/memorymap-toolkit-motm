@@ -1,16 +1,11 @@
 # Django core
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.http import HttpResponse
-from django.db.models import Q
-from django.core.serializers import serialize
 from django.http import JsonResponse
 from django.db import connection
 from django.views.decorators.cache import cache_page
-from django.contrib.gis.geos import GEOSGeometry
 
 # Other Python modules
-import json 
-from datetime import datetime
 from psycopg2 import sql
 import requests
 
@@ -18,9 +13,8 @@ import requests
 from constance import config
 
 # Memory Map Toolkit
-from .models import Point, Line, Polygon, Theme, Document, Image, AudioFile, TagList, MapLayer
-from mmt_pages.models import Page
-from mmt_api.serializers import PointSerializer, PolygonSerializer, PointDetailSerializer, DocumentSerializer
+from .models import Theme, TagList, MapLayer
+from mmt_motm.models import Event
 from .vector_tile_helpers import tileIsValid, tileToEnvelope
 
 
@@ -28,7 +22,6 @@ def index(request):
 	"""Base map"""
 
 	themes = Theme.objects.all()
-	pages = Page.objects.all().order_by('order')
 	tag_lists = TagList.objects.filter(published=True).order_by('order')
 
 	bounds = None
@@ -256,13 +249,6 @@ def tile_json(request):
 def style_json(request):
 	"""Returns the base map style for the main map for use in the admin site"""
 
-	if request.is_secure():
-		scheme = 'https'
-	else:
-		scheme = request.scheme
-
-	host = request.get_host()
-
 	# This works by getting the base map style, then appending the raster layers to the returned
 	# styleJSON object
 
@@ -283,14 +269,14 @@ def style_json(request):
 				'tileSize': 256
 			}
 			
-			l = {
+			layer_def = {
 				'id': layer.slug,
 				'type': 'raster',
 				'source': layer.slug,
 				'visibility': 'visible'
 			}
 
-			style['layers'].append(l)
+			style['layers'].append(layer_def)
 		
 		return JsonResponse(style)
 	

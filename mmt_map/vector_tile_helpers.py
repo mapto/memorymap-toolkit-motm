@@ -1,5 +1,4 @@
 ## Helper functions for creating vector tiles from a PostGIS database - adapted from https://github.com/pramsey/minimal-mvt
-from psycopg2 import sql
 
 
 def tileIsValid(tile):
@@ -8,11 +7,11 @@ def tileIsValid(tile):
     """
     if not ('x' in tile and 'y' in tile and 'zoom' in tile):
         return False
-    if not (type(tile['x']) == int and type(tile['y'] == int)):
+    if not (isinstance(tile['x'], int) and isinstance(tile['y'], int)):
         return False
     if 'format' not in tile or tile['format'] not in ['pbf', 'mvt']:
         return False
-    size = 2 ** tile['zoom'];
+    size = 2 ** tile['zoom']
     if tile['x'] >= size or tile['y'] >= size:
         return False
     if tile['x'] < 0 or tile['y'] < 0:

@@ -59,7 +59,7 @@ def import_geojson(url, feature_title, doc_title, fallback, theme, props_to_tags
 
         try:
             name = f['properties'][feature_title][0:127] # trim to fit in
-        except:
+        except Exception:
             name = None
         
         if not name:
@@ -128,7 +128,7 @@ def import_geojson(url, feature_title, doc_title, fallback, theme, props_to_tags
             if len(group):
                 try:
                     grouped_tags[group[0]].append(value)
-                except:
+                except Exception:
                     grouped_tags[group[0]] = [value]
 
         # Get the actual tag instances as a list

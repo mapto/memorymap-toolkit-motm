@@ -1,8 +1,8 @@
 # Django core
 
 # Third party Django apps
-from rest_framework import routers, serializers, viewsets
-from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeometrySerializerMethodField, GeometryField
+from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from taggit.models import Tag
 
 # Other Python modules

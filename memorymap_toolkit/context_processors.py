@@ -1,5 +1,4 @@
 # Django Core
-from django.conf import settings
 
 # Third Party Django apps
 from constance import config

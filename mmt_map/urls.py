@@ -5,7 +5,6 @@ from django.urls import path, re_path
 
 # Memory Map Toolkit
 from . import views
-from .models import Point
 
 urlpatterns = [
 	path('', views.index, name='index'),

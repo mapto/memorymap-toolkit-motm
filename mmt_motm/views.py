@@ -14,7 +14,7 @@ from .models import (
 from .serializers import (
     PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
     RelationshipTypeSerializer, RelationshipSerializer,
-    InterviewSerializer, InterviewDetailSerializer, EventSerializer,
+    InterviewSerializer, EventSerializer,
     ExtractionSerializer, ConceptSerializer, TimespanSerializer,
     URLSerializer,
 )
@@ -201,7 +201,17 @@ class LocationDetailView(DetailView):
         ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').first()
         context["dominant_icon"] = dominant['icon'] if dominant else ''
 
-        # Breadcrumb: walk up concept hierarchy if location has a linked concept
+        # Breadcrumb: walk up region hierarchy
+        region_ancestors = []
+        if loc.region:
+            node = loc.region
+            while node:
+                region_ancestors.append(node)
+                node = node.part_of
+            region_ancestors.reverse()
+        context["region_ancestors"] = region_ancestors
+
+        # Concept breadcrumb: walk up concept hierarchy if location has a linked concept
         ancestors = []
         if loc.concept:
             node = loc.concept.parent
@@ -424,7 +434,6 @@ class SourceCategoryHeatmapView(ListView):
             counts[key] = counts.get(key, 0) + 1
 
         max_count = max(counts.values()) if counts else 1
-        cat_ids = list(categories.values_list('id', flat=True))
 
         # Build grid: one row per category, one cell per interview
         grid = []
@@ -494,7 +503,7 @@ class LifeJourneyHeatmapView(ListView):
         context["stages_json"] = json.dumps(stages)
         context["stage_colors_json"] = json.dumps(stage_colors)
         context["stage_headers"] = [
-            {"label": stage_labels[s], "color": stage_colors[s]} for s in stages
+            {"label": stage_labels[s], "color": stage_colors[s], "icon": Event.LIFECYCLE_CONFIG[s]["icon"]} for s in stages
         ]
         return context
 

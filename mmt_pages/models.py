@@ -42,7 +42,7 @@ class Page(models.Model):
 				curr_front_page = Page.objects.filter(is_front_page=True).exclude(id=self.id)[0]
 				curr_front_page.is_front_page = False
 				curr_front_page.save()
-			except:
+			except Exception:
 				pass
 
 	def switch_instructions(self):
@@ -52,7 +52,7 @@ class Page(models.Model):
 				curr_instructions = Page.objects.filter(is_instructions=True).exlude(id=self.id)[0]
 				curr_instructions.is_instructions = False
 				curr_instructions.save()
-			except:
+			except Exception:
 				pass
 
 	def save(self, *args, **kwargs):

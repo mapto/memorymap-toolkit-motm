@@ -10,7 +10,9 @@
                 <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">Source</th>
                 {% for h in stage_headers %}
                 <th style="white-space:nowrap;">
-                    <span style="color:{{ h.color }}">{{ h.label }}</span>
+                    <span style="color:{{ h.color }}">
+                        {% if h.icon %}<i class="fas {{ h.icon }}"></i> {% endif %}{{ h.label }}
+                    </span>
                 </th>
                 {% endfor %}
             </tr>

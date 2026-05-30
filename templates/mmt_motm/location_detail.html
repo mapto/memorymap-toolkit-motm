@@ -5,6 +5,18 @@
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
     <p><a href="javascript:history.back()">&larr; Back</a></p>
+    {% if region_ancestors %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-light">
+            {% for r in region_ancestors %}
+            <li class="breadcrumb-item">
+                <i class="fas fa-globe"></i> {{ r.name }}
+            </li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">{{ location.current_name }}</li>
+        </ol>
+    </nav>
+    {% endif %}
     {% if ancestors %}
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb bg-light">

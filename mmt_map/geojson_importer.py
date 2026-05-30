@@ -18,13 +18,13 @@ class GeoJsonImporter():
 		with open(file) as f:
 			self.geojson = json.load(f)
 
-		if theme != None:
+		if theme is not None:
 			t = Theme.objects.get_or_create(name=theme)
 			self.theme = t
 		else:
 			self.theme = None
 
-		if name_field != None:
+		if name_field is not None:
 			self.name_field = name_field
 		else:
 			self.name_field = None
@@ -36,7 +36,7 @@ class GeoJsonImporter():
 		for f in self.geojson['features']:
 			feature = None
 
-			if self.name_field != None:
+			if self.name_field is not None:
 				name = f['properties'][self.name_field]
 			else:
 				name = str(count)

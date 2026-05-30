@@ -11,12 +11,12 @@ instructions_text = open('instructions.htm').read()
 
 try:
     Page.objects.get(is_front_page=True)
-except:
+except Exception:
     Page.objects.create(title='Welcome', body=welcome_text, is_front_page=True).save()
 
 try:
     Page.objects.get(is_instructions=True)
-except:
+except Exception:
     Page.objects.create(title='Instructions', body=instructions_text, is_instructions=True).save()
 
 
@@ -31,7 +31,7 @@ if Theme.objects.all().count() == 0:
 
 try:
     User.objects.filter(is_superuser=True)[0]
-except:
+except Exception:
     pw = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
     if pw:
         u = User.objects.create(username=os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin'), is_superuser=True, is_staff=True)

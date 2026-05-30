@@ -1,0 +1,13 @@
+<li class="tree-item">
+    <span class="tree-label">
+        {% if node.icon %}<i class="fas {{ node.icon }}"></i> {% endif %}
+        <a href="{% url 'concept_detail' node.pk %}">{{ node.label }}</a>
+    </span>
+    {% if node.children.all %}
+    <ul class="tree-list">
+        {% for child in node.children.all %}
+            {% include "mmt_motm/_concept_node.html" with node=child %}
+        {% endfor %}
+    </ul>
+    {% endif %}
+</li>

@@ -7,7 +7,6 @@ from django.db.models.signals import m2m_changed
 # Third party Django apps
 from colorful.fields import RGBColorField
 from easy_thumbnails.files import get_thumbnailer
-from filer.fields.image import FilerImageField
 from filer.fields.file import FilerFileField
 from ckeditor_uploader.fields import RichTextUploadingField
 from ckeditor.fields import RichTextField
@@ -17,9 +16,6 @@ from django_extensions.db.fields import AutoSlugField
 
 # Other modules
 import bleach
-import markdown
-import html2text
-import re
 import uuid
 
 
@@ -194,11 +190,10 @@ class Line(AbstractFeature):
 
 def tags_changed(sender, **kwargs):
 	"""Helper function to update the tag_str field on features when tags are changed."""
-	action = kwargs['action']
 	instance = kwargs['instance']
 	model = kwargs['model']
 
-	if (model == Tag):
+	if model is Tag:
 		tags = ', '.join(instance.tags.names())
 		instance.tag_str = tags
 		instance.save()

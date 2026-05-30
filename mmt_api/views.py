@@ -1,16 +1,13 @@
 # Django core
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, TrigramSimilarity, SearchHeadline
-from django.conf import settings
-from django.utils.text import slugify
 
 # 3rd Party
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status, filters
 from constance import config
 from rest_framework.generics import ListAPIView
@@ -39,7 +36,6 @@ def feature(request, pk, source_layer):
 	Returns a GeoJSON representation of a single feature
 	"""
 
-	feature = None
 	serializer = None
 
 	if source_layer == 'points':
@@ -60,7 +56,6 @@ def feature_detail(request, pk, source_layer):
 	"""
 	Returns a JSON representation of a single feature and all of its attachements
 	"""
-	feature = None
 	serializer = None
 
 	if source_layer == 'points':
@@ -93,13 +88,13 @@ def feature_detail_by_uuid(request, uuid):
 	try:
 		feature = Polygon.objects.get(uuid=uuid)
 		serializer = PolygonDetailSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	try:
 		feature = Line.objects.get(uuid=uuid)
 		serializer = LineDetailSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	if not feature:
@@ -119,7 +114,7 @@ def feature_by_uuid(request, uuid):
 
 	try:
 		terse = json.loads(request.GET.get('compact'))
-	except Exception as err:
+	except Exception:
 		terse = False
 
 	feature = None
@@ -140,7 +135,7 @@ def feature_by_uuid(request, uuid):
 			serializer = TersePolygonSerializer(feature)
 		else:
 			serializer = PolygonSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	try:
@@ -149,7 +144,7 @@ def feature_by_uuid(request, uuid):
 			serializer = TerseLineSerializer(feature)
 		else:
 			serializer = LineSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	try:
@@ -158,7 +153,7 @@ def feature_by_uuid(request, uuid):
 			serializer = TerseMultiPointSerializer(feature)
 		else:
 			serializer = MultiPointSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	if not feature:
@@ -196,7 +191,7 @@ def feature_list(request):
 	try:
 		page = request.GET['page']
 
-	except:
+	except Exception:
 		page = 1
 
 	if int(page) > paginator.num_pages:
@@ -219,7 +214,7 @@ def search_features(request):
 
 	try:
 		search_string = request.GET['q']
-	except:
+	except Exception:
 		return Response('No search string', status=status.HTTP_404_NOT_FOUND)
 
 	points = Point.objects.filter(Q(published=True), Q(name__icontains=search_string) | Q(tags__name__in=[search_string])).distinct()
@@ -230,7 +225,7 @@ def search_features(request):
 	points_serializer = PointSerializer(points, many=True)
 	lines_serializer = LineSerializer(lines, many=True)
 	polygons_serializer = PolygonSerializer(polygons, many=True)
-	multipoints_serializer = MultiPointSerializer(polygons, many=True)
+	multipoints_serializer = MultiPointSerializer(multipoints, many=True)
 
 	points_data = points_serializer.data
 	lines_data = lines_serializer.data
@@ -245,7 +240,7 @@ def search_features(request):
 	try:
 		page = request.GET['page']
 
-	except:
+	except Exception:
 		page = 1
 
 	if int(page) > paginator.num_pages:
@@ -268,7 +263,7 @@ def get_features_by_theme(request):
 
 	try:
 		theme = request.GET['theme']
-	except:
+	except Exception:
 		return Response('No theme id', status=status.HTTP_404_NOT_FOUND)
 
 	points = Point.objects.filter(theme=theme)
@@ -291,7 +286,7 @@ def get_features_by_theme(request):
 	try:
 		page = request.GET['page']
 
-	except:
+	except Exception:
 		page = 1
 
 	if int(page) > paginator.num_pages:
@@ -315,7 +310,7 @@ def get_features_by_tag(request):
 
 	try:
 		tags = request.GET['tags'].split(',')
-	except:
+	except Exception:
 		return Response('No tags', status=status.HTTP_404_NOT_FOUND)
 
 
@@ -340,7 +335,7 @@ def get_features_by_tag(request):
 	try:
 		page = request.GET['page']
 
-	except:
+	except Exception:
 		page = 1
 
 	if int(page) > paginator.num_pages:
@@ -441,7 +436,7 @@ def feature_attachments_by_uuid(request, uuid):
 		images = Image.objects.filter(polygon=feature, published=True)
 		audio = AudioFile.objects.filter(polygon=feature, published=True)
 		feature_serializer = PolygonSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	try:
@@ -450,7 +445,7 @@ def feature_attachments_by_uuid(request, uuid):
 		images = Image.objects.filter(line=feature, published=True)
 		audio = AudioFile.objects.filter(line=feature, published=True)
 		feature_serializer = LineSerializer(feature)
-	except:
+	except Exception:
 		pass
 
 	if not feature:
@@ -497,19 +492,19 @@ def feature_document_by_uuid(request, uuid, slug):
 	try:
 		feature = Polygon.objects.get(uuid=uuid)
 		document = Document.objects.get(polygon=feature, slug=slug)
-	except:
+	except Exception:
 		pass
 
 	try:
 		feature = Line.objects.get(uuid=uuid)
 		document = Document.objects.get(line=feature, slug=slug)
-	except:
+	except Exception:
 		pass
 	
 	try:
 		feature = MultiPoint.objects.get(uuid=uuid)
 		document = Document.objects.get(multipoint=feature, slug=slug)
-	except:
+	except Exception:
 		pass
 
 	if not feature:
@@ -569,7 +564,7 @@ def front_page(request):
 		page = Page.objects.filter(is_front_page=True)[0]
 		serializer = PageSerializer(page)
 		return Response(serializer.data)
-	except:
+	except Exception:
 		return Response('Page not found', status=status.HTTP_404_NOT_FOUND)
 	
 @api_view()
@@ -581,7 +576,7 @@ def instructions(request):
 		page = Page.objects.filter(is_instructions=True)[0]
 		serializer = PageSerializer(page)
 		return Response(serializer.data)
-	except:
+	except Exception:
 		return Response('Page not found', status=status.HTTP_404_NOT_FOUND)
 
 
@@ -682,12 +677,12 @@ def search(request):
 	try:
 		search_string = request.GET['q']
 		
-	except:
+	except Exception:
 		return Response('No search string', status=status.HTTP_404_NOT_FOUND)
 	
 	try:
 		limit = int(request.GET['limit'])
-	except:
+	except Exception:
 		limit = 8
 
 	try:
@@ -722,7 +717,7 @@ def search(request):
 						'type': p.get_type()
 					}
 				)
-			except:
+			except Exception:
 				continue
 
 		for p in multipoints:
@@ -741,27 +736,27 @@ def search(request):
 						'geom': p.geom.json
 					}
 				)
-			except:
+			except Exception:
 				continue
 		
-		for l in lines:
+		for line in lines:
 			try:
 				results.append(
 					{
-						'id': l.id,
-						'name': l.name,
-						'uuid': l.uuid,
+						'id': line.id,
+						'name': line.name,
+						'uuid': line.uuid,
 						'category': 'Place',
-						'slug': l.documents.all()[0].slug,
-						'description': l.description,
-						'similarity': l.similarity,
-						'coordinates': l.geom.coords,
-						'type': p.get_type()
+						'slug': line.documents.all()[0].slug,
+						'description': line.description,
+						'similarity': line.similarity,
+						'coordinates': line.geom.coords,
+						'type': line.get_type()
 					}
 				)
-			except:
+			except Exception:
 				continue
-
+		
 		for p in polygons:
 			try:
 				results.append(
@@ -777,7 +772,7 @@ def search(request):
 						'type': p.get_type()
 					}
 				)
-			except:
+			except Exception:
 				continue
 		
 		for d in documents:
@@ -794,13 +789,13 @@ def search(request):
 						'coordinates': d.point.geom.coords
 					}
 				)
-			except:
+			except Exception:
 				continue
 		
 		# TODO: Create a SearchResultsSerializer, and return the data with that instead so it's browsable in the REST api web interface
 		return JsonResponse({'results': results})
 	
-	except Exception as err:
+	except Exception:
 		return Response('Server Error', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 	
 
@@ -906,7 +901,7 @@ def filterable_feature_list(request):
 	try:
 		page = request.GET['page']
 
-	except:
+	except Exception:
 		page = 1
 
 	if int(page) > paginator.num_pages:
