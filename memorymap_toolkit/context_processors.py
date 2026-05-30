@@ -6,6 +6,7 @@ from constance import config
 
 # Local
 from .utils import ensure_maptiler_key
+from mmt_motm.models import Event
 
 
 def site_settings(request):
@@ -16,5 +17,6 @@ def site_settings(request):
     
     return {
         'config': config,
-        'config_base_map_style_url': config_dict['BASE_MAP_STYLE_URL']
+        'config_base_map_style_url': config_dict['BASE_MAP_STYLE_URL'],
+        'lifecycle_config': Event.LIFECYCLE_CONFIG,
     }

@@ -10,6 +10,13 @@
     <h3>Details</h3>
     <p>{{ event.description }}</p>
 
+    {% if event.lifecycle %}
+    <p><strong>Life Journey:</strong>
+        <a href="{% url 'life_journey_heatmap' %}" style="color:{{ event.lifecycle_color }};">
+            <i class="fas {{ event.lifecycle_icon }}"></i> {{ event.get_lifecycle_display }}</a>
+    </p>
+    {% endif %}
+
     {% if event.timespan %}
     <p><strong>Date:</strong>
         {% with timespan=event.timespan %}
@@ -39,12 +46,11 @@
     {% endif %}
 
     {% if event.persons.exists %}
-    <h3>People</h3>
-    <ul>
+    <p><strong>People:</strong>
         {% for person in event.persons.all %}
-        <li><a href="{% url 'person_detail' person.pk %}">{{ person }}</a></li>
+            <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
-    </ul>
+    </p>
     {% endif %}
 
     {% if event.concepts.exists %}
@@ -144,7 +150,7 @@
             var bounds = new mapboxgl.LngLatBounds();
             bounds.extend(startCoord);
             bounds.extend(endCoord);
-            map.fitBounds(bounds, { padding: 60 });
+            map.fitBounds(bounds, { padding: 60, maxZoom: 14 });
         } else {
             mmtCreateFAMarker(map, endCoord, 'fa-check-circle', '#e74c3c', { url: endUrl, title: endName });
         }

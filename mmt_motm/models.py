@@ -5,6 +5,7 @@ from django.template.defaultfilters import date as date_filter
 class Timespan(models.Model):
     CERTAINTY_CHOICES = [
         ("certain", "Certain"),
+        ("estimated", "Estimated"),
         ("probable", "Probable"),
         ("uncertain", "Uncertain"),
         ("disputed", "Disputed"),
@@ -30,6 +31,7 @@ class Timespan(models.Model):
         return "—"
 
     CERTAINTY_ICONS = {
+        "estimated": ("fa-clock", "Estimated date"),
         "probable": ("fa-question-circle", "Probable date"),
         "uncertain": ("fa-exclamation-triangle", "Uncertain date"),
         "disputed": ("fa-balance-scale", "Disputed date"),
@@ -126,7 +128,31 @@ class LocationPoint(models.Model):
     
 # This class contains all the various Events from a person life that are registered
 class Event(models.Model):
-    
+    # Single source of truth for lifecycle stages.
+    # Keep project_static/js/mmtCategoryColors.js in sync when changing colors.
+    LIFECYCLE_CONFIG = {
+        "alte_heimat":   {"label": "Alte Heimat",    "icon": "fa-baby-carriage",  "color": "#3498db"},  # or fa-monument
+        "auswanderung":  {"label": "Auswanderung",   "icon": "fa-person-walking", "color": "#e74c3c"},  # or fa-ship
+        "neue_heimat":   {"label": "Neue Heimat",    "icon": "fa-house-flag",     "color": "#2ecc71"}, 
+        "reise_zurueck": {"label": "Reise zurück",   "icon": "fa-route",          "color": "#9b59b6"},
+        "altro":         {"label": "Altro",          "icon": "fa-flag",           "color": "#95a5a6"},  # fa-ellipsis-h
+    }
+
+    LIFECYCLE_CHOICES = [(k, v["label"]) for k, v in LIFECYCLE_CONFIG.items()]
+    LIFECYCLE_ICONS = {k: v["icon"] for k, v in LIFECYCLE_CONFIG.items()}
+    LIFECYCLE_DEFAULT = "altro"
+
+    @classmethod
+    def lifecycle_sql_case(cls, column='"e"."lifecycle"'):
+        """Build a SQL CASE expression mapping lifecycle → icon."""
+        whens = " ".join(
+            "WHEN '{}' THEN '{}'".format(key, cfg["icon"])
+            for key, cfg in cls.LIFECYCLE_CONFIG.items()
+            if key != cls.LIFECYCLE_DEFAULT
+        )
+        default_icon = cls.LIFECYCLE_CONFIG[cls.LIFECYCLE_DEFAULT]["icon"]
+        return f"CASE {column} {whens} ELSE '{default_icon}' END"
+
     timespan = models.ForeignKey(
         "Timespan",
         on_delete=models.SET_NULL,
@@ -136,6 +162,10 @@ class Event(models.Model):
     )
 
     description = models.TextField(blank=True)
+
+    lifecycle = models.CharField(
+        max_length=20, choices=LIFECYCLE_CHOICES, default=LIFECYCLE_DEFAULT, blank=True
+    )
 
     # Source URLs or references
     urls = models.ManyToManyField(
@@ -179,6 +209,15 @@ class Event(models.Model):
         blank=True,
         related_name="events"
     )
+
+    @property
+    def lifecycle_icon(self):
+        return self.LIFECYCLE_ICONS.get(self.lifecycle, self.LIFECYCLE_CONFIG[self.LIFECYCLE_DEFAULT]["icon"])
+
+    @property
+    def lifecycle_color(self):
+        cfg = self.LIFECYCLE_CONFIG.get(self.lifecycle, self.LIFECYCLE_CONFIG[self.LIFECYCLE_DEFAULT])
+        return cfg["color"]
 
     def __str__(self):
         if self.timespan:

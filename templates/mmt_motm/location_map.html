@@ -38,7 +38,7 @@
     var map = mmtCreateMap('locations-map', [center.lng, center.lat], 5);
 
     map.on('load', function() {
-        map.fitBounds(bounds, { padding: 50 });
+        map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
 
         locations.forEach(function(loc) {
             var color = mmtCategoryColor(loc.icon);

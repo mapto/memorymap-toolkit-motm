@@ -13,6 +13,12 @@
 			</div>
 			<span id="year-label-max" class="year-label">{{ year_max }}</span>
 		</div>
+		<div id="lifecycle-legend" style="position:absolute;bottom:30px;left:10px;background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:4px;font-size:12px;z-index:1;box-shadow:0 1px 4px rgba(0,0,0,0.2);">
+			<strong style="display:block;margin-bottom:4px;">Life Journey</strong>
+			{% for key, cfg in lifecycle_config.items %}
+			<span style="color:{{ cfg.color }};"><i class="fas {{ cfg.icon }}"></i> {{ cfg.label }}</span><br>
+			{% endfor %}
+		</div>
 	</div>
 </div>
 

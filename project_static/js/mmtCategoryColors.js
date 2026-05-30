@@ -1,8 +1,16 @@
 /**
- * Single source of truth for category icon → color mapping.
- * Used by detail-page maps (_map_init.html) and the main map (mapHandler.js).
+ * Category icon → color mapping for map rendering.
+ * Lifecycle colors must match Event.LIFECYCLE_CONFIG in mmt_motm/models.py.
+ * Concept category colors are used for location dot styling.
  */
 var MMT_CATEGORY_COLORS = {
+    // Lifecycle stage icons (source: Event.LIFECYCLE_CONFIG in mmt_motm/models.py)
+    'fa-baby-carriage': '#3498db',
+    'fa-person-walking': '#e74c3c',
+    'fa-house-flag': '#2ecc71',
+    'fa-route': '#9b59b6',
+    'fa-flag': '#95a5a6',
+    // Concept category icons (used by location dots)
     'fa-map-marker-alt': '#504cf1',
     'fa-university': '#3cee42',
     'fa-route': '#fc4743',

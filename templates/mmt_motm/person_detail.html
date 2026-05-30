@@ -49,6 +49,12 @@
     </p>
     {% endif %}
 
+    {% if language_summary %}
+    <p><strong>Languages:</strong>
+        {% for lang in language_summary %}{{ lang.label }} ({{ lang.count }}){% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+
     {% if person.description %}
     <h3>Biography</h3>
     <p>{{ person.description }}</p>
@@ -101,12 +107,6 @@
             &nbsp;({{ concept.mention_count }})
             {% if not forloop.last %}, {% endif %}
         {% endfor %}
-    </p>
-    {% endif %}
-
-    {% if language_summary %}
-    <p><strong>Languages:</strong>
-        {% for lang in language_summary %}{{ lang.label }} ({{ lang.count }}){% if not forloop.last %}, {% endif %}{% endfor %}
     </p>
     {% endif %}
 
@@ -207,7 +207,8 @@
             startName: "{{ event.start_location.current_name|escapejs }}",
             endName: "{{ event.end_location.current_name|escapejs }}",
             date: "{% if event.timespan %}{{ event.timespan|escapejs }}{% endif %}",
-            icon: "{{ event.dominant_icon|default:'' }}"
+            icon: "{{ event.lifecycle_icon }}",
+            lifecycle: "{{ event.get_lifecycle_display|escapejs }}"
         },
         {% endif %}
         {% endfor %}
@@ -229,13 +230,14 @@
     var map = mmtCreateMap('person-map', [center.lng, center.lat], 5);
 
     map.on('load', function() {
-        map.fitBounds(bounds, { padding: 40 });
+        map.fitBounds(bounds, { padding: 40, maxZoom: 14 });
 
         var features = events.map(function(e) {
             return {
                 type: 'Feature',
                 properties: { id: e.id, desc: e.desc, url: e.url, date: e.date,
                               startName: e.startName, endName: e.endName,
+                              lifecycle: e.lifecycle, icon: e.icon,
                               color: mmtCategoryColor(e.icon) },
                 geometry: { type: 'LineString', coordinates: [e.start, e.end] }
             };
@@ -284,7 +286,23 @@
             var props = ev.features[0].properties;
             window.location.href = props.url;
         });
-        mmtAddLayerHover(map, 'event-lines-layer', 'desc');
+        var _tooltip = new mapboxgl.Popup({ closeButton: false, closeOnClick: false, className: 'hover_popup' });
+        map.on('mousemove', 'event-lines-layer', function(ev) {
+            map.getCanvas().style.cursor = 'pointer';
+            var p = ev.features[0].properties;
+            var color = p.color || '#888';
+            var html = '<p class="m-0 p-0 text-center">'
+                + '<i class="fas ' + (p.icon || '') + '" style="color:' + color + '"></i> '
+                + '<strong>' + (p.lifecycle || '') + '</strong><br>'
+                + (p.desc || '')
+                + (p.date ? ' <small>(' + p.date + ')</small>' : '')
+                + '</p>';
+            _tooltip.setLngLat(ev.lngLat).setHTML(html).addTo(map);
+        });
+        map.on('mouseleave', 'event-lines-layer', function() {
+            map.getCanvas().style.cursor = '';
+            _tooltip.remove();
+        });
     });
 })();
 </script>

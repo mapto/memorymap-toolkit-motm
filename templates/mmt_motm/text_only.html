@@ -23,6 +23,13 @@
                         <small>Searchable table of all events</small>
                     </span></span>
                 </a>
+                <a href="{% url 'life_journey_heatmap' %}" class="dash-row">
+                    <span class="dash-inner"><span class="dash-count"><i class="fas fa-th"></i></span>
+                    <span class="dash-label">
+                        <strong>Life Journey</strong>
+                        <small>Persons × Life Journey Heatmap</small>
+                    </span></span>
+                </a>
                 <a href="{% url 'location_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ locations }}</span>
                     <span class="dash-label">

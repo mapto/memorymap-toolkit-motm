@@ -1,0 +1,28 @@
+{% extends "mmt_map/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Location Taxonomy</h1>
+
+    {% for node in region_tree %}
+        {% include "mmt_motm/_region_node.html" with node=node %}
+    {% endfor %}
+
+    {% if unassigned %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="mb-0"><i class="fas fa-map-pin"></i> Other Locations</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled mb-0">
+                {% for loc in unassigned %}
+                <li>
+                    <a href="{% url 'location_detail' loc.pk %}">{{ loc.current_name }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -412,7 +412,7 @@ map.on('load', function() {
             });
         });
         if (found) {
-            map.fitBounds(bounds, { padding: 50 });
+            map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
         }
     });
 
@@ -525,9 +525,15 @@ map.on('click', 'locations', function(e) {
 
 map.on('mousemove', 'event_lines', function(e) {
     map.getCanvas().style.cursor = 'pointer';
-    var name = e.features[0].properties.name || '';
-    var year = e.features[0].properties.year;
-    var html = '<p class="m-0 p-0 text-center">' + name + (year ? ' <small>(' + year + ')</small>' : '') + '</p>';
+    var props = e.features[0].properties;
+    var name = props.name || '';
+    var year = props.year;
+    var icon = props.icon || '';
+    var color = mmtCategoryColor(icon);
+    var html = '<p class="m-0 p-0 text-center">'
+        + (icon ? '<i class="fas ' + icon + '" style="color:' + color + '"></i> ' : '')
+        + name + (year ? ' <small>(' + year + ')</small>' : '')
+        + '</p>';
     MmtMap.hoverInteractions.smallPopup
         .setLngLat(e.lngLat)
         .setHTML(html)

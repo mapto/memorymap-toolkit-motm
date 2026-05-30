@@ -148,8 +148,12 @@ class RelationshipTypeAdmin(admin.ModelAdmin):
     ordering = ("name",)
 
 admin.site.register(URL)
-admin.site.register(Event)
 admin.site.register(Timespan)
+
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "description", "lifecycle")
+    list_filter = ("lifecycle",)
 
 @admin.register(Extraction)
 class ExtractionAdmin(admin.ModelAdmin):

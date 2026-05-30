@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Q, Count, Subquery, OuterRef
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView
@@ -64,14 +66,6 @@ class PersonDetailView(DetailView):
         context["events"] = (
             person.events.select_related(
                 'timespan', 'start_location', 'end_location'
-            ).annotate(
-                dominant_icon=Subquery(
-                    Concept.objects.filter(
-                        events=OuterRef('pk')
-                    ).exclude(icon='').values('icon').annotate(
-                        cnt=Count('id')
-                    ).order_by('-cnt').values('icon')[:1]
-                )
             ).order_by('timespan__start')
         )
         lang_counts = (
@@ -126,9 +120,7 @@ class EventDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         event = self.object
         context["extractions"] = event.relates_to_event.prefetch_related('concepts').all()
-        icons = event.concepts.exclude(icon='').values('icon').annotate(
-            cnt=Count('id')).order_by('-cnt')
-        context["dominant_icon"] = icons[0]['icon'] if icons else ''
+        context["dominant_icon"] = event.lifecycle_icon
         return context
 
 
@@ -219,6 +211,36 @@ class LocationDetailView(DetailView):
             ancestors.reverse()
         context["ancestors"] = ancestors
 
+        return context
+
+
+class LocationTaxonomyView(ListView):
+    model = LocationRegion
+    template_name = "mmt_motm/location_taxonomy.html"
+    context_object_name = "regions"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build region tree: root regions with subregions and points
+        def build_tree(region):
+            node = {
+                "region": region,
+                "points": list(region.points.order_by("current_name")),
+                "children": [build_tree(sub) for sub in region.subregions.order_by("name")],
+            }
+            return node
+
+        roots = LocationRegion.objects.filter(part_of__isnull=True).order_by("name")
+        region_tree = [build_tree(r) for r in roots]
+
+        # Locations not belonging to any region
+        unassigned = LocationPoint.objects.filter(
+            region__isnull=True
+        ).order_by("current_name")
+
+        context["region_tree"] = region_tree
+        context["unassigned"] = unassigned
         return context
 
 
@@ -407,15 +429,73 @@ class SourceCategoryHeatmapView(ListView):
         # Build grid: one row per category, one cell per interview
         grid = []
         for cat in categories:
+            row_total = sum(counts.get((iv.id, cat.id), 0) for iv in interviews)
             cells = []
             for interview in interviews:
                 cells.append(counts.get((interview.id, cat.id), 0))
-            grid.append({"category": cat, "cells": cells})
+            grid.append({"category": cat, "cells": cells, "total": row_total})
+
+        # Sort by total count, most frequent first
+        grid.sort(key=lambda row: row["total"], reverse=True)
 
         context["categories"] = categories
         context["interviews"] = interviews
         context["grid"] = grid
         context["max_count"] = max_count
+        return context
+
+
+class LifeJourneyHeatmapView(ListView):
+    model = Event
+    template_name = "mmt_motm/life_journey_heatmap.html"
+    context_object_name = "events"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        stages = list(Event.LIFECYCLE_CONFIG.keys())
+        stage_labels = {k: v["label"] for k, v in Event.LIFECYCLE_CONFIG.items()}
+        stage_colors = {k: v["color"] for k, v in Event.LIFECYCLE_CONFIG.items()}
+
+        interviews = Interview.objects.filter(
+            interviewee__isnull=False
+        ).select_related("interviewee").order_by("archive_id")
+
+        # Count events per (person_id, lifecycle) via the Event.persons M2M
+        event_qs = Event.objects.values_list("persons__id", "lifecycle")
+        person_counts = {}
+        for person_id, lifecycle in event_qs:
+            if person_id is None:
+                continue
+            key = (person_id, lifecycle or Event.LIFECYCLE_DEFAULT)
+            person_counts[key] = person_counts.get(key, 0) + 1
+
+        max_count = max(person_counts.values()) if person_counts else 1
+
+        # Build grid: one row per interview, using interviewee's event counts
+        grid = []
+        for interview in interviews:
+            pid = interview.interviewee_id
+            cells = []
+            row_total = 0
+            for stage in stages:
+                c = person_counts.get((pid, stage), 0)
+                cells.append(c)
+                row_total += c
+            if row_total > 0:
+                grid.append({"interview": interview, "cells": cells, "total": row_total})
+
+        grid.sort(key=lambda row: row["total"], reverse=True)
+
+        context["stages"] = stages
+        context["stage_labels"] = stage_labels
+        context["stage_colors"] = stage_colors
+        context["grid"] = grid
+        context["max_count"] = max_count
+        context["stages_json"] = json.dumps(stages)
+        context["stage_colors_json"] = json.dumps(stage_colors)
+        context["stage_headers"] = [
+            {"label": stage_labels[s], "color": stage_colors[s]} for s in stages
+        ]
         return context
 
 

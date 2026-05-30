@@ -96,7 +96,7 @@ $('#map_search').keyup(function(e) {
             }), true, false]); 
             
             let bounds = turf.bbox(turf.featureCollection(filtered_features));
-            map.fitBounds(bounds);
+            map.fitBounds(bounds, { maxZoom: 14 });
 
         }
 

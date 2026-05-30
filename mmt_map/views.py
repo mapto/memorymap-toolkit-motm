@@ -164,8 +164,10 @@ def _append_motm_layers(response, env):
 		'segSize': env['segSize'],
 	}
 
-	# LocationPoints with dominant concept icon
-	loc_sql = """
+	# LocationPoints with dominant lifecycle icon from events
+	_lc_case = Event.lifecycle_sql_case()
+	_lc_case_loc = Event.lifecycle_sql_case()  # same expression, for location subquery
+	loc_sql = f"""
 		WITH
 		"bounds" AS (
 			SELECT ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s) AS "geom",
@@ -175,12 +177,11 @@ def _append_motm_layers(response, env):
 			SELECT ST_AsMVTGeom(ST_Transform("t"."location", 3857), "bounds"."b2d") AS "geom",
 				   "t"."id", "t"."current_name" AS "name",
 				   (
-				       SELECT "c"."icon"
+				       SELECT {_lc_case_loc}
 				       FROM "mmt_motm_event" "e"
-				       JOIN "mmt_motm_event_concepts" "ec" ON "ec"."event_id" = "e"."id"
-				       JOIN "mmt_motm_concept" "c" ON "c"."id" = "ec"."concept_id"
-				       WHERE "e"."start_location_id" = "t"."id" AND "c"."icon" != ''
-				       GROUP BY "c"."icon"
+				       WHERE ("e"."start_location_id" = "t"."id"
+				              OR "e"."end_location_id" = "t"."id")
+				       GROUP BY "e"."lifecycle"
 				       ORDER BY COUNT(*) DESC
 				       LIMIT 1
 				   ) AS "icon"
@@ -196,8 +197,8 @@ def _append_motm_layers(response, env):
 		pbf = cursor.fetchone()[0]
 	response.write(pbf.tobytes())
 
-	# Event lines (start_location → end_location)
-	evt_sql = """
+	# Event lines (start_location → end_location) with lifecycle icon
+	evt_sql = f"""
 		WITH
 		"bounds" AS (
 			SELECT ST_Segmentize(ST_MakeEnvelope(%(xmin)s, %(ymin)s, %(xmax)s, %(ymax)s, 3857),%(segSize)s) AS "geom",
@@ -211,15 +212,7 @@ def _append_motm_layers(response, env):
 			"e"."id",
 			"e"."description" AS "name",
 			COALESCE(EXTRACT(YEAR FROM "ts"."start"), EXTRACT(YEAR FROM "ts"."end"))::int AS "year",
-			(
-			    SELECT "c"."icon"
-			    FROM "mmt_motm_event_concepts" "ec"
-			    JOIN "mmt_motm_concept" "c" ON "c"."id" = "ec"."concept_id"
-			    WHERE "ec"."event_id" = "e"."id" AND "c"."icon" != ''
-			    GROUP BY "c"."icon"
-			    ORDER BY COUNT(*) DESC
-			    LIMIT 1
-			) AS "icon"
+			{_lc_case} AS "icon"
 			FROM "mmt_motm_event" "e"
 			JOIN "mmt_motm_locationpoint" "sl" ON "e"."start_location_id" = "sl"."id"
 			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id"

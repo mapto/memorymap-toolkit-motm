@@ -32,5 +32,5 @@ def ensure_maptiler_key(url, key):
         
     # 5. Reconstruct the full URL
     result = urlunparse(url_parts)
-    print(f"Utils called with {url} and {key}. Got {result}")
+    # print(f"Utils called with {url} and {key}. Got {result}")
     return result

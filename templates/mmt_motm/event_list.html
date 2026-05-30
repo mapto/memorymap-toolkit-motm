@@ -10,6 +10,7 @@
                 <th class="sortable" data-col="0">Date <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="1">Place <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="2">Description <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">Life Journey <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -36,6 +37,9 @@
                     {% endif %}
                 </td>
                 <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:15 }}</a></td>
+                <td data-value="{{ event.lifecycle }}">
+                    {% if event.lifecycle %}<i class="fas {{ event.lifecycle_icon }}"></i> {{ event.get_lifecycle_display }}{% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

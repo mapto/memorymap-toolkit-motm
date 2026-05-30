@@ -1,0 +1,22 @@
+<div class="card mb-3 ml-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-globe"></i>
+            {{ node.region.name }}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if node.points %}
+        <ul class="list-unstyled mb-2">
+            {% for loc in node.points %}
+            <li>
+                <a href="{% url 'location_detail' loc.pk %}">{{ loc.current_name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% for child in node.children %}
+            {% include "mmt_motm/_region_node.html" with node=child %}
+        {% endfor %}
+    </div>
+</div>
