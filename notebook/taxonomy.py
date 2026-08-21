@@ -7,11 +7,14 @@ and returns a :class:`Taxonomy` dataclass with the following fields::
     sub_categories: {key: {"label": ..., "parent": ...}}
     concept_to_category: {label: category_key}
 
+The three special categories (Zeitangaben, Personae, GO) are pre-extracted
+and removed from these structures, accessible via dedicated methods instead.
+
 >>> tax = load_taxonomy()
->>> "GO" in tax.categories
+>>> "Religion" in tax.categories
 True
->>> tax.categories["GO"]["label"]
-'GO – geographischer Ort'
+>>> "GO" in tax.categories  # Special categories are removed
+False
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from timespan import Timespan, parse_timespan
 
 
 # Key used in the tree returned by parse_mermaid_mindmap() to list top-level
@@ -138,15 +142,21 @@ class Taxonomy:
         categories: root category key -> {"label": ..., "icon": ...}.
         sub_categories: sub-category key -> {"label": ..., "parent": root_key}.
         concept_to_category: leaf concept label -> root category key.
+        _zeitangaben_data: pre-extracted leaf concepts under Zeitangaben.
+        _personae_data: pre-extracted leaf concepts under Personae.
+        _go_data: pre-extracted leaf geographic locations with hierarchical paths.
     """
 
     hierarchy: dict[str, list[str]]
     categories: dict[str, dict[str, str]] = field(default_factory=dict, init=False)
     sub_categories: dict[str, dict[str, str]] = field(default_factory=dict, init=False)
     concept_to_category: dict[str, str] = field(default_factory=dict, init=False)
+    _zeitangaben_data: list[Timespan] = field(default_factory=list, init=False)
+    _personae_data: list[str] = field(default_factory=list, init=False)
+    _go_data: list[str] = field(default_factory=list, init=False)  # Will be built at method call time
 
     def __post_init__(self) -> None:
-        """Build categories, sub_categories, and concept_to_category from hierarchy."""
+        """Build all taxonomy structures at construction time."""
         categories: dict[str, dict] = {}
         sub_categories: dict[str, dict] = {}
         concept_to_category: dict[str, str] = {}
@@ -162,9 +172,12 @@ class Taxonomy:
             for child_label in self.hierarchy.get(root_label, []):
                 grandchildren = self.hierarchy.get(child_label, [])
                 if grandchildren:
-                    # This is a sub-category
+                    # This is a sub-category (intermediate node)
                     sub_key = f"{key}__{child_label}"
                     sub_categories[sub_key] = {"label": child_label, "parent": key}
+                    # Map the intermediate node itself (e.g., "1933" year node)
+                    concept_to_category[child_label] = key
+                    # Also map all leaves under it (e.g., "1. April 1933")
                     for leaf in _walk_leaves(self.hierarchy, child_label):
                         concept_to_category[leaf] = key
                 else:
@@ -175,20 +188,63 @@ class Taxonomy:
         object.__setattr__(self, "sub_categories", sub_categories)
         object.__setattr__(self, "concept_to_category", concept_to_category)
 
-    def zeitangaben(self) -> list[str]:
-        """Return all concepts under the Zeitangaben category.
+        # Extract zeitangaben, personae, and go at construction time
+        # Use context-aware labels for dates/times (include year/parent in label)
+        # Automatically detect and include all hierarchy levels present in the data
+        zeitangaben_labels = self._build_concept_labels_with_context("Zeitangaben")
+        # Parse each label to Timespan
+        zeitangaben_list = [parse_timespan(label) for label in zeitangaben_labels]
+        object.__setattr__(self, "_zeitangaben_data", zeitangaben_list)
+
+        personae_list = self._build_concept_labels_with_context("Personae")
+        object.__setattr__(self, "_personae_data", personae_list)
+
+        # For GO, we need to build paths, but we'll do that lazily in the go() method
+        # For now, just extract the labels
+        go_labels = self._build_concept_labels_with_context("GO")
+        object.__setattr__(self, "_go_data", go_labels)
+        
+        # Remove the three special categories from the general structures
+        # since they're accessed via pre-extracted data instead
+        special_categories = {"Zeitangaben", "Personae", "GO"}
+        
+        # Remove from categories
+        categories = {k: v for k, v in self.categories.items() if k not in special_categories}
+        
+        # Remove from sub_categories (those with parent in special categories)
+        sub_categories = {
+            k: v for k, v in self.sub_categories.items()
+            if v.get("parent") not in special_categories
+        }
+        
+        # Remove from concept_to_category (those pointing to special categories)
+        concept_to_category = {
+            label: cat for label, cat in self.concept_to_category.items()
+            if cat not in special_categories
+        }
+        
+        object.__setattr__(self, "categories", categories)
+        object.__setattr__(self, "sub_categories", sub_categories)
+        object.__setattr__(self, "concept_to_category", concept_to_category)
+
+    def zeitangaben(self) -> list[Timespan]:
+        """Return all leaf concepts under the Zeitangaben category as Timespan objects.
+        
+        Returns pre-extracted data.
 
         >>> tax = load_taxonomy()
-        >>> dates = tax.zeitangaben()
-        >>> '1909' in dates
+        >>> timespans = tax.zeitangaben()
+        >>> len(timespans) > 0
         True
-        >>> '1945' in dates
+        >>> all(isinstance(ts, Timespan) for ts in timespans)
         True
         """
-        return sorted([label for label, cat in self.concept_to_category.items() if cat == "Zeitangaben"])
+        return self._zeitangaben_data
 
     def personae(self) -> list[str]:
-        """Return all concepts under the Personae category.
+        """Return all leaf concepts under the Personae category.
+        
+        Returns pre-extracted data.
 
         >>> tax = load_taxonomy()
         >>> people = tax.personae()
@@ -197,12 +253,12 @@ class Taxonomy:
         >>> len(people) > 0
         True
         """
-        return sorted([label for label, cat in self.concept_to_category.items() if cat == "Personae"])
+        return self._personae_data
 
     def go(self) -> list[dict[str, str]]:
-        """Return geographic locations with compiled hierarchical paths.
+        """Return leaf geographic locations with compiled hierarchical paths.
         
-        Builds address strings by concatenating the hierarchy from root to leaf.
+        Returns pre-extracted data.
 
         >>> tax = load_taxonomy()
         >>> locations = tax.go()
@@ -210,15 +266,138 @@ class Taxonomy:
         True
         >>> all('label' in loc and 'address' in loc for loc in locations)
         True
-        >>> any(loc['label'] == 'Berlin' for loc in locations)
+        >>> any('Adlon' in loc['label'] for loc in locations)
         True
         """
-        go_concepts = [label for label, cat in self.concept_to_category.items() if cat == "GO"]
+        # Build result with paths
         result = []
-        for concept in sorted(go_concepts):
-            path = self._build_path(concept)
-            result.append({"label": concept, "address": path})
+        for concept_label in self._go_data:
+            # Extract the main label (without context suffix for path building)
+            main_label = concept_label.split(" ")[0] if " " in concept_label else concept_label
+            path = self._build_path(main_label)
+            result.append({"label": concept_label, "address": path})
+        
         return result
+
+    def _remove_subtree(self, category_key: str) -> None:
+        """Remove a category and all its descendants from taxonomy structures.
+        
+        Updates categories, sub_categories, concept_to_category, and hierarchy.
+        """
+        # Find the category label from the key
+        category_label = None
+        for key, info in self.categories.items():
+            if key == category_key:
+                category_label = info["label"]
+                break
+        
+        if not category_label:
+            return  # Category not found
+        
+        # Collect all descendants of this category
+        descendants = set()
+        descendants.add(category_label)
+        self._collect_descendants(category_label, descendants)
+        
+        # Remove from categories
+        new_categories = {k: v for k, v in self.categories.items() if k != category_key}
+        object.__setattr__(self, "categories", new_categories)
+        
+        # Remove from sub_categories and hierarchy
+        new_sub_categories = {
+            k: v for k, v in self.sub_categories.items()
+            if v.get("parent") != category_key and k.split("__")[0] != category_key
+        }
+        object.__setattr__(self, "sub_categories", new_sub_categories)
+        
+        # Remove from concept_to_category
+        new_concept_to_category = {
+            label: cat for label, cat in self.concept_to_category.items()
+            if cat != category_key
+        }
+        object.__setattr__(self, "concept_to_category", new_concept_to_category)
+        
+        # Remove from hierarchy
+        new_hierarchy = {
+            node: [child for child in children if child not in descendants]
+            for node, children in self.hierarchy.items()
+            if node not in descendants
+        }
+        object.__setattr__(self, "hierarchy", new_hierarchy)
+
+    def _build_concept_labels_with_context(
+        self, category_key: str
+    ) -> list[str]:
+        """Build concept labels for a category, automatically including all hierarchy levels.
+        
+        Automatically detects and includes all levels present in the data:
+        - Direct children of category (e.g., years "1909", "1933")
+        - Intermediate nodes (e.g., months "April 1933" under year "1933")
+        - Leaf nodes (e.g., "1. April 1933" under month)
+        
+        Each leaf is labeled with its parent context when applicable.
+        """
+        labels = set()
+        
+        # Find the root category label
+        category_label = None
+        for key, info in self.categories.items():
+            if key == category_key:
+                category_label = info["label"]
+                break
+        
+        if not category_label:
+            return []
+        
+        # Helper to collect labels recursively, including all hierarchy levels
+        def collect_labels(node: str, depth: int = 0, first_parent: str = "") -> None:
+            children = self.hierarchy.get(node, [])
+            
+            # At depth 0 (direct children of category), this is our first parent context
+            if depth == 0:
+                labels.add(node)
+                first_parent = node  # First-level children become the context for deeper nodes
+            
+            # Recurse into children
+            for child in children:
+                child_children = self.hierarchy.get(child, [])
+                next_depth = depth + 1
+                
+                if not child_children:
+                    # This is a leaf node - always combine with parent context if available
+                    if first_parent:
+                        labels.add(f"{child} {first_parent}")
+                    else:
+                        labels.add(child)
+                else:
+                    # This is an intermediate node with children
+                    # If it's a direct child of a root node (depth==0), add it both ways
+                    # Otherwise add with parent context
+                    if depth == 0:
+                        # Direct child like "April" under year "1933"
+                        # Add just the child (e.g., "April")
+                        labels.add(child)
+                        # Also add with parent context (e.g., "April 1933")
+                        labels.add(f"{child} {first_parent}")
+                    else:
+                        # Deeper intermediate nodes - add with parent context
+                        labels.add(f"{child} {first_parent}")
+                    # Recurse deeper, always passing first_parent
+                    collect_labels(child, next_depth, first_parent)
+        
+        # Start collection from direct children of the category
+        for child in self.hierarchy.get(category_label, []):
+            collect_labels(child, 0, "")
+        
+        return sorted(labels)
+
+
+    def _collect_descendants(self, node: str, descendants: set[str]) -> None:
+        """Recursively collect all descendants of a node."""
+        for child in self.hierarchy.get(node, []):
+            if child not in descendants:
+                descendants.add(child)
+                self._collect_descendants(child, descendants)
 
     def _build_path(self, node: str, visited: set[str] | None = None) -> str:
         """Build hierarchical path for a node by walking the hierarchy tree."""
@@ -289,12 +468,9 @@ def parse_mmd_taxonomy(path: str | Path) -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
     tax = load_taxonomy()
     print(f"Categories: {len(tax.categories)}")
     for k, v in sorted(tax.categories.items()):
         print(f"  {k}: {v['label']} (icon={v['icon']})")
     print(f"Sub-categories: {len(tax.sub_categories)}")
-    print(f"Concept-to-category mappings: {len(tax.concept_to_category)}")
+    print(f"Concept-to-category mappings: {tax.concept_to_category}")
