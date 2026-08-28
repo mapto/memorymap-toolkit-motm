@@ -20,7 +20,7 @@ from utils import clean_str, is_empty
 # Session & config
 # ---------------------------------------------------------------------------
 
-BASE_URL = os.environ.get("MMT_API_URL", "http://localhost:8000/motm/api")
+BASE_URL = os.environ.get("MMT_API_URL", "http://localhost:8000/en/motm/api")
 LOGIN_URL = os.environ.get("MMT_LOGIN_URL", "http://localhost:8000/admin/login/")
 
 SESSION = requests.Session()
@@ -178,8 +178,18 @@ def get_or_create_concept(label):
         if parent_id:
             payload["parent"] = parent_id
         created = api_post("concepts", payload)
-        _concept_cache[child_key] = created["id"]
-        return created["id"]
+        
+        # Handle both single dict and list responses (from BulkMixin)
+        if isinstance(created, list):
+            created = created[0] if created else {}
+        
+        child_id = created.get("id")
+        if not child_id:
+            print(f"ERROR: No 'id' in child concept creation response: {created}")
+            return None
+        
+        _concept_cache[child_key] = child_id
+        return child_id
 
     key = label.lower()
     if key in _concept_cache:
@@ -190,8 +200,22 @@ def get_or_create_concept(label):
         _concept_cache[key] = match["id"]
         return match["id"]
     created = api_post("concepts", {"label": label})
-    _concept_cache[key] = created["id"]
-    return created["id"]
+    
+    # Handle both single dict and list responses (from BulkMixin)
+    if isinstance(created, list):
+        if created:
+            created = created[0]
+        else:
+            print(f"ERROR: Empty response when creating concept: {created}")
+            return None
+    
+    concept_id = created.get("id")
+    if not concept_id:
+        print(f"ERROR: No 'id' in concept creation response: {created}")
+        return None
+    
+    _concept_cache[key] = concept_id
+    return concept_id
 
 
 # ---------------------------------------------------------------------------

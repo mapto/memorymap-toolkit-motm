@@ -169,7 +169,6 @@ def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
         "family": [],
     }
 
-    in_person_section = False
     in_sources_section = False
 
     for field, value, extra in rows:
@@ -177,72 +176,70 @@ def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
         value_str = clean_value(value)
         extra_str = clean_value(extra)
 
-        # Identifier
+        # Identifier from "ID Sprecher" field
         if record["identifier"] is None:
-            combined = " ".join([x for x in [field, value_str] if x]).replace(
-                "\u2013", "-"
-            )
-            match = re.search(r"Metadaten\s*-\s*([A-Za-z0-9_]+)", combined)
-            if match:
-                record["identifier"] = match.group(1)
+            if field == "ID Sprecher":
+                record["identifier"] = value_str
+            else:
+                # Fallback: extract from title row
+                combined = " ".join([x for x in [field, value_str] if x]).replace(
+                    "\u2013", "-"
+                )
+                match = re.search(r"Metadaten\s*-\s*([A-Za-z0-9_]+)", combined)
+                if match:
+                    record["identifier"] = match.group(1)
 
-        # Section markers
-        if field == "PERSON":
-            in_person_section = True
-            continue
-        if field == "BILDUNG UND BERUF":
-            in_person_section = False
+        # Section markers (optional, for future format compatibility)
         if field == "QUELLEN":
             in_sources_section = True
             continue
         if field == "MIGRATION":
             in_sources_section = False
 
-        # Person fields
-        if in_person_section:
-            if field == "Vorname":
-                record["person"]["given_name"] = value_str
-            elif field == "ehemaliger Vorname":
-                record["person"]["previous_given_name"] = value_str
-            elif field == "Nachname":
-                record["person"]["family_name"] = value_str
-            elif field == "ehemaliger Nachname":
-                record["person"]["previous_family_name"] = value_str
-            elif field == "Geschlecht":
-                record["person"]["gender"] = value_str
-            elif field == "Geburtsdatum":
-                record["person"]["birth_date"] = (
-                    parse_date(value_str) if value_str else None
-                )
-            elif field == "Verfolgtengruppe(n) NS":
-                record["person"]["attributes"]["ns_persecution_group"] = value_str
-            elif field == "Geburtsort":
-                record["birth_place"]["name"] = value_str
-                if extra_str:
-                    for part in (p.strip() for p in extra_str.split("|") if p.strip()):
-                        if part.startswith("Land:"):
-                            record["birth_place"]["regions"].append(
-                                part.split(":", 1)[1].strip()
-                            )
-                        elif part.startswith("Region:"):
-                            record["birth_place"]["regions"].append(
-                                part.split(":", 1)[1].strip()
-                            )
-                        elif part.startswith("Kreis:"):
-                            record["birth_place"]["regions"].append(
-                                part.split(":", 1)[1].strip()
-                            )
-                        elif part.startswith("Koordinaten:"):
-                            record["birth_place"]["coordinates"] = parse_coordinates(
-                                part
-                            )
-                        elif part.startswith("Wikidata:"):
-                            record["birth_place"]["wikidata_id"] = part.split(":", 1)[
-                                1
-                            ].strip()
+        # Person fields (parse directly without section markers)
+        if field == "Vorname":
+            record["person"]["given_name"] = value_str
+        elif field == "ehem. Vorname" or field == "ehemaliger Vorname":
+            record["person"]["previous_given_name"] = value_str
+        elif field == "Nachname":
+            record["person"]["family_name"] = value_str
+        elif field == "ehem. Nachname" or field == "ehemaliger Nachname":
+            record["person"]["previous_family_name"] = value_str
+        elif field == "Geschlecht":
+            record["person"]["gender"] = value_str
+        elif field == "Geburtsdatum":
+            record["person"]["birth_date"] = (
+                parse_date(value_str) if value_str else None
+            )
+        elif field == "Verfolgtengruppe NS" or field == "Verfolgtengruppe(n) NS":
+            record["person"]["attributes"]["ns_persecution_group"] = value_str
+        elif field == "Geburtsort":
+            record["birth_place"]["name"] = value_str
+            if extra_str:
+                for part in (p.strip() for p in extra_str.split("|") if p.strip()):
+                    if part.startswith("Land:"):
+                        record["birth_place"]["regions"].append(
+                            part.split(":", 1)[1].strip()
+                        )
+                    elif part.startswith("Region:"):
+                        record["birth_place"]["regions"].append(
+                            part.split(":", 1)[1].strip()
+                        )
+                    elif part.startswith("Kreis:"):
+                        record["birth_place"]["regions"].append(
+                            part.split(":", 1)[1].strip()
+                        )
+                    elif part.startswith("Koordinaten:"):
+                        record["birth_place"]["coordinates"] = parse_coordinates(
+                            part
+                        )
+                    elif part.startswith("Wikidata:"):
+                        record["birth_place"]["wikidata_id"] = part.split(":", 1)[
+                            1
+                        ].strip()
 
-        # Interviews
-        if in_sources_section:
+        # Interviews/Sources
+        if in_sources_section or field.startswith("Quelle "):
             m = re.match(r"Quelle (\d+)\s*\u2013\s*(.+)", field)
             if not m:
                 continue
