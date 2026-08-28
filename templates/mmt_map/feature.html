@@ -1,14 +1,15 @@
 {% load thumbnail %}
 {% load static %}
+{% load i18n %}
 <!--<div class="row justify-content-center">-->
 <div class="feature_detail shadow col-12">
-	<button type="button" class="close close_feature" aria-label="Close">
+	<button type="button" class="close close_feature" aria-label="{% trans 'Close' %}">
 		<span aria-hidden="true">&times;</span>
 	</button>
 	<div class="row">
 		<div class="col-xs-12 col-sm-8 col-lg-6" style="margin: auto">
 			<br />
-			<img src="{{ feature.thumbnail.url }}" alt="Photo of {{ feature.name }}" class="feature_thumbnail_lg img-fluid" />
+			<img src="{{ feature.thumbnail.url }}" alt="{% blocktrans with name=feature.name %}Photo of {{ name }}{% endblocktrans %}" class="feature_thumbnail_lg img-fluid" />
 			<p class="small"><em>{{ feature.thumbnail_copyright|safe }}</em></p>
 
 			<h2>{{ feature.name }}</h2>
@@ -17,10 +18,10 @@
 			<article>
 
 			{% if feature.popup_audio_file %}
-			<h3>Listen: {{ feature.popup_audio_title }}</h3>
+			<h3>{% blocktrans with title=feature.popup_audio_title %}Listen: {{ title }}{% endblocktrans %}</h3>
 			<div class="player {{ feature.popup_audio_title|slugify }}-detail" id="{{ feature.popup_audio_title|slugify }}-{{ feature.name|slugify }}">	
 				<div id="play_button_container">
-					<a href="#" class="play" data-audio="{{ feature.popup_audio_file.url }}" data-title="{{ feature.popup_audio_title }}", data-player_id="{{ feature.popup_audio_title|slugify }}-detail"><img src="{% static 'img/play.svg' %}" alt="play" class="play_button" /></a>
+					<a href="#" class="play" data-audio="{{ feature.popup_audio_file.url }}" data-title="{{ feature.popup_audio_title }}", data-player_id="{{ feature.popup_audio_title|slugify }}-detail"><img src="{% static 'img/play.svg' %}" alt="{% trans 'play' %}" class="play_button" /></a>
 				</div>
 				<div class="player_display">
 					<span class="player_timer">--:--</span>
@@ -38,7 +39,7 @@
 				{% endif %}
 
 				{% if item.audio_file %}
-				<h3>Listen: {{ item.title }}</h3>
+				<h3>{% blocktrans with title=item.title %}Listen: {{ title }}{% endblocktrans %}</h3>
 				<div class="player {{ item.title|slugify }}-detail" id="{{ item.title|slugify }}-{{ feature.name|slugify }}">	
 					<div id="play_button_container">
 						<a href="#" class="play" data-audio="/media/{{ item.audio_file }}" data-title="{{ item.title }}", data-player_id="{{ item.title|slugify }}-detail"><img src="/static/memory_map/img/play.svg" alt="play" class="play_button" /></a>
@@ -55,13 +56,13 @@
 				<hr />
 				<br />
 			{% empty %}
-				<h4>No Material</h4>
+				<h4>{% trans "No Material" %}</h4>
 			{% endfor %}
 
-			<h3>Cite This Article</h3>
-			<p><em>{{ feature.name }}</em>, <span class="citation_link">{{ host }}?feature_type={{ feature.get_type }}&id={{ feature.id }}</span>, accessed <span class="citation_date">{{ today|date:"F Y" }}</span>.</p>
+			<h3>{% trans "Cite This Article" %}</h3>
+			<p><em>{{ feature.name }}</em>, <span class="citation_link">{{ host }}?feature_type={{ feature.get_type }}&id={{ feature.id }}</span>, {% trans "accessed" %} <span class="citation_date">{{ today|date:"F Y" }}</span>.</p>
 
-			<button class="btn btn-light btn-block close_feature">Close</button>
+			<button class="btn btn-light btn-block close_feature">{% trans "Close" %}</button>
 			</article>
 		</div>
 	</div>

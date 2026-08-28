@@ -1,19 +1,20 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-0">
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
-    <p><a href="javascript:history.back()">&larr; Back</a></p>
+    <p><a href="javascript:history.back()">&larr; {% trans "Back" %}</a></p>
     {% include "mmt_motm/_breadcrumb.html" %}
     <h1>{% if dominant_icon %}<i class="fas {{ dominant_icon }}"></i> {% endif %}{{ location.current_name }}</h1>
 
     {% if location.alternate_names %}
-    <p><strong>Alternate names:</strong> {{ location.alternate_names }}</p>
+    <p><strong>{% trans "Alternate names:" %}</strong> {{ location.alternate_names }}</p>
     {% endif %}
 
     {% if location.postal_address %}
-    <p><strong>Address:</strong> {{ location.postal_address }}</p>
+    <p><strong>{% trans "Address:" %}</strong> {{ location.postal_address }}</p>
     {% endif %}
 
     {% if location.description %}
@@ -23,13 +24,13 @@
     {% if location.wikidata_id or location.geonames_id %}
     <p>
     {% if location.wikidata_id %}
-        <strong>Wikidata:</strong>
+        <strong>{% trans "Wikidata:" %}</strong>
         <a href="https://www.wikidata.org/wiki/{{ location.wikidata_id }}"
            target="_blank" rel="noopener">{{ location.wikidata_id }}</a>
     {% endif %}
     {% if location.wikidata_id and location.geonames_id %} &middot; {% endif %}
     {% if location.geonames_id %}
-        <strong>GeoNames:</strong>
+        <strong>{% trans "GeoNames:" %}</strong>
         <a href="https://www.geonames.org/{{ location.geonames_id }}"
            target="_blank" rel="noopener">{{ location.geonames_id }}</a>
     {% endif %}
@@ -37,7 +38,7 @@
     {% endif %}
 
     {% if location.urls.exists %}
-    <h3>References</h3>
+    <h3>{% trans "References" %}</h3>
     <ul>
         {% for url in location.urls.all %}
         <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
@@ -46,7 +47,7 @@
     {% endif %}
 
     {% if persons_born_here %}
-    <h3>Born here</h3>
+    <h3>{% trans "Born here" %}</h3>
     <ul>
         {% for person in persons_born_here %}
         <li><a href="{% url 'person_detail' person.pk %}">{{ person }}</a></li>
@@ -55,7 +56,7 @@
     {% endif %}
 
     {% if persons_died_here %}
-    <h3>Died here</h3>
+    <h3>{% trans "Died here" %}</h3>
     <ul>
         {% for person in persons_died_here %}
         <li><a href="{% url 'person_detail' person.pk %}">{{ person }}</a></li>
@@ -64,9 +65,9 @@
     {% endif %}
 
     {% if events %}
-    <h3>Events</h3>
+    <h3>{% trans "Events" %}</h3>
     <table class="table table-sm table-striped">
-        <thead><tr><th>Date</th><th>Place</th><th>Description</th></tr></thead>
+        <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Place" %}</th><th>{% trans "Description" %}</th></tr></thead>
         <tbody>
         {% for event in events %}
         <tr>
@@ -110,7 +111,7 @@
     {% if location.location %}
     var coord = [{{ location.location.x }}, {{ location.location.y }}];
     {% else %}
-    document.getElementById('location-map').innerHTML = '<p class="text-muted p-3">No coordinates available.</p>';
+    document.getElementById('location-map').innerHTML = '<p class="text-muted p-3">{% trans "No coordinates available." %}</p>';
     return;
     {% endif %}
 

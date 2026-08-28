@@ -1,16 +1,17 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Events</h1>
-    <input type="text" id="events-filter" class="form-control mb-2" placeholder="Filter events…">
+    <h1>{% trans "Events" %}</h1>
+    <input type="text" id="events-filter" class="form-control mb-2" placeholder="{% trans 'Filter events…' %}">
     <table class="table table-sm table-striped table-hover" id="events-table">
         <thead>
             <tr>
-                <th class="sortable" data-col="0">Date <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="1">Place <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">Description <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">Life Journey <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="0">{% trans "Date" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">{% trans "Place" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{% trans "Description" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{% trans "Life Journey" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>

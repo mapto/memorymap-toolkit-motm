@@ -8,8 +8,9 @@ Context variables:
     - icon (str|None): Font Awesome icon class (e.g. "fa-globe")
   breadcrumb_items must NOT include the current page — only ancestors.
 {% endcomment %}
+{% load i18n %}
 {% if breadcrumb_items %}
-<nav aria-label="breadcrumb">
+<nav aria-label="{% trans 'breadcrumb' %}">
     <ol class="breadcrumb bg-light">
         {% for item in breadcrumb_items %}
         <li class="breadcrumb-item">

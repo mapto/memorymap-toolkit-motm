@@ -1,6 +1,7 @@
 {% load analytical %}
+{% load i18n %}
 <!doctype html>
-	<html lang="en">
+	<html lang="{{ LANGUAGE_CODE }}">
 	<head>
 		{% analytical_head_top %}
 		<!-- Required meta tags -->
@@ -86,7 +87,7 @@
 				<div class="collapse navbar-collapse" id="navbarSupportedContent">
 					<ul class="navbar-nav ml-auto menu_links">
 						<li class="nav-item">
-							<a class="nav-link" href="{% url 'index' %}">Map</a>
+							<a class="nav-link" href="{% url 'index' %}">{% trans "Map" %}</a>
 						</li>
 						&nbsp;
 						<li class="nav-item dropdown">
@@ -96,14 +97,14 @@
 								role="button"
 								data-toggle="dropdown"
 								aria-haspopup="true"
-								aria-expanded="false">Concepts</a>
+								aria-expanded="false">{% trans "Concepts" %}</a>
 							<div class="dropdown-menu" aria-labelledby="conceptsDropdown">
-								<a class="dropdown-item" href="{% url 'concept_list' %}">Word Cloud</a>
-								<a class="dropdown-item" href="{% url 'concept_taxonomy' %}">Taxonomy</a>
+								<a class="dropdown-item" href="{% url 'concept_list' %}">{% trans "Word Cloud" %}</a>
+								<a class="dropdown-item" href="{% url 'concept_taxonomy' %}">{% trans "Taxonomy" %}</a>
 							</div>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="{% url 'person_list' %}">People</a>
+							<a class="nav-link" href="{% url 'person_list' %}">{% trans "People" %}</a>
 						</li>
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle"
@@ -112,11 +113,11 @@
 								role="button"
 								data-toggle="dropdown"
 								aria-haspopup="true"
-								aria-expanded="false">Places</a>
+								aria-expanded="false">{% trans "Places" %}</a>
 							<div class="dropdown-menu" aria-labelledby="locationsDropdown">
-								<a class="dropdown-item" href="{% url 'location_list' %}">Word Cloud</a>
-								<a class="dropdown-item" href="{% url 'location_taxonomy' %}">Taxonomy</a>
-								<a class="dropdown-item" href="{% url 'location_map' %}">Map</a>
+								<a class="dropdown-item" href="{% url 'location_list' %}">{% trans "Word Cloud" %}</a>
+								<a class="dropdown-item" href="{% url 'location_taxonomy' %}">{% trans "Taxonomy" %}</a>
+								<a class="dropdown-item" href="{% url 'location_map' %}">{% trans "Map" %}</a>
 							</div>
 						</li>
 						&nbsp;
@@ -127,10 +128,10 @@
 								role="button"
 								data-toggle="dropdown"
 								aria-haspopup="true"
-								aria-expanded="false">Events</a>
+								aria-expanded="false">{% trans "Events" %}</a>
 							<div class="dropdown-menu" aria-labelledby="eventsDropdown">
-								<a class="dropdown-item" href="{% url 'event_list' %}">List</a>
-								<a class="dropdown-item" href="{% url 'life_journey_heatmap' %}">Heatmap</a>
+								<a class="dropdown-item" href="{% url 'event_list' %}">{% trans "List" %}</a>
+								<a class="dropdown-item" href="{% url 'life_journey_heatmap' %}">{% trans "Heatmap" %}</a>
 							</div>
 						</li>
 						<li class="nav-item dropdown">
@@ -140,10 +141,10 @@
 								role="button"
 								data-toggle="dropdown"
 								aria-haspopup="true"
-								aria-expanded="false">Quotes</a>
+								aria-expanded="false">{% trans "Quotes" %}</a>
 							<div class="dropdown-menu" aria-labelledby="quotesDropdown">
-								<a class="dropdown-item" href="{% url 'extraction_list' %}">List</a>
-								<a class="dropdown-item" href="{% url 'source_category_heatmap' %}">Heatmap</a>
+								<a class="dropdown-item" href="{% url 'extraction_list' %}">{% trans "List" %}</a>
+								<a class="dropdown-item" href="{% url 'source_category_heatmap' %}">{% trans "Heatmap" %}</a>
 							</div>
 						</li>
 						&nbsp;
@@ -153,11 +154,11 @@
 								data-toggle="dropdown"
 								aria-haspopup="true"
 								aria-expanded="false">
-							About
+							{% trans "About" %}
 							</a>
 							<div class="dropdown-menu" id="pages" aria-labelledby="navbarDropdown">
-								<a class="dropdown-item" href="{% url 'text_only' %}">Text Only Site</a>
-								<a class="dropdown-item" href="https://prinminorsonthemove.wordpress.com/" target="_blank" rel="noopener">Research Project</a>
+								<a class="dropdown-item" href="{% url 'text_only' %}">{% trans "Text Only Site" %}</a>
+								<a class="dropdown-item" href="https://prinminorsonthemove.wordpress.com/" target="_blank" rel="noopener">{% trans "Research Project" %}</a>
 							</div>
 						</li>
 						{% if themes %}
@@ -189,8 +190,33 @@
 							{% endfor %}
 						{% endif %}
 					</ul>
+					<div class="form-inline my-2 my-lg-0 mr-2">
+						{% get_current_language as CURRENT_LANGUAGE %}
+						<div class="dropdown">
+							<a class="nav-link dropdown-toggle" href="#"
+								id="languageDropdown" role="button"
+								data-toggle="dropdown"
+								aria-haspopup="true"
+								aria-expanded="false">
+								{{ CURRENT_LANGUAGE|upper }}
+							</a>
+							<div class="dropdown-menu dropdown-menu-right" aria-labelledby="languageDropdown">
+								{% get_available_languages as AVAILABLE_LANGUAGES %}
+								{% for lang_code, lang_name in AVAILABLE_LANGUAGES %}
+								<form action="{% url 'set_language' %}" method="post" class="px-3 py-1">
+									{% csrf_token %}
+									<input name="next" type="hidden" value="{{ request.path }}">
+									<input name="language" type="hidden" value="{{ lang_code }}">
+									<button type="submit" class="btn btn-link p-0 dropdown-item{% if lang_code == CURRENT_LANGUAGE %} active{% endif %}">
+										{{ lang_name }}
+									</button>
+								</form>
+								{% endfor %}
+							</div>
+						</div>
+					</div>
 					<form class="form-inline my-2 my-lg-0" style="position:relative;">
-						<input class="form-control mr-sm-2" placeholder="Search" aria-label="Search" id="map_search">
+						<input class="form-control mr-sm-2" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}" id="map_search">
 						<div id="person-search-results" class="list-group"
 							style="position:absolute;top:100%;left:0;right:0;
 								z-index:1050;max-height:300px;
@@ -209,13 +235,13 @@
 				<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
 					<div class="modal-content">
 						<div class="modal-header">
-							<h5 class="modal-title" id="welcomeMessageLongTitle">Welcome</h5>
+							<h5 class="modal-title" id="welcomeMessageLongTitle">{% trans "Welcome" %}</h5>
 						</div>
 						<div class="modal-body">
 							<p>{{ config.WELCOME_MESSAGE|safe }}</p>
 						</div>
 						<div class="modal-footer">
-							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
 						</div>
 					</div>
 				</div>
@@ -267,7 +293,7 @@
 						if (persons.length > 0) {
 							var h = document.createElement('div');
 							h.className = 'list-group-item list-group-item-secondary small';
-							h.textContent = 'People';
+							h.textContent = '{% trans "People" %}';
 							resultsBox.appendChild(h);
 							persons.forEach(function(p) {
 								var a = document.createElement('a');
@@ -280,7 +306,7 @@
 						if (extractions.length > 0) {
 							var h2 = document.createElement('div');
 							h2.className = 'list-group-item list-group-item-secondary small';
-							h2.textContent = 'Quotes';
+							h2.textContent = '{% trans "Quotes" %}';
 							resultsBox.appendChild(h2);
 							extractions.forEach(function(e) {
 								var a = document.createElement('a');
@@ -293,7 +319,7 @@
 						if (concepts.length > 0) {
 							var h3 = document.createElement('div');
 							h3.className = 'list-group-item list-group-item-secondary small';
-							h3.textContent = 'Concepts';
+							h3.textContent = '{% trans "Concepts" %}';
 							resultsBox.appendChild(h3);
 							concepts.forEach(function(c) {
 								var a = document.createElement('a');
@@ -306,7 +332,7 @@
 						if (events.length > 0) {
 							var h4 = document.createElement('div');
 							h4.className = 'list-group-item list-group-item-secondary small';
-							h4.textContent = 'Events';
+							h4.textContent = '{% trans "Events" %}';
 							resultsBox.appendChild(h4);
 							events.forEach(function(ev) {
 								var a = document.createElement('a');

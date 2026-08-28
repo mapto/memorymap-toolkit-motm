@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.gis import forms as gis_forms
 from django.contrib.gis.geos import Point
 from constance import config
+from parler.admin import TranslatableAdmin
 
 from mmt_map.widgets import MapBoxGLWidget
 
@@ -22,7 +23,7 @@ from .models import (
 )
 
 @admin.register(Person)
-class PersonAdmin(admin.ModelAdmin):
+class PersonAdmin(TranslatableAdmin):
     list_display = ("family_name", "given_name", "get_birth_date", "birth_place")
     search_fields = ("given_name", "family_name", "birth_place__current_name")
     ordering = ("family_name",)
@@ -34,7 +35,7 @@ class PersonAdmin(admin.ModelAdmin):
     get_birth_date.short_description = "Birth date"
 
 @admin.register(Interview)
-class InterviewAdmin(admin.ModelAdmin):
+class InterviewAdmin(TranslatableAdmin):
     list_display = ("archive_id", "interviewee", "interviewer", "date", "place")
     search_fields = ("archive_id", "place",
         "interviewee__given_name",
@@ -73,7 +74,7 @@ class LocationPointForm(forms.ModelForm):
         return instance
 
 @admin.register(LocationPoint)
-class LocationPointAdmin(admin.ModelAdmin):
+class LocationPointAdmin(TranslatableAdmin):
     form = LocationPointForm
     list_display = ("current_name", "get_latitude", "get_longitude")
     search_fields = ("current_name",)
@@ -129,7 +130,7 @@ class RelationshipAdmin(admin.ModelAdmin):
     to_person.short_description = "To"
 
 @admin.register(LocationRegion)
-class LocationRegionAdmin(admin.ModelAdmin):
+class LocationRegionAdmin(TranslatableAdmin):
     list_display = ("name", "part_of")
     search_fields = ("name",)
 
@@ -143,26 +144,24 @@ admin.site._registry[Person].opts.verbose_name = "Person"
 admin.site._registry[Person].opts.verbose_name_plural = "People"
 
 @admin.register(RelationshipType)
-class RelationshipTypeAdmin(admin.ModelAdmin):
+class RelationshipTypeAdmin(TranslatableAdmin):
     list_display = ("name", "original_label")
-    ordering = ("name",)
 
 admin.site.register(URL)
 admin.site.register(Timespan)
 
 @admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(TranslatableAdmin):
     list_display = ("__str__", "description", "lifecycle")
     list_filter = ("lifecycle",)
 
 @admin.register(Extraction)
-class ExtractionAdmin(admin.ModelAdmin):
+class ExtractionAdmin(TranslatableAdmin):
     list_display = ("identifier", "people_mentioned", "classification", "interview", "language")
-    search_fields = ("identifier", "quote", "notes")
+    search_fields = ("identifier", "quote", "translations__notes")
     ordering = ("identifier",)
 
 @admin.register(Concept)
-class ConceptAdmin(admin.ModelAdmin):
+class ConceptAdmin(TranslatableAdmin):
     list_display = ("label",)
-    search_fields = ("label",)
-    ordering = ("label",)
+    search_fields = ("translations__label",)

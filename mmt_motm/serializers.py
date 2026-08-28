@@ -28,12 +28,17 @@ class URLSerializer(serializers.ModelSerializer):
 
 
 class LocationRegionSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on LocationRegion.
+    description = serializers.CharField()
+
     class Meta:
         model = LocationRegion
         fields = "__all__"
 
 
 class LocationPointSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on LocationPoint.
+    description = serializers.CharField(required=False)
     latitude = serializers.FloatField(write_only=True, required=False)
     longitude = serializers.FloatField(write_only=True, required=False)
 
@@ -56,12 +61,18 @@ class LocationPointSerializer(serializers.ModelSerializer):
 
 
 class PersonSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on Person.
+    description = serializers.CharField()
+
     class Meta:
         model = Person
         fields = "__all__"
 
 
 class RelationshipTypeSerializer(serializers.ModelSerializer):
+    # name is a django-parler translated field on RelationshipType.
+    name = serializers.CharField()
+
     class Meta:
         model = RelationshipType
         fields = "__all__"
@@ -74,18 +85,26 @@ class RelationshipSerializer(serializers.ModelSerializer):
 
 
 class ExtractionSerializer(serializers.ModelSerializer):
+    # notes is a django-parler translated field on Extraction.
+    notes = serializers.CharField()
+
     class Meta:
         model = Extraction
         fields = "__all__"
 
 
 class InterviewSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on Interview.
+    description = serializers.CharField()
+
     class Meta:
         model = Interview
         fields = "__all__"
 
 
 class InterviewDetailSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on Interview.
+    description = serializers.CharField()
     extracted_from = ExtractionSerializer(many=True, read_only=True)
     interviewee_display = serializers.CharField(source='interviewee', read_only=True)
     interviewer_display = serializers.CharField(source='interviewer', read_only=True)
@@ -100,12 +119,18 @@ class InterviewDetailSerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    # description is a django-parler translated field on Event.
+    description = serializers.CharField()
+
     class Meta:
         model = Event
         fields = "__all__"
 
 
 class ConceptSerializer(serializers.ModelSerializer):
+    # label is a django-parler translated field on Concept.
+    label = serializers.CharField()
+
     class Meta:
         model = Concept
         fields = "__all__"

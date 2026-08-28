@@ -17,6 +17,11 @@ from mmt_pages.models import Page, Section
 # Full map feature seralizers
 
 class AbstractFeatureSerializer(GeoFeatureModelSerializer):
+	# name/description are django-parler translated fields, not real model
+	# fields, so DRF's automatic ModelSerializer introspection can't see them.
+	# Declare them explicitly; parler's attribute proxy makes plain get/set work.
+	name = serializers.CharField()
+	description = serializers.CharField()
 	feature_type = serializers.CharField(source='get_type', read_only=True)
 	theme = serializers.StringRelatedField()
 	popup_image = serializers.CharField(source='get_popup_image_url', read_only=True)
@@ -52,6 +57,8 @@ class LineSerializer(AbstractFeatureSerializer):
 # Terse map feature seralizers
 
 class TerseAbstractfeatureSerializer(GeoFeatureModelSerializer):
+	# name is a django-parler translated field; see AbstractFeatureSerializer.
+	name = serializers.CharField()
 	documents = serializers.SlugRelatedField(
 		many=True,
 		read_only=True,
@@ -85,6 +92,9 @@ class TerseMultiPointSerializer(TerseAbstractfeatureSerializer):
 
 
 class DocumentSerializer(serializers.ModelSerializer):
+	# title/body are django-parler translated fields on Document.
+	title = serializers.CharField()
+	body = serializers.CharField()
 	attachment_type = serializers.CharField(source='get_type', read_only=True)
 	point = PointSerializer(read_only=True)
 	class Meta:
@@ -92,6 +102,8 @@ class DocumentSerializer(serializers.ModelSerializer):
 		fields = ('id', 'attachment_type', 'title', 'body_processed', 'order', 'slug', 'body', 'point', 'polygon', 'line')
 
 class ImageSerializer(serializers.ModelSerializer):
+	# description is a django-parler translated field on Image (title stays plain).
+	description = serializers.CharField()
 	attachment_type = serializers.CharField(source='get_type', read_only=True)
 	class Meta:
 		model = Image
@@ -107,6 +119,8 @@ class AudioFileSerializer(serializers.ModelSerializer):
 
 
 class PointDetailSerializer(serializers.ModelSerializer):
+	# name is a django-parler translated field on Point.
+	name = serializers.CharField()
 	point_documents = DocumentSerializer(many=True, read_only=True)
 	point_images = ImageSerializer(many=True, read_only=True)
 	point_audiofiles = AudioFileSerializer(many=True, read_only=True)
@@ -116,6 +130,8 @@ class PointDetailSerializer(serializers.ModelSerializer):
 		fields = ('name', 'point_documents', 'point_images', 'point_audiofiles')
 
 class PolygonDetailSerializer(serializers.ModelSerializer):
+	# name is a django-parler translated field on Polygon.
+	name = serializers.CharField()
 	polygon_documents = DocumentSerializer(many=True, read_only=True)
 	polygon_images = ImageSerializer(many=True, read_only=True)
 	polygon_audiofiles = AudioFileSerializer(many=True, read_only=True)
@@ -125,6 +141,8 @@ class PolygonDetailSerializer(serializers.ModelSerializer):
 		fields = ('name', 'polygon_documents', 'polygon_images', 'polygon_audiofiles')
 
 class LineDetailSerializer(serializers.ModelSerializer):
+	# name is a django-parler translated field on Line.
+	name = serializers.CharField()
 	line_documents = DocumentSerializer(many=True, read_only=True)
 	line_images = ImageSerializer(many=True, read_only=True)
 	line_audiofiles = AudioFileSerializer(many=True, read_only=True)
@@ -135,6 +153,8 @@ class LineDetailSerializer(serializers.ModelSerializer):
 
 
 class MapLayerSerializer(serializers.ModelSerializer):
+	# name is a django-parler translated field on MapLayer.
+	name = serializers.CharField()
 	class Meta:
 		model = MapLayer
 		fields = ('name', 'slug', 'tilejson_url')
@@ -143,11 +163,17 @@ class MapLayerSerializer(serializers.ModelSerializer):
 # Other serializers
 
 class SectionSerializer(serializers.ModelSerializer):
+	# title/body are django-parler translated fields on Section.
+	title = serializers.CharField()
+	body = serializers.CharField()
 	class Meta:
 		model = Section
 		fields = ('title', 'slug', 'body', 'order')
 
 class PageSerializer(serializers.ModelSerializer):
+	# title/body are django-parler translated fields on Page.
+	title = serializers.CharField()
+	body = serializers.CharField()
 	sections = SectionSerializer(many=True, read_only=True)
 	
 	class Meta:
@@ -156,11 +182,14 @@ class PageSerializer(serializers.ModelSerializer):
 
 
 class PageLinkSerializer(serializers.ModelSerializer):
+	title = serializers.CharField()
 	class Meta:
 		model = Page
 		fields = ('title', 'slug', 'order',)
 
 class ThemeSerializer(serializers.ModelSerializer):
+	# name is a django-parler translated field on Theme.
+	name = serializers.CharField()
 	class Meta:
 		model = Theme
 		fields = ('id', 'name', 'color')

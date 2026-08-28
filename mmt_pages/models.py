@@ -5,6 +5,7 @@ from django.urls import reverse
 # Third party Django apps
 from ckeditor_uploader.fields import RichTextUploadingField
 from django_extensions.db.fields import AutoSlugField
+from parler.models import TranslatableModel, TranslatedFields
 
 # Other modules
 import bleach
@@ -14,11 +15,13 @@ def page_directory_path(instance, filename):
 	if hasattr(instance, 'slug'):
 		return 'uploads/pages/{0}/{1}'.format(instance.slug, filename)
 
-class Page(models.Model):
+class Page(TranslatableModel):
 	"""An HTML page"""
-	title = models.CharField(max_length=140)
+	translations = TranslatedFields(
+		title = models.CharField(max_length=140),
+		body = RichTextUploadingField(blank=True, null=True),
+	)
 	slug = AutoSlugField(populate_from='title')
-	body = RichTextUploadingField(blank=True, null=True)
 	order = models.PositiveSmallIntegerField(default=0)
 	is_front_page = models.BooleanField(default=False)
 	is_instructions = models.BooleanField(default=False)
@@ -66,11 +69,13 @@ class Page(models.Model):
 		ordering = ['order']
 
 
-class Section(models.Model):
+class Section(TranslatableModel):
 	"""A section of a page"""
-	title = models.CharField(max_length=140)
+	translations = TranslatedFields(
+		title = models.CharField(max_length=140),
+		body = RichTextUploadingField(blank=True, null=True),
+	)
 	slug = AutoSlugField(populate_from='title')
-	body = RichTextUploadingField(blank=True, null=True)
 	order = models.PositiveSmallIntegerField(default=0)
 	page = models.ForeignKey(Page, related_name='sections', on_delete=models.CASCADE, null=True)
 

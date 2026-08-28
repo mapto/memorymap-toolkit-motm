@@ -1,13 +1,14 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <h1>Life Journey × Sources</h1>
+    <h1>{% trans "Life Journey × Sources" %}</h1>
     <div class="table-responsive">
     <table class="table table-bordered table-sm text-center" id="heatmap-table">
         <thead>
             <tr>
-                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">Source</th>
+                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">{% trans "Source" %}</th>
                 {% for h in stage_headers %}
                 <th style="white-space:nowrap;">
                     <span style="color:{{ h.color }}">

@@ -1,12 +1,13 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4">
-    <p><a href="{% url 'extraction_list' %}">&larr; Back to list</a></p>
-    <h1>Quote {{ extraction.identifier|default:"" }}</h1>
+    <p><a href="{% url 'extraction_list' %}">&larr; {% trans "Back to list" %}</a></p>
+    <h1>{% blocktrans with identifier=extraction.identifier|default:"" %}Quote {{ identifier }}{% endblocktrans %}</h1>
 
     {% if extraction.people_mentioned %}
-    <p><strong>Person mentioned:</strong>
+    <p><strong>{% trans "Person mentioned:" %}</strong>
         <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">
             {{ extraction.people_mentioned }}
         </a>
@@ -14,11 +15,11 @@
     {% endif %}
 
     {% if extraction.timecode %}
-    <p><strong>Timecode:</strong> {{ extraction.timecode }}</p>
+    <p><strong>{% trans "Timecode:" %}</strong> {{ extraction.timecode }}</p>
     {% endif %}
 
     {% if extraction.concepts.exists %}
-    <p><strong>Concepts:</strong>
+    <p><strong>{% trans "Concepts:" %}</strong>
         {% for concept in extraction.concepts.all %}
         <a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
@@ -26,23 +27,23 @@
     {% endif %}
 
     {% if extraction.classification %}
-    <p><strong>Classification:</strong> {{ extraction.classification }}</p>
+    <p><strong>{% trans "Classification:" %}</strong> {{ extraction.classification }}</p>
     {% endif %}
 
     {% if extraction.quote %}
-    <h3>Quote</h3>
+    <h3>{% trans "Quote" %}</h3>
     <blockquote class="blockquote">{{ extraction.quote }}</blockquote>
     {% endif %}
 
     {% if extraction.event %}
-    <p><strong>Event:</strong> {{ extraction.event }}</p>
+    <p><strong>{% trans "Event:" %}</strong> {{ extraction.event }}</p>
     {% if extraction.event_confidence %}
-    <p><strong>Event confidence:</strong> {{ extraction.event_confidence }}</p>
+    <p><strong>{% trans "Event confidence:" %}</strong> {{ extraction.event_confidence }}</p>
     {% endif %}
     {% endif %}
 
     {% if extraction.interview %}
-    <p><strong>Source:</strong>
+    <p><strong>{% trans "Source:" %}</strong>
         <a href="{% url 'interview_detail' extraction.interview.pk %}">
             {{ extraction.interview }}
         </a>
@@ -50,7 +51,7 @@
     {% endif %}
 
     {% if extraction.notes %}
-    <h3>Notes</h3>
+    <h3>{% trans "Notes" %}</h3>
     <p>{{ extraction.notes }}</p>
     {% endif %}
 </div>

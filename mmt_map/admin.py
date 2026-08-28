@@ -1,5 +1,6 @@
 # Django core
 from django.contrib.gis import admin
+from parler.admin import TranslatableAdmin, TranslatableStackedInline
 
 # Memory Map Toolkit
 from .models import Theme, Point, Polygon, Line, Document, Image, AudioFile, TagList, MapLayer, MultiPoint
@@ -20,7 +21,7 @@ def set_read_only_fields(request, fields):
 	return fields
 
 
-class DocumentInline(admin.StackedInline):
+class DocumentInline(TranslatableStackedInline):
 	model = Document
 	# prepopulated_fields = {"slug": ("title",)}
 	fields = ['title', 'order', 'published', 'body',]
@@ -31,7 +32,7 @@ class DocumentInline(admin.StackedInline):
 		return set_read_only_fields(request, fields)
 
 
-class ImageInline(admin.StackedInline):
+class ImageInline(TranslatableStackedInline):
 	model = Image
 	# prepopulated_fields = {"slug": ("title",)}
 	fields = ['title', 'order', 'published', 'file', 'description', 'copyright',]
@@ -62,7 +63,7 @@ def unpublish(modeladmin, request, queryset):
 	queryset.update(published=False)
 
 
-class PointAdmin(admin.GeoModelAdmin):
+class PointAdmin(TranslatableAdmin, admin.GeoModelAdmin):
 	form = PointForm
 
 	inlines = [
@@ -76,7 +77,7 @@ class PointAdmin(admin.GeoModelAdmin):
 
 	prepopulated_fields = {"popup_audio_slug": ("popup_audio_title",)}
 
-	search_fields = ['name']
+	search_fields = ['translations__name']
 
 	actions = [publish, unpublish]
 
@@ -88,7 +89,7 @@ class PointAdmin(admin.GeoModelAdmin):
 		return set_read_only_fields(request, fields)
 
 
-class MultiPointAdmin(admin.GeoModelAdmin):
+class MultiPointAdmin(TranslatableAdmin, admin.GeoModelAdmin):
 	form = MultiPointForm
 
 	inlines = [
@@ -102,7 +103,7 @@ class MultiPointAdmin(admin.GeoModelAdmin):
 
 	prepopulated_fields = {"popup_audio_slug": ("popup_audio_title",)}
 
-	search_fields = ['name']
+	search_fields = ['translations__name']
 
 	actions = [publish, unpublish]
 
@@ -114,7 +115,7 @@ class MultiPointAdmin(admin.GeoModelAdmin):
 		return set_read_only_fields(request, fields)
 
 
-class PolygonAdmin(admin.GeoModelAdmin):
+class PolygonAdmin(TranslatableAdmin, admin.GeoModelAdmin):
 	form = PolygonForm
 
 	inlines = [
@@ -128,7 +129,7 @@ class PolygonAdmin(admin.GeoModelAdmin):
 
 	prepopulated_fields = {"popup_audio_slug": ("popup_audio_title",)}
 
-	search_fields = ['name']
+	search_fields = ['translations__name']
 
 	actions = [publish, unpublish]
 
@@ -140,7 +141,7 @@ class PolygonAdmin(admin.GeoModelAdmin):
 		return set_read_only_fields(request, fields)
 
 
-class LineAdmin(admin.GeoModelAdmin):
+class LineAdmin(TranslatableAdmin, admin.GeoModelAdmin):
 	form = LineForm
 
 	inlines = [
@@ -154,7 +155,7 @@ class LineAdmin(admin.GeoModelAdmin):
 
 	prepopulated_fields = {"popup_audio_slug": ("popup_audio_title",)}
 
-	search_fields = ['name']
+	search_fields = ['translations__name']
 
 	actions = [publish, unpublish]
 
@@ -166,7 +167,7 @@ class LineAdmin(admin.GeoModelAdmin):
 		return set_read_only_fields(request, fields)
 
 
-class ThemeAdmin(admin.ModelAdmin):
+class ThemeAdmin(TranslatableAdmin):
 	list_display = ['name', 'color']
 	list_editable = ['color']
 
@@ -174,7 +175,7 @@ class ThemeAdmin(admin.ModelAdmin):
 		model = Theme
 
 
-class MapLayerAdmin(admin.ModelAdmin):
+class MapLayerAdmin(TranslatableAdmin):
 	list_display = ['name', 'order']
 	list_editable = ['order']
 	

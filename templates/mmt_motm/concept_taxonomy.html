@@ -1,4 +1,5 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <style>
@@ -51,7 +52,7 @@
 </style>
 
 <div class="container mt-4">
-    <h1>Concept Taxonomy</h1>
+    <h1>{% trans "Concept Taxonomy" %}</h1>
     <div class="file-tree">
         <ul class="tree-list">
         {% for root in roots %}

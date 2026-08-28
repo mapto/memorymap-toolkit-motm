@@ -2,6 +2,7 @@
 
 {% block content %}
 {% load static %}
+{% load i18n %}
 
 <div class="row full_height iface_container">
 	<div class="col map_container" id="map">
@@ -14,7 +15,7 @@
 			<span id="year-label-max" class="year-label">{{ year_max }}</span>
 		</div>
 		<div id="lifecycle-legend" style="position:absolute;bottom:30px;left:10px;background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:4px;font-size:12px;z-index:1;box-shadow:0 1px 4px rgba(0,0,0,0.2);">
-			<strong style="display:block;margin-bottom:4px;">Life Journey</strong>
+			<strong style="display:block;margin-bottom:4px;">{% trans "Life Journey" %}</strong>
 			{% for key, cfg in lifecycle_config.items %}
 			<span style="color:{{ cfg.color }};"><i class="fas {{ cfg.icon }}"></i> {{ cfg.label }}</span><br>
 			{% endfor %}
@@ -46,7 +47,9 @@ const MmtMap = {
 		bearing: {{ config.BEARING }},
 		scale: '{{ config.SCALE }}',
 		font: '{{ config.FEATURE_LABEL_FONT}}',
-		hoverThumbs: {% if config.HOVER_THUMBNAILS %}true{% else %}false{% endif %}
+		hoverThumbs: {% if config.HOVER_THUMBNAILS %}true{% else %}false{% endif %},
+		locationBaseUrl: '{% url "location_detail" pk=0 %}'.replace('0/', ''),
+		eventBaseUrl: '{% url "event_detail" pk=0 %}'.replace('0/', '')
 	},
 
 	themes: [

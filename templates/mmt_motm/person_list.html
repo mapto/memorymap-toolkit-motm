@@ -1,23 +1,24 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>People</h1>
-    <input type="text" id="person-search" class="form-control mb-3" placeholder="Search by name…">
+    <h1>{% trans "People" %}</h1>
+    <input type="text" id="person-search" class="form-control mb-3" placeholder="{% trans 'Search by name…' %}">
     <table class="table table-striped" id="person-table">
         <thead>
             <tr>
-                <th class="sortable col-group-name" data-col="0">Family Name <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-name" data-col="0">{% trans "Family Name" %} <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-name-end col-right-separator"
-                    data-col="1">Given Name <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-birth" data-col="2">Birth Date <span class="sort-arrow"></span></th>
+                    data-col="1">{% trans "Given Name" %} <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-birth" data-col="2">{% trans "Birth Date" %} <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-birth-end col-right-separator"
-                    data-col="3">Birth Place <span class="sort-arrow"></span></th>
-                <th class="sortable col-group-death" data-col="4">Death Date <span class="sort-arrow"></span></th>
+                    data-col="3">{% trans "Birth Place" %} <span class="sort-arrow"></span></th>
+                <th class="sortable col-group-death" data-col="4">{% trans "Death Date" %} <span class="sort-arrow"></span></th>
                 <th class="sortable col-group-death-end col-right-separator"
-                    data-col="5">Death Place <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="6">Sources <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="7">Top Concepts <span class="sort-arrow"></span></th>
+                    data-col="5">{% trans "Death Place" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="6">{% trans "Sources" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="7">{% trans "Top Concepts" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -72,7 +73,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8">No people found.</td>
+                <td colspan="8">{% trans "No people found." %}</td>
             </tr>
             {% endfor %}
         </tbody>

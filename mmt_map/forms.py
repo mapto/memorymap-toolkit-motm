@@ -1,11 +1,12 @@
 from django.contrib.gis import forms
 from django.utils.translation import gettext_lazy as _
+from parler.forms import TranslatableModelForm
 from .models import Point, Polygon, Line, MultiPoint
 from .widgets import MapBoxGLWidget
 from constance import config
 
 
-class PointForm(forms.ModelForm):
+class PointForm(TranslatableModelForm):
 	class Meta:
 		model = Point
 		
@@ -19,7 +20,7 @@ class PointForm(forms.ModelForm):
 	geom = forms.PointField(widget=MapBoxGLWidget(attrs={'config': config}), label=_('Point'))
 
 
-class MultiPointForm(forms.ModelForm):
+class MultiPointForm(TranslatableModelForm):
 	class Meta:
 		model = MultiPoint
 		
@@ -35,7 +36,7 @@ class MultiPointForm(forms.ModelForm):
 
 
 
-class PolygonForm(forms.ModelForm):
+class PolygonForm(TranslatableModelForm):
 	class Meta:
 		model = Polygon
 		
@@ -49,7 +50,7 @@ class PolygonForm(forms.ModelForm):
 	geom = forms.MultiPolygonField(widget=MapBoxGLWidget(attrs={'config': config}), label=_('Polygon'))
 
 
-class LineForm(forms.ModelForm):
+class LineForm(TranslatableModelForm):
 	class Meta:
 		model = Line
 

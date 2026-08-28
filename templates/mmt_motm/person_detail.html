@@ -1,26 +1,27 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-0">
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
-    <p><a href="{% url 'person_list' %}">&larr; Back to list</a></p>
+    <p><a href="{% url 'person_list' %}">&larr; {% trans "Back to list" %}</a></p>
     <h1>{{ person.given_name }} {{ person.family_name }}</h1>
 
     {% if person.previous_given_name or person.previous_family_name %}
-    <p><strong>Previous name:</strong> {{ person.previous_given_name }} {{ person.previous_family_name }}</p>
+    <p><strong>{% trans "Previous name:" %}</strong> {{ person.previous_given_name }} {{ person.previous_family_name }}</p>
     {% endif %}
 
     {% if person.identifier %}
-    <p><strong>Identifier:</strong> {{ person.identifier }}</p>
+    <p><strong>{% trans "Identifier:" %}</strong> {{ person.identifier }}</p>
     {% endif %}
 
     {% if person.gender %}
-    <p><strong>Gender:</strong> {{ person.gender }}</p>
+    <p><strong>{% trans "Gender:" %}</strong> {{ person.gender }}</p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.start %}
-    <p><strong>Born:</strong>
+    <p><strong>{% trans "Born:" %}</strong>
         {{ person.lifespan.start|date:"j N Y" }}
         {% if person.lifespan.certainty_icon %}
             <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning"
@@ -28,14 +29,14 @@
                data-toggle="tooltip"></i>
         {% endif %}
         {% if person.birth_place %}
-            in <a href="{% url 'location_detail' person.birth_place.pk %}">
+            {% trans "in" %} <a href="{% url 'location_detail' person.birth_place.pk %}">
                 {{ person.birth_place }}</a>
         {% endif %}
     </p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.end %}
-    <p><strong>Died:</strong>
+    <p><strong>{% trans "Died:" %}</strong>
         {{ person.lifespan.end|date:"j N Y" }}
         {% if person.lifespan.certainty_icon %}
             <i class="fas {{ person.lifespan.certainty_icon.0 }} text-warning"
@@ -43,31 +44,31 @@
                data-toggle="tooltip"></i>
         {% endif %}
         {% if person.death_place %}
-            in <a href="{% url 'location_detail' person.death_place.pk %}">
+            {% trans "in" %} <a href="{% url 'location_detail' person.death_place.pk %}">
                 {{ person.death_place }}</a>
         {% endif %}
     </p>
     {% endif %}
 
     {% if language_summary %}
-    <p><strong>Languages:</strong>
+    <p><strong>{% trans "Languages:" %}</strong>
         {% for lang in language_summary %}{{ lang.label }} ({{ lang.count }}){% if not forloop.last %}, {% endif %}{% endfor %}
     </p>
     {% endif %}
 
     {% if person.description %}
-    <h3>Biography</h3>
+    <h3>{% trans "Biography" %}</h3>
     <p>{{ person.description }}</p>
     {% endif %}
 
     {% if events %}
-    <h3>Events</h3>
+    <h3>{% trans "Events" %}</h3>
     <table class="table table-sm table-striped">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Place</th>
-                <th>Description</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Place" %}</th>
+                <th>{% trans "Description" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -100,7 +101,7 @@
     {% endif %}
 
     {% if concepts %}
-    <h3>Concepts <small class="text-muted">(top 20)</small></h3>
+    <h3>{% trans "Concepts" %} <small class="text-muted">({% trans "top 20" %})</small></h3>
     <p>
         {% for concept in concepts %}
             <a href="{% url 'concept_detail' concept.pk %}">{{ concept.label }}</a>
@@ -111,7 +112,7 @@
     {% endif %}
 
     {% if person.urls.exists %}
-    <h3>References</h3>
+    <h3>{% trans "References" %}</h3>
     <ul>
         {% for url in person.urls.all %}
         <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
@@ -120,18 +121,18 @@
     {% endif %}
 
     {% if person.relationships_from.exists or person.relationships_to.exists %}
-    <h3>Relationships</h3>
+    <h3>{% trans "Relationships" %}</h3>
     <ul>
         {% for rel in person.relationships_from.all %}
         <li>
-            {{ rel.relationship_type }} is
+            {{ rel.relationship_type }} {% trans "is" %}
             <a href="{% url 'person_detail' rel.person_to.pk %}">{{ rel.person_to }}</a>
             {% if rel.timespan %} ({{ rel.timespan }}){% endif %}
         </li>
         {% endfor %}
         {% for rel in person.relationships_to.all %}
         <li>
-            {{ rel.relationship_type }} of
+            {{ rel.relationship_type }} {% trans "of" %}
             <a href="{% url 'person_detail' rel.person_from.pk %}">{{ rel.person_from }}</a>
             {% if rel.timespan %} ({{ rel.timespan }}){% endif %}
         </li>
@@ -140,33 +141,33 @@
     {% endif %}
 
     {% if interviews_as_interviewer %}
-    <h3>Sources conducted</h3>
+    <h3>{% trans "Sources conducted" %}</h3>
     <ul>
         {% for interview in interviews_as_interviewer %}
         <li>
             <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
             {% if interview.date %} ({{ interview.date }}){% endif %}
-            {% if interview.interviewee %} &mdash; with {{ interview.interviewee }}{% endif %}
+            {% if interview.interviewee %} &mdash; {% trans "with" %} {{ interview.interviewee }}{% endif %}
         </li>
         {% endfor %}
     </ul>
     {% endif %}
 
     {% if interviews_as_interviewee %}
-    <h3>Sources given</h3>
+    <h3>{% trans "Sources given" %}</h3>
     <ul>
         {% for interview in interviews_as_interviewee %}
         <li>
             <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
             {% if interview.date %} ({{ interview.date }}){% endif %}
-            {% if interview.interviewer %} &mdash; by {{ interview.interviewer }}{% endif %}
+            {% if interview.interviewer %} &mdash; {% trans "by" %} {{ interview.interviewer }}{% endif %}
         </li>
         {% endfor %}
     </ul>
     {% endif %}
 
     {% if random_quotes %}
-    <h3>Quotes</h3>
+    <h3>{% trans "Quotes" %}</h3>
         {% for extraction in random_quotes %}
         <div class="mb-2">
           <blockquote class="list-unstyled">
@@ -216,7 +217,7 @@
 
     if (events.length === 0) {
         document.getElementById('person-map').innerHTML =
-            '<p class="text-muted p-3">No geolocated events to display.</p>';
+            '<p class="text-muted p-3">{% trans "No geolocated events to display." %}</p>';
         return;
     }
 

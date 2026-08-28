@@ -1,14 +1,15 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <style>.comma-list a + a::before { content: ", "; }</style>
 <div class="container mt-4">
-    <p><a href="{% url 'concept_list' %}">&larr; Back to list</a></p>
+    <p><a href="{% url 'concept_list' %}">&larr; {% trans "Back to list" %}</a></p>
     {% include "mmt_motm/_breadcrumb.html" %}
     <h1>{% if concept.icon %}<i class="fas {{ concept.icon }}"></i> {% endif %}{{ concept.label }}</h1>
 
     {% if persons %}
-    <h3>People</h3>
+    <h3>{% trans "People" %}</h3>
     <p>
         {% for person in persons %}
             <a href="{% url 'person_detail' person.pk %}">
@@ -19,15 +20,15 @@
     {% endif %}
 
     {% if quotes %}
-    <h3>Quotes</h3>
-    <input type="text" id="quote-filter" class="form-control mb-3" placeholder="Filter quotes…">
+    <h3>{% trans "Quotes" %}</h3>
+    <input type="text" id="quote-filter" class="form-control mb-3" placeholder="{% trans 'Filter quotes…' %}">
     <table class="table table-striped" id="quotes-table">
         <thead>
             <tr>
-                <th>Quote</th>
-                <th>Person Mentioned</th>
-                <th>Source</th>
-                <th>Related Concepts</th>
+                <th>{% trans "Quote" %}</th>
+                <th>{% trans "Person Mentioned" %}</th>
+                <th>{% trans "Source" %}</th>
+                <th>{% trans "Related Concepts" %}</th>
             </tr>
         </thead>
         <tbody>

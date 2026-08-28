@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     gdal-bin \
     libgdal-dev \
+    gettext \
     && apt-get clean
     
 # Upgrade pip & setuptools

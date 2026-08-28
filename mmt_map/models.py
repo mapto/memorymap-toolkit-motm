@@ -13,6 +13,7 @@ from ckeditor.fields import RichTextField
 from taggit.managers import TaggableManager
 from taggit.models import Tag
 from django_extensions.db.fields import AutoSlugField
+from parler.models import TranslatableModel, TranslatedFields
 
 # Other modules
 import bleach
@@ -27,9 +28,11 @@ def feature_directory_path(instance, filename):
 		return 'uploads/features/{0}/{1}'.format(slugify(instance.title), filename)
 
 
-class Theme(models.Model):
+class Theme(TranslatableModel):
 	"""Feature categories"""
-	name = models.CharField(max_length=128)
+	translations = TranslatedFields(
+		name = models.CharField(max_length=128)
+	)
 	color = RGBColorField(default='#4a62b1')
 
 	def __str__(self):
@@ -47,11 +50,9 @@ class TagList(models.Model):
 		return self.name
 
 
-class AbstractFeature(models.Model):
+class AbstractFeature(TranslatableModel):
 	"""The model class from which all feature objects derive"""
-	name = models.CharField(max_length=140)
 	uuid = models.UUIDField(default=uuid.uuid4, editable=False)
-	description = models.CharField(max_length=300, blank=True)
 	theme = models.ForeignKey(Theme, blank=True, null=True, on_delete=models.SET_NULL)
 	banner_image = models.ImageField(upload_to=feature_directory_path, null=True, blank=True, verbose_name='Banner Image')
 	banner_image_copyright = models.CharField(max_length=240, blank=True)
@@ -109,6 +110,10 @@ class AbstractFeature(models.Model):
 
 class Point(AbstractFeature):
 	"""A point"""
+	translations = TranslatedFields(
+		name = models.CharField(max_length=140),
+		description = models.CharField(max_length=300, blank=True),
+	)
 	geom = models.PointField(verbose_name='Coordinates')
 
 	def save(self, *args, **kwargs):
@@ -129,6 +134,10 @@ class Point(AbstractFeature):
 
 class MultiPoint(AbstractFeature):
 	"""A multipoint geometry"""
+	translations = TranslatedFields(
+		name = models.CharField(max_length=140),
+		description = models.CharField(max_length=300, blank=True),
+	)
 
 	geom = models.MultiPointField(verbose_name='Points')
 
@@ -150,6 +159,10 @@ class MultiPoint(AbstractFeature):
 
 class Polygon(AbstractFeature):
 	"""A polygon"""
+	translations = TranslatedFields(
+		name = models.CharField(max_length=140),
+		description = models.CharField(max_length=300, blank=True),
+	)
 	geom = models.MultiPolygonField(verbose_name='Geometry')
 
 	def save(self, *args, **kwargs):
@@ -170,6 +183,10 @@ class Polygon(AbstractFeature):
 
 class Line(AbstractFeature):
 	"""A line"""
+	translations = TranslatedFields(
+		name = models.CharField(max_length=140),
+		description = models.CharField(max_length=300, blank=True),
+	)
 	geom = models.MultiLineStringField(verbose_name='Line Geometry')
 
 	def save(self, *args, **kwargs):
@@ -210,7 +227,6 @@ class AbstractAttachment(models.Model):
 	polygon = models.ForeignKey(Polygon, related_name='%(class)ss', null=True, blank=True, on_delete=models.SET_NULL)
 	line = models.ForeignKey(Line, related_name='%(class)ss', null=True, blank=True, on_delete=models.SET_NULL)
 	author = models.ForeignKey(User, related_name='%(app_label)s_%(class)s_author', null=True, on_delete=models.SET_NULL)
-	title = models.CharField(max_length=128)
 	slug = AutoSlugField(populate_from=['title', 'id'], allow_duplicates=True)
 	order = models.PositiveSmallIntegerField(default=0)
 	created = models.DateField(auto_now_add=True, null=True, blank=True)
@@ -228,9 +244,12 @@ class AbstractAttachment(models.Model):
 		ordering = ['order']
 
 
-class Document(AbstractAttachment):
-	"""A text document associated with a map feature"""	
-	body = RichTextUploadingField(blank=False)
+class Document(AbstractAttachment, TranslatableModel):
+	"""A text document associated with a map feature"""
+	translations = TranslatedFields(
+		title = models.CharField(max_length=128),
+		body = RichTextUploadingField(blank=False),
+	)
 	body_processed = models.TextField(null=True, blank=True)
 	
 	def save(self, *args, **kwargs):
@@ -249,10 +268,13 @@ class Document(AbstractAttachment):
 		super(Document, self).save(*args, **kwargs)
 
 
-class Image(AbstractAttachment):
+class Image(AbstractAttachment, TranslatableModel):
 	"""An image associated with a map feature"""
+	title = models.CharField(max_length=128)
+	translations = TranslatedFields(
+		description = RichTextField(null=True, blank=True),
+	)
 	file = models.ImageField(upload_to=feature_directory_path, null=True, blank=False, verbose_name='Image')
-	description = RichTextField(null=True, blank=True)
 	copyright = models.CharField(blank=True, max_length=140)
 	
 	def save(self, *args, **kwargs):
@@ -263,6 +285,7 @@ class Image(AbstractAttachment):
 
 class AudioFile(AbstractAttachment):
 	"""An audio file associated with a map feature"""
+	title = models.CharField(max_length=128)
 	file = FilerFileField(null=True, blank=True, related_name='%(app_label)s_%(class)s_audio_file', on_delete=models.SET_NULL)
 
 	def get_audio_file_url(self):
@@ -270,9 +293,11 @@ class AudioFile(AbstractAttachment):
 			return self.file.url
 
 
-class MapLayer(models.Model):
+class MapLayer(TranslatableModel):
 	"""Additional raster map layers for your map"""
-	name = models.CharField(max_length=64)
+	translations = TranslatedFields(
+		name = models.CharField(max_length=64)
+	)
 	tilejson_url = models.URLField(max_length=256)
 	slug = AutoSlugField(populate_from='name')
 	order = models.IntegerField(default=0)

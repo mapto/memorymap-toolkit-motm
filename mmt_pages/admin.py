@@ -1,13 +1,14 @@
 from django.contrib import admin
+from parler.admin import TranslatableAdmin, TranslatableStackedInline
 
 from .models import Page, Section
 
-class SectionInline(admin.StackedInline):
+class SectionInline(TranslatableStackedInline):
 	model = Section
 	fields = ['title', 'order', 'body']
 	extra = 1
 
-class PageAdmin(admin.ModelAdmin):
+class PageAdmin(TranslatableAdmin):
 	inlines = [SectionInline]
 
 	class Meta:

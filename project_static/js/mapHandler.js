@@ -518,7 +518,7 @@ map.on('mouseleave', 'locations', function() {
 
 map.on('click', 'locations', function(e) {
     var props = e.features[0].properties;
-    window.location.href = '/motm/locations/' + props.id + '/';
+    window.location.href = MmtMap.settings.locationBaseUrl + props.id + '/';
 });
 
 // Event lines (mmt_motm Events)
@@ -547,6 +547,6 @@ map.on('mouseleave', 'event_lines', function() {
 
 map.on('click', 'event_lines', function(e) {
     var props = e.features[0].properties;
-    window.location.href = '/motm/events/' + props.id + '/';
+    window.location.href = MmtMap.settings.eventBaseUrl + props.id + '/';
 });
 

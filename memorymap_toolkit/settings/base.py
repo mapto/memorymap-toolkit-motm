@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'mmt_api',
     'mmt_motm',
     # 3rd Party
+    'parler',
     'easy_thumbnails',
     'rest_framework',
     'rest_framework_gis',
@@ -62,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'memorymap_toolkit.custom_middlewares.MultipleProxyMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -127,7 +129,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('de', 'Deutsch'),
+    ('it', 'Italiano'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR.child('locale'),
+]
 
 TIME_ZONE = 'UTC'
 
@@ -136,6 +148,25 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+# Site ID is required by django-parler to look up PARLER_LANGUAGES
+SITE_ID = 1
+
+# Django-Parler (per-instance translations for model content: Persons, Events,
+# Concepts, Interviews, map features, pages, etc.)
+PARLER_LANGUAGES = {
+    SITE_ID: (
+        {'code': 'en'},
+        {'code': 'de'},
+        {'code': 'it'},
+    ),
+    'default': {
+        'fallbacks': ['en'],
+        'hide_untranslated': False,
+    }
+}
+
+PARLER_DEFAULT_LANGUAGE_CODE = 'en'
 
 
 # Static files (CSS, JavaScript, Images)

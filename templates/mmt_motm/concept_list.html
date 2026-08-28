@@ -1,9 +1,10 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Concepts</h1>
-    <input type="text" id="concept-search" class="form-control mb-3" placeholder="Filter concepts…">
+    <h1>{% trans "Concepts" %}</h1>
+    <input type="text" id="concept-search" class="form-control mb-3" placeholder="{% trans 'Filter concepts…' %}">
     <div id="word-cloud" style="line-height:2.2;text-align:center;">
         {% for concept in concepts %}
         <a href="{% url 'concept_detail' concept.pk %}"
@@ -15,7 +16,7 @@
             <small class="text-muted">({{ concept.quote_count }})</small>
         </a>
         {% empty %}
-        <p>No concepts found.</p>
+        <p>{% trans "No concepts found." %}</p>
         {% endfor %}
     </div>
 </div>

@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.conf.urls.i18n import i18n_patterns
 from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import GenericSitemap
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
@@ -40,9 +41,8 @@ admin.site.index_title = "Welcome to the Memory Map Toolkit"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('mmt_map.urls')),
+    path('i18n/', include('django.conf.urls.i18n')),
     path('api/', include('mmt_api.urls')),
-    path('motm/', include('mmt_motm.urls')),
     path('motm/api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('motm/api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('motm/api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
@@ -58,6 +58,14 @@ urlpatterns = [
         }, 
         name='django.contrib.sitemaps.views.sitemap'),
 ]
+
+# Human-facing, template-rendered pages get a language prefix (/en/, /de/, /it/)
+# so menus and content can be localized via i18n and django-parler.
+urlpatterns += i18n_patterns(
+    path('', include('mmt_map.urls')),
+    path('motm/', include('mmt_motm.urls')),
+    prefix_default_language=True,
+)
 
 if settings.DEBUG:
     import debug_toolbar

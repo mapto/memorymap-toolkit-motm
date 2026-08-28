@@ -1,8 +1,9 @@
 {% extends 'mmt_map/base.html' %}
+{% load i18n %}
 
 {% block content %}
 <div class="container py-4">
-    <h1 class="mb-4">Site Overview</h1>
+    <h1 class="mb-4">{% trans "Site Overview" %}</h1>
 
     <div class="row align-items-stretch" style="text-align: left;">
         <!-- Left column: primary data -->
@@ -12,29 +13,29 @@
                 <a href="{% url 'person_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ persons }}</span>
                     <span class="dash-label">
-                        <strong>People</strong>
-                        <small>Searchable and browsable table</small>
+                        <strong>{% trans "People" %}</strong>
+                        <small>{% trans "Searchable and browsable table" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'event_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ events }}</span>
                     <span class="dash-label">
-                        <strong>Events</strong>
-                        <small>Searchable table of all events</small>
+                        <strong>{% trans "Events" %}</strong>
+                        <small>{% trans "Searchable table of all events" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'life_journey_heatmap' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-th"></i></span>
                     <span class="dash-label">
-                        <strong>Life Journey</strong>
-                        <small>Persons × Life Journey Heatmap</small>
+                        <strong>{% trans "Life Journey" %}</strong>
+                        <small>{% trans "Persons × Life Journey Heatmap" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'location_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ locations }}</span>
                     <span class="dash-label">
-                        <strong>Places</strong>
-                        <small>All places as a list</small>
+                        <strong>{% trans "Places" %}</strong>
+                        <small>{% trans "All places as a list" %}</small>
                     </span></span>
                 </a>
             </div>
@@ -42,64 +43,64 @@
 
         <!-- Right column: secondary groups -->
         <div class="col-md-5 pl-md-4">
-            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Concepts &amp; Themes</h6>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Concepts & Themes" %}</h6>
             <div class="dash-section mb-3">
                 <div class="dash-span-group">
                     <span class="dash-count-span">{{ concepts }}</span>
                     <div class="dash-span-links">
                         <a href="{% url 'concept_list' %}" class="dash-span-row">
-                            <strong>Concepts</strong>
-                            <small>Word cloud</small>
+                            <strong>{% trans "Concepts" %}</strong>
+                            <small>{% trans "Word cloud" %}</small>
                         </a>
                         <a href="{% url 'concept_taxonomy' %}" class="dash-span-row">
-                            <strong>Taxonomy</strong>
-                            <small>Hierarchy</small>
+                            <strong>{% trans "Taxonomy" %}</strong>
+                            <small>{% trans "Hierarchy" %}</small>
                         </a>
                     </div>
                 </div>
             </div>
 
-            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">Sources &amp; Quotes</h6>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Sources & Quotes" %}</h6>
             <div class="dash-section mb-3">
                 <a href="{% url 'interview_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ interviews }}</span>
                     <span class="dash-label">
-                        <strong>Sources</strong>
-                        <small>Recorded</small>
+                        <strong>{% trans "Sources" %}</strong>
+                        <small>{% trans "Recorded" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'extraction_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ extractions }}</span>
                     <span class="dash-label">
-                        <strong>Quotes</strong>
-                        <small>Extractions</small>
+                        <strong>{% trans "Quotes" %}</strong>
+                        <small>{% trans "Extractions" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'source_category_heatmap' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-th"></i></span>
                     <span class="dash-label">
-                        <strong>Heatmap</strong>
-                        <small>Sources &times; Categories</small>
+                        <strong>{% trans "Heatmap" %}</strong>
+                        <small>{% trans "Sources × Categories" %}</small>
                     </span></span>
                 </a>
             </div>
 
             <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">
-                <i class="fas fa-map"></i> Map-based pages
+                <i class="fas fa-map"></i> {% trans "Map-based pages" %}
             </h6>
             <div class="dash-section">
                 <a href="{% url 'index' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-globe"></i></span>
                     <span class="dash-label">
-                        <strong>Interactive Map</strong>
-                        <small>Places &amp; events</small>
+                        <strong>{% trans "Interactive Map" %}</strong>
+                        <small>{% trans "Places & events" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'location_map' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-map-marked-alt"></i></span>
                     <span class="dash-label">
-                        <strong>Places Map</strong>
-                        <small>Map view</small>
+                        <strong>{% trans "Places Map" %}</strong>
+                        <small>{% trans "Map view" %}</small>
                     </span></span>
                 </a>
             </div>

@@ -1,39 +1,40 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-0">
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
-    <p><a href="javascript:history.back()">&larr; Back</a></p>
+    <p><a href="javascript:history.back()">&larr; {% trans "Back" %}</a></p>
     <h1>{{ event.description|truncatewords:10 }}</h1>
 
-    <h3>Details</h3>
+    <h3>{% trans "Details" %}</h3>
     <p>{{ event.description }}</p>
 
     {% if event.lifecycle %}
-    <p><strong>Life Journey:</strong>
+    <p><strong>{% trans "Life Journey:" %}</strong>
         <a href="{% url 'life_journey_heatmap' %}" style="color:{{ event.lifecycle_color }};">
             <i class="fas {{ event.lifecycle_icon }}"></i> {{ event.get_lifecycle_display }}</a>
     </p>
     {% endif %}
 
     {% if event.timespan %}
-    <p><strong>Date:</strong>
+    <p><strong>{% trans "Date:" %}</strong>
         {% with timespan=event.timespan %}
             {% include "mmt_motm/_timespan.html" %}
         {% endwith %}
     {% if event.is_confirmed %}
         <i class="fas fa-check-circle text-success"
-           title="Confirmed event" data-toggle="tooltip"></i>
+           title="{% trans 'Confirmed event' %}" data-toggle="tooltip"></i>
     {% else %}
         <i class="fas fa-question-circle text-secondary"
-           title="Unconfirmed event" data-toggle="tooltip"></i>
+           title="{% trans 'Unconfirmed event' %}" data-toggle="tooltip"></i>
     {% endif %}
     </p>
     {% endif %}
 
     {% if event.start_location or event.end_location %}
-    <p><strong>Where:</strong>
+    <p><strong>{% trans "Where:" %}</strong>
     {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
         <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a> &rarr;
         <a href="{% url 'location_detail' event.end_location.pk %}">{{ event.end_location }}</a>
@@ -46,7 +47,7 @@
     {% endif %}
 
     {% if event.persons.exists %}
-    <p><strong>People:</strong>
+    <p><strong>{% trans "People:" %}</strong>
         {% for person in event.persons.all %}
             <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
@@ -54,7 +55,7 @@
     {% endif %}
 
     {% if event.concepts.exists %}
-    <h3>Concepts</h3>
+    <h3>{% trans "Concepts" %}</h3>
     <p>
         {% for c in event.concepts.all %}
             <a href="{% url 'concept_detail' c.pk %}">
@@ -66,7 +67,7 @@
     {% endif %}
 
     {% if event.urls.exists %}
-    <h3>References</h3>
+    <h3>{% trans "References" %}</h3>
     <ul>
         {% for url in event.urls.all %}
         <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
@@ -75,12 +76,12 @@
     {% endif %}
 
     {% if extractions %}
-    <h3>Source data</h3>
+    <h3>{% trans "Source data" %}</h3>
     {% for extraction in extractions %}
     <div class="card mb-2">
         <div class="card-body">
             {% if extraction.concepts.exists %}
-            <p><strong>Concepts:</strong>
+            <p><strong>{% trans "Concepts:" %}</strong>
                 {% for c in extraction.concepts.all %}
                     <a href="{% url 'concept_detail' c.pk %}">{{ c.label }}</a>
                     {% if not forloop.last %}, {% endif %}
@@ -88,11 +89,11 @@
             </p>
             {% endif %}
             {% if extraction.quote %}
-                <p><strong>Quote:</strong>
+                <p><strong>{% trans "Quote:" %}</strong>
                     <em>&ldquo;{{ extraction.quote }}&rdquo;</em></p>
             {% endif %}
-            {% if extraction.timecode %}<p><strong>Timecode:</strong> {{ extraction.timecode }}</p>{% endif %}
-            {% if extraction.notes %}<p><strong>Notes:</strong> {{ extraction.notes }}</p>{% endif %}
+            {% if extraction.timecode %}<p><strong>{% trans "Timecode:" %}</strong> {{ extraction.timecode }}</p>{% endif %}
+            {% if extraction.notes %}<p><strong>{% trans "Notes:" %}</strong> {{ extraction.notes }}</p>{% endif %}
         </div>
     </div>
     {% endfor %}
@@ -130,7 +131,7 @@
     var endUrl = "{% url 'location_detail' event.start_location.pk %}";
     var hasLine = false;
     {% else %}
-    document.getElementById('event-map').innerHTML = '<p class="text-muted p-3">No geolocated data to display.</p>';
+    document.getElementById('event-map').innerHTML = '<p class="text-muted p-3">{% trans "No geolocated data to display." %}</p>';
     var hasLine = false;
     var endCoord = null;
     {% endif %}

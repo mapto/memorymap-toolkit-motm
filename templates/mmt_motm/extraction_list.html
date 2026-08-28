@@ -1,18 +1,19 @@
 {% extends "mmt_map/base.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Quotes</h1>
+    <h1>{% trans "Quotes" %}</h1>
     <input type="text" id="extraction-search" class="form-control mb-3"
-           placeholder="Search by quote, concept or person…">
+           placeholder="{% trans 'Search by quote, concept or person…' %}">
     <table class="table table-striped" id="extraction-table">
         <thead>
             <tr>
-                <th class="sortable" data-col="0">Person <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="1">Concept <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">Quote <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">Source <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="4">Language <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="0">{% trans "Person" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">{% trans "Concept" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{% trans "Quote" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{% trans "Source" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">{% trans "Language" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
@@ -45,7 +46,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5">No extractions found.</td>
+                <td colspan="5">{% trans "No extractions found." %}</td>
             </tr>
             {% endfor %}
         </tbody>

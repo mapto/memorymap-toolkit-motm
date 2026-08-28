@@ -1,14 +1,16 @@
 from django.contrib.gis.db import models
 from django.template.defaultfilters import date as date_filter
+from django.utils.translation import gettext_lazy as _
+from parler.models import TranslatableModel, TranslatedFields
 
 
 class Timespan(models.Model):
     CERTAINTY_CHOICES = [
-        ("certain", "Certain"),
-        ("estimated", "Estimated"),
-        ("probable", "Probable"),
-        ("uncertain", "Uncertain"),
-        ("disputed", "Disputed"),
+        ("certain", _("Certain")),
+        ("estimated", _("Estimated")),
+        ("probable", _("Probable")),
+        ("uncertain", _("Uncertain")),
+        ("disputed", _("Disputed")),
     ]
 
     start = models.DateField(null=True, blank=True)
@@ -31,10 +33,10 @@ class Timespan(models.Model):
         return "—"
 
     CERTAINTY_ICONS = {
-        "estimated": ("fa-clock", "Estimated date"),
-        "probable": ("fa-question-circle", "Probable date"),
-        "uncertain": ("fa-exclamation-triangle", "Uncertain date"),
-        "disputed": ("fa-balance-scale", "Disputed date"),
+        "estimated": ("fa-clock", _("Estimated date")),
+        "probable": ("fa-question-circle", _("Probable date")),
+        "uncertain": ("fa-exclamation-triangle", _("Uncertain date")),
+        "disputed": ("fa-balance-scale", _("Disputed date")),
     }
 
     @property
@@ -51,9 +53,11 @@ class URL(models.Model):
         return self.url
     
 # This class contains all regions
-class LocationRegion(models.Model):
+class LocationRegion(TranslatableModel):
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
+    translations = TranslatedFields(
+        description = models.TextField(blank=True),
+    )
 
     polygon = models.MultiPolygonField(null=True, blank=True)
 
@@ -80,7 +84,7 @@ class LocationRegion(models.Model):
         return self.name
     
 # This class contains all Points part of Region
-class LocationPoint(models.Model):
+class LocationPoint(TranslatableModel):
     
     current_name = models.CharField(max_length=100)
 
@@ -89,7 +93,9 @@ class LocationPoint(models.Model):
 
     postal_address = models.CharField(max_length=200, blank=True)
 
-    description = models.TextField(blank=True)
+    translations = TranslatedFields(
+        description = models.TextField(blank=True),
+    )
 
     # Geographic coordinates (latitude/longitude point)
     location = models.PointField(null=True, blank=True)
@@ -127,15 +133,15 @@ class LocationPoint(models.Model):
         return self.current_name
     
 # This class contains all the various Events from a person life that are registered
-class Event(models.Model):
+class Event(TranslatableModel):
     # Single source of truth for lifecycle stages.
     # Keep project_static/js/mmtCategoryColors.js in sync when changing colors.
     LIFECYCLE_CONFIG = {
-        "alte_heimat":   {"label": "Alte Heimat",    "icon": "fa-baby-carriage",  "color": "#3498db"},  # or fa-monument
-        "auswanderung":  {"label": "Auswanderung",   "icon": "fa-person-walking", "color": "#e74c3c"},  # or fa-ship
-        "neue_heimat":   {"label": "Neue Heimat",    "icon": "fa-house-flag",     "color": "#2ecc71"}, 
-        "reise_zurueck": {"label": "Reise zurück",   "icon": "fa-route",          "color": "#9b59b6"},
-        "altro":         {"label": "Altro",          "icon": "fa-flag",           "color": "#95a5a6"},  # fa-ellipsis-h
+        "alte_heimat":   {"label": _("Alte Heimat"),    "icon": "fa-baby-carriage",  "color": "#3498db"},  # or fa-monument
+        "auswanderung":  {"label": _("Auswanderung"),   "icon": "fa-person-walking", "color": "#e74c3c"},  # or fa-ship
+        "neue_heimat":   {"label": _("Neue Heimat"),    "icon": "fa-house-flag",     "color": "#2ecc71"}, 
+        "reise_zurueck": {"label": _("Reise zurück"),   "icon": "fa-route",          "color": "#9b59b6"},
+        "altro":         {"label": _("Altro"),          "icon": "fa-flag",           "color": "#95a5a6"},  # fa-ellipsis-h
     }
 
     LIFECYCLE_CHOICES = [(k, v["label"]) for k, v in LIFECYCLE_CONFIG.items()]
@@ -161,7 +167,9 @@ class Event(models.Model):
         related_name="events"
     )
 
-    description = models.TextField(blank=True)
+    translations = TranslatedFields(
+        description = models.TextField(blank=True),
+    )
 
     lifecycle = models.CharField(
         max_length=20, choices=LIFECYCLE_CHOICES, default=LIFECYCLE_DEFAULT, blank=True
@@ -225,7 +233,7 @@ class Event(models.Model):
         return "Event"
     
 # This class contains all the People linked to the Project
-class Person(models.Model):
+class Person(TranslatableModel):
     # External archive identifiers
     identifier = models.CharField(max_length=100, unique=True, null=True, blank=True,
     db_index=True)
@@ -247,7 +255,9 @@ class Person(models.Model):
     gender = models.CharField(max_length=50, blank=True)
 
     # Description or biography
-    description = models.TextField(blank=True)
+    translations = TranslatedFields(
+        description = models.TextField(blank=True),
+    )
 
     # Place of birth
     birth_place = models.ForeignKey(
@@ -278,8 +288,10 @@ class Person(models.Model):
         return f"{self.given_name} {self.family_name}"
 
 # This class contains all RelationshipType
-class RelationshipType(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+class RelationshipType(TranslatableModel):
+    translations = TranslatedFields(
+        name = models.CharField(max_length=50),
+    )
     original_label = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
@@ -330,7 +342,7 @@ class Relationship(models.Model):
         return f"{self.person_from} -> {self.relationship_type} -> {self.person_to}"
 
 
-class Interview(models.Model):
+class Interview(TranslatableModel):
     # Archive identifier (external system)
     archive_id = models.CharField(max_length=100, unique=True)
 
@@ -343,7 +355,9 @@ class Interview(models.Model):
 
     place = models.CharField(max_length=200, blank=True)
 
-    description = models.TextField(blank=True)
+    translations = TranslatedFields(
+        description = models.TextField(blank=True),
+    )
 
     # Related URLs (sources, references)
     urls = models.ManyToManyField(
@@ -373,7 +387,7 @@ class Interview(models.Model):
     def __str__(self):
         return self.archive_id
     
-class Extraction(models.Model):
+class Extraction(TranslatableModel):
 
     
     # beleg_id - External archive identifiers
@@ -416,7 +430,9 @@ class Extraction(models.Model):
     event_confidence = models.CharField(max_length=200, blank=True)
 
     # notizien
-    notes = models.TextField(blank=True)
+    translations = TranslatedFields(
+        notes = models.TextField(blank=True),
+    )
 
     # ISO 639-1 language code detected from quote text
     language = models.CharField(max_length=10, blank=True)
@@ -449,8 +465,10 @@ class Extraction(models.Model):
         }
         return _LANG_NAMES.get(self.language, self.language)
 
-class Concept(models.Model):
-    label = models.CharField(max_length=200, blank=True)
+class Concept(TranslatableModel):
+    translations = TranslatedFields(
+        label = models.CharField(max_length=200, blank=True),
+    )
     icon = models.CharField(max_length=50, blank=True, default="")
     parent = models.ForeignKey(
         'self', null=True, blank=True,

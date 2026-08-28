@@ -2,7 +2,7 @@
 
 /* Prevent the page refreshing when the user presses the enter key */
 
-$("form").on('submit',function(e){
+$('#map_search').closest('form').on('submit', function(e){
     e.preventDefault();
 });
 
