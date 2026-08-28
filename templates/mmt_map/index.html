@@ -36,15 +36,15 @@ mapboxgl.accessToken = '{{ config.MAPBOX_KEY }}';
 const MmtMap = {
 
 	settings: {
-		mapCenter: [{{ config.MAP_CENTER_LONGITUDE }}, {{ config.MAP_CENTER_LATITUDE }}],
-		zoom: {{ config.ZOOM }},
+		mapCenter: {{ map_center|safe }},
+		zoom: {{ zoom|safe }},
 		{% if bounds %}
-		maxBounds: {{ bounds }},
+		maxBounds: {{ bounds|safe }},
 		{% endif %}
-		maxZoom: {{ config.MAX_ZOOM }},
-		minZoom: {{ config.MIN_ZOOM }},
-		pitch: {{ config.PITCH }},
-		bearing: {{ config.BEARING }},
+		maxZoom: {{ max_zoom|safe }},
+		minZoom: {{ min_zoom|safe }},
+		pitch: {{ pitch|safe }},
+		bearing: {{ bearing|safe }},
 		scale: '{{ config.SCALE }}',
 		font: '{{ config.FEATURE_LABEL_FONT}}',
 		hoverThumbs: {% if config.HOVER_THUMBNAILS %}true{% else %}false{% endif %},

@@ -29,7 +29,7 @@ class URLSerializer(serializers.ModelSerializer):
 
 class LocationRegionSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on LocationRegion.
-    description = serializers.CharField()
+    description = serializers.CharField(required=False)
 
     class Meta:
         model = LocationRegion
@@ -62,7 +62,7 @@ class LocationPointSerializer(serializers.ModelSerializer):
 
 class PersonSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on Person.
-    description = serializers.CharField()
+    description = serializers.CharField(required=False)
 
     class Meta:
         model = Person
@@ -95,7 +95,7 @@ class ExtractionSerializer(serializers.ModelSerializer):
 
 class InterviewSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on Interview.
-    description = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Interview
@@ -104,7 +104,7 @@ class InterviewSerializer(serializers.ModelSerializer):
 
 class InterviewDetailSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on Interview.
-    description = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
     extracted_from = ExtractionSerializer(many=True, read_only=True)
     interviewee_display = serializers.CharField(source='interviewee', read_only=True)
     interviewer_display = serializers.CharField(source='interviewer', read_only=True)
@@ -120,7 +120,7 @@ class InterviewDetailSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on Event.
-    description = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Event
@@ -129,7 +129,7 @@ class EventSerializer(serializers.ModelSerializer):
 
 class ConceptSerializer(serializers.ModelSerializer):
     # label is a django-parler translated field on Concept.
-    label = serializers.CharField()
+    label = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Concept

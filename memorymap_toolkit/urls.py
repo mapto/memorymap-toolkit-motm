@@ -22,6 +22,7 @@ from django.contrib.sitemaps.views import sitemap
 from django.contrib.sitemaps import GenericSitemap
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from mmt_map.models import Point, Polygon, Line
+from mmt_map.urls import api_urlpatterns as mmt_map_api_urlpatterns
 
 point_dict = {
     'queryset': Point.objects.filter(published=True)
@@ -66,6 +67,9 @@ urlpatterns += i18n_patterns(
     path('motm/', include('mmt_motm.urls')),
     prefix_default_language=True,
 )
+
+# Tile API routes are NOT language-prefixed (shared across all languages)
+urlpatterns += mmt_map_api_urlpatterns
 
 if settings.DEBUG:
     import debug_toolbar

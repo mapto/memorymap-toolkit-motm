@@ -498,7 +498,7 @@ class RelationshipTypeViewSet(viewsets.ModelViewSet):
     queryset = RelationshipType.objects.all()
     serializer_class = RelationshipTypeSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ["name"]
+    search_fields = ["translations__name"]
 
 
 class RelationshipViewSet(viewsets.ModelViewSet):
@@ -658,7 +658,7 @@ class ConceptViewSet(BulkMixin, viewsets.ModelViewSet):
     queryset = Concept.objects.all()
     serializer_class = ConceptSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ["label"]
+    search_fields = ["translations__label"]
     bulk_lookup_field = "label"
 
 
