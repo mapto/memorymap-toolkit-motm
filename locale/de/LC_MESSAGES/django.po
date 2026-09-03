@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-02 09:51\n"
+"PO-Revision-Date: 2026-09-03 09:49\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -29,7 +29,7 @@ msgstr ""
 
 #: mmt_map/forms.py:20
 msgid "Point"
-msgstr ""
+msgstr "Punkt"
 
 #: mmt_map/forms.py:34
 msgid "Points"
@@ -216,7 +216,7 @@ msgstr ""
 #: templates/mmt_map/index.html:18 templates/mmt_motm/event_list.html:14
 #: templates/mmt_motm/text_only.html:30
 msgid "Life Journey"
-msgstr ""
+msgstr "Lebenslauf"
 
 #: templates/mmt_motm/_breadcrumb.html:13
 msgid "breadcrumb"
