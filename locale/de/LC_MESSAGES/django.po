@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 08:23\n"
+"PO-Revision-Date: 2026-09-07 08:39\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -37,7 +37,7 @@ msgstr "Punkte"
 
 #: mmt_map/forms.py:50
 msgid "Polygon"
-msgstr "Polygon"
+msgstr ""
 
 #: mmt_map/forms.py:64
 msgid "Line"
@@ -81,15 +81,15 @@ msgstr "Umstrittenes Datum"
 
 #: mmt_motm/models.py:140
 msgid "Alte Heimat"
-msgstr "Alte Heimat"
+msgstr ""
 
 #: mmt_motm/models.py:141
 msgid "Auswanderung"
-msgstr "Auswanderung"
+msgstr ""
 
 #: mmt_motm/models.py:142
 msgid "Neue Heimat"
-msgstr "Neue Heimat"
+msgstr ""
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
@@ -275,7 +275,7 @@ msgstr "Zurück"
 
 #: templates/mmt_motm/event_detail.html:11
 msgid "Details"
-msgstr "Details"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:15
 msgid "Life Journey:"
@@ -394,7 +394,7 @@ msgstr "Suche nach Zitat, Konzept oder Person…"
 
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
-msgstr "Person"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:13
 #: templates/mmt_motm/interview_detail.html:57
@@ -551,7 +551,7 @@ msgstr "Geboren:"
 #: templates/mmt_motm/person_detail.html:32
 #: templates/mmt_motm/person_detail.html:47
 msgid "in"
-msgstr "in"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:39
 msgid "Died:"
