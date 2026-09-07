@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-02 09:51\n"
+"PO-Revision-Date: 2026-09-07 08:19\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it_IT\n"
@@ -20,88 +20,88 @@ msgstr ""
 #: mmt_map/forms.py:16 mmt_map/forms.py:30 mmt_map/forms.py:46
 #: mmt_map/forms.py:60
 msgid "If you have added an audio file to the popup, make sure you give it a title as well"
-msgstr "Se hai aggiunto un file audio al popup, assicurati di dargli anche un titolo"
+msgstr ""
 
 #: mmt_map/forms.py:17 mmt_map/forms.py:31 mmt_map/forms.py:47
 #: mmt_map/forms.py:61
 msgid "A short description of the location."
-msgstr "Una breve descrizione del luogo."
+msgstr ""
 
 #: mmt_map/forms.py:20
 msgid "Point"
-msgstr "Punto"
+msgstr ""
 
 #: mmt_map/forms.py:34
 msgid "Points"
-msgstr "Punti"
+msgstr ""
 
 #: mmt_map/forms.py:50
 msgid "Polygon"
-msgstr "Poligono"
+msgstr ""
 
 #: mmt_map/forms.py:64
 msgid "Line"
-msgstr "Linea"
+msgstr ""
 
 #: mmt_motm/models.py:9
 msgid "Certain"
-msgstr "Certo"
+msgstr ""
 
 #: mmt_motm/models.py:10
 msgid "Estimated"
-msgstr "Stimato"
+msgstr ""
 
 #: mmt_motm/models.py:11
 msgid "Probable"
-msgstr "Probabile"
+msgstr ""
 
 #: mmt_motm/models.py:12
 msgid "Uncertain"
-msgstr "Incerto"
+msgstr ""
 
 #: mmt_motm/models.py:13
 msgid "Disputed"
-msgstr "Contestato"
+msgstr ""
 
 #: mmt_motm/models.py:36
 msgid "Estimated date"
-msgstr "Data stimata"
+msgstr ""
 
 #: mmt_motm/models.py:37
 msgid "Probable date"
-msgstr "Data probabile"
+msgstr ""
 
 #: mmt_motm/models.py:38
 msgid "Uncertain date"
-msgstr "Data incerta"
+msgstr ""
 
 #: mmt_motm/models.py:39
 msgid "Disputed date"
-msgstr "Data contestata"
+msgstr ""
 
 #: mmt_motm/models.py:140
 msgid "Alte Heimat"
-msgstr "Vecchia patria"
+msgstr ""
 
 #: mmt_motm/models.py:141
 msgid "Auswanderung"
-msgstr "Emigrazione"
+msgstr ""
 
 #: mmt_motm/models.py:142
 msgid "Neue Heimat"
-msgstr "Nuova patria"
+msgstr ""
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
-msgstr "Viaggio di ritorno"
+msgstr ""
 
 #: mmt_motm/models.py:144
 msgid "Altro"
-msgstr "Altro"
+msgstr ""
 
 #: templates/mmt_map/base.html:90 templates/mmt_map/base.html:120
 msgid "Map"
-msgstr "Mappa"
+msgstr ""
 
 #: templates/mmt_map/base.html:100 templates/mmt_map/base.html:322
 #: templates/mmt_motm/concept_list.html:6
@@ -109,27 +109,27 @@ msgstr "Mappa"
 #: templates/mmt_motm/person_detail.html:104
 #: templates/mmt_motm/text_only.html:52
 msgid "Concepts"
-msgstr "Concetti"
+msgstr ""
 
 #: templates/mmt_map/base.html:102 templates/mmt_map/base.html:118
 msgid "Word Cloud"
-msgstr "Nuvola di parole"
+msgstr ""
 
 #: templates/mmt_map/base.html:103 templates/mmt_map/base.html:119
 #: templates/mmt_motm/text_only.html:56
 msgid "Taxonomy"
-msgstr "Tassonomia"
+msgstr ""
 
 #: templates/mmt_map/base.html:107 templates/mmt_map/base.html:296
 #: templates/mmt_motm/concept_detail.html:12
 #: templates/mmt_motm/person_list.html:6 templates/mmt_motm/text_only.html:16
 msgid "People"
-msgstr "Persone"
+msgstr ""
 
 #: templates/mmt_map/base.html:116 templates/mmt_motm/location_list.html:6
 #: templates/mmt_motm/text_only.html:37
 msgid "Places"
-msgstr "Luoghi"
+msgstr ""
 
 #: templates/mmt_map/base.html:131 templates/mmt_map/base.html:335
 #: templates/mmt_motm/event_list.html:6
@@ -137,16 +137,16 @@ msgstr "Luoghi"
 #: templates/mmt_motm/person_detail.html:65
 #: templates/mmt_motm/text_only.html:23
 msgid "Events"
-msgstr "Eventi"
+msgstr ""
 
 #: templates/mmt_map/base.html:133 templates/mmt_map/base.html:146
 msgid "List"
-msgstr "Elenco"
+msgstr ""
 
 #: templates/mmt_map/base.html:134 templates/mmt_map/base.html:147
 #: templates/mmt_motm/text_only.html:82
 msgid "Heatmap"
-msgstr "Mappa di calore"
+msgstr ""
 
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
@@ -155,553 +155,554 @@ msgstr "Mappa di calore"
 #: templates/mmt_motm/person_detail.html:170
 #: templates/mmt_motm/text_only.html:75
 msgid "Quotes"
-msgstr "Citazioni"
+msgstr ""
 
 #: templates/mmt_map/base.html:157
 msgid "About"
-msgstr "Informazioni"
+msgstr ""
 
 #: templates/mmt_map/base.html:160
 msgid "Text Only Site"
-msgstr "Sito solo testo"
+msgstr ""
 
 #: templates/mmt_map/base.html:161
 msgid "Research Project"
-msgstr "Progetto di ricerca"
+msgstr ""
 
 #: templates/mmt_map/base.html:219
 msgid "Search"
-msgstr "Cerca"
+msgstr ""
 
 #: templates/mmt_map/base.html:238
 msgid "Welcome"
-msgstr "Benvenuto"
+msgstr ""
 
 #: templates/mmt_map/base.html:244 templates/mmt_map/feature.html:6
 #: templates/mmt_map/feature.html:65 templates/mmt_map/page.html:3
 #: templates/mmt_map/page.html:10
 msgid "Close"
-msgstr "Chiudi"
+msgstr ""
 
 #: templates/mmt_map/feature.html:12
 #, python-format
 msgid "Photo of %(name)s"
-msgstr "Foto di %(name)s"
+msgstr ""
 
 #: templates/mmt_map/feature.html:21 templates/mmt_map/feature.html:42
 #, python-format
 msgid "Listen: %(title)s"
-msgstr "Ascolta: %(title)s"
+msgstr ""
 
 #: templates/mmt_map/feature.html:24
 msgid "play"
-msgstr "riproduci"
+msgstr ""
 
 #: templates/mmt_map/feature.html:59
 msgid "No Material"
-msgstr "Nessun materiale"
+msgstr ""
 
 #: templates/mmt_map/feature.html:62
 msgid "Cite This Article"
-msgstr "Cita questo articolo"
+msgstr ""
 
 #: templates/mmt_map/feature.html:63
 msgid "accessed"
-msgstr "consultato il"
+msgstr ""
 
 #: templates/mmt_map/feature_list.html:9
 msgid "Place Index"
-msgstr "Indice dei luoghi"
+msgstr ""
 
 #: templates/mmt_map/index.html:18 templates/mmt_motm/event_list.html:14
 #: templates/mmt_motm/text_only.html:30
 msgid "Life Journey"
-msgstr "Percorso di vita"
+msgstr ""
 
 #: templates/mmt_motm/_breadcrumb.html:13
 msgid "breadcrumb"
-msgstr "briciole di pane"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:7
 #: templates/mmt_motm/extraction_detail.html:6
 #: templates/mmt_motm/interview_detail.html:6
 #: templates/mmt_motm/person_detail.html:8
 msgid "Back to list"
-msgstr "Torna all'elenco"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:24
 #: templates/mmt_motm/interview_detail.html:52
 msgid "Filter quotes…"
-msgstr "Filtra citazioni…"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:28
 #: templates/mmt_motm/extraction_detail.html:34
 #: templates/mmt_motm/extraction_list.html:14
 #: templates/mmt_motm/interview_detail.html:56
 msgid "Quote"
-msgstr "Citazione"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:29
 #: templates/mmt_motm/interview_detail.html:58
 msgid "Person Mentioned"
-msgstr "Persona menzionata"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:30
 #: templates/mmt_motm/extraction_list.html:15
 #: templates/mmt_motm/life_journey_heatmap.html:11
 msgid "Source"
-msgstr "Fonte"
+msgstr ""
 
 #: templates/mmt_motm/concept_detail.html:31
 msgid "Related Concepts"
-msgstr "Concetti correlati"
+msgstr ""
 
 #: templates/mmt_motm/concept_list.html:7
 msgid "Filter concepts…"
-msgstr "Filtra concetti…"
+msgstr ""
 
 #: templates/mmt_motm/concept_list.html:19
 msgid "No concepts found."
-msgstr "Nessun concetto trovato."
+msgstr ""
 
 #: templates/mmt_motm/concept_taxonomy.html:55
 msgid "Concept Taxonomy"
-msgstr "Tassonomia dei concetti"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:8
 #: templates/mmt_motm/location_detail.html:8
 msgid "Back"
-msgstr "Indietro"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:11
 msgid "Details"
-msgstr "Dettagli"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:15
 msgid "Life Journey:"
-msgstr "Percorso di vita:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:22
 #: templates/mmt_motm/interview_detail.html:14
 msgid "Date:"
-msgstr "Data:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:28
 msgid "Confirmed event"
-msgstr "Evento confermato"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:31
 msgid "Unconfirmed event"
-msgstr "Evento non confermato"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:37
 msgid "Where:"
-msgstr "Dove:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:50
 msgid "People:"
-msgstr "Persone:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:70
 #: templates/mmt_motm/location_detail.html:41
 #: templates/mmt_motm/person_detail.html:115
 msgid "References"
-msgstr "Riferimenti"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:79
 msgid "Source data"
-msgstr "Dati di origine"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:84
 #: templates/mmt_motm/extraction_detail.html:22
 msgid "Concepts:"
-msgstr "Concetti:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:92
 msgid "Quote:"
-msgstr "Citazione:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:95
 #: templates/mmt_motm/extraction_detail.html:18
 msgid "Timecode:"
-msgstr "Timecode:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:96
 msgid "Notes:"
-msgstr "Note:"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:134
 msgid "No geolocated data to display."
-msgstr "Nessun dato geolocalizzato da visualizzare."
+msgstr ""
 
 #: templates/mmt_motm/event_list.html:7
 msgid "Filter events…"
-msgstr "Filtra eventi…"
+msgstr ""
 
 #: templates/mmt_motm/event_list.html:11
 #: templates/mmt_motm/interview_list.html:13
 #: templates/mmt_motm/location_detail.html:70
 #: templates/mmt_motm/person_detail.html:69
 msgid "Date"
-msgstr "Data"
+msgstr ""
 
 #: templates/mmt_motm/event_list.html:12
 #: templates/mmt_motm/interview_list.html:14
 #: templates/mmt_motm/location_detail.html:70
 #: templates/mmt_motm/person_detail.html:70
 msgid "Place"
-msgstr "Luogo"
+msgstr ""
 
 #: templates/mmt_motm/event_list.html:13
 #: templates/mmt_motm/interview_detail.html:40
 #: templates/mmt_motm/location_detail.html:70
 #: templates/mmt_motm/person_detail.html:71
 msgid "Description"
-msgstr "Descrizione"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:7
 #, python-format
 msgid "Quote %(identifier)s"
-msgstr "Citazione %(identifier)s"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:10
 msgid "Person mentioned:"
-msgstr "Persona menzionata:"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:30
 msgid "Classification:"
-msgstr "Classificazione:"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:39
 msgid "Event:"
-msgstr "Evento:"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:41
 msgid "Event confidence:"
-msgstr "Affidabilità dell'evento:"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:46
 msgid "Source:"
-msgstr "Fonte:"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:54
 msgid "Notes"
-msgstr "Note"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:8
 msgid "Search by quote, concept or person…"
-msgstr "Cerca per citazione, concetto o persona…"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
-msgstr "Persona"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:13
 #: templates/mmt_motm/interview_detail.html:57
 msgid "Concept"
-msgstr "Concetto"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:16
 msgid "Language"
-msgstr "Lingua"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:49
 msgid "No extractions found."
-msgstr "Nessuna estrazione trovata."
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:7
 #, python-format
 msgid "Source %(archive_id)s"
-msgstr "Fonte %(archive_id)s"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:10
 msgid "Type:"
-msgstr "Tipo:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:18
 msgid "Place:"
-msgstr "Luogo:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:22
 msgid "Recording ID:"
-msgstr "ID registrazione:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:26
 msgid "Interviewee:"
-msgstr "Intervistato/a:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:33
 msgid "Interviewer:"
-msgstr "Intervistatore/trice:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:45
 #: templates/mmt_motm/person_detail.html:54
 msgid "Languages:"
-msgstr "Lingue:"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:59
 msgid "Timecode"
-msgstr "Timecode"
+msgstr ""
 
 #: templates/mmt_motm/interview_detail.html:90
 msgid "Related URLs"
-msgstr "URL correlati"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:6
 #: templates/mmt_motm/person_list.html:20 templates/mmt_motm/text_only.html:68
 msgid "Sources"
-msgstr "Fonti"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:7
 msgid "Search by archive ID or quotes…"
-msgstr "Cerca per ID archivio o citazioni…"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:11
 msgid "Archive ID"
-msgstr "ID archivio"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:12
 msgid "Type"
-msgstr "Tipo"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:15
 msgid "Interviewee"
-msgstr "Intervistato/a"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:16
 msgid "Interviewer"
-msgstr "Intervistatore/trice"
+msgstr ""
 
 #: templates/mmt_motm/interview_list.html:43
 msgid "No sources found."
-msgstr "Nessuna fonte trovata."
+msgstr ""
 
 #: templates/mmt_motm/life_journey_heatmap.html:6
 msgid "Life Journey × Sources"
-msgstr "Percorso di vita × Fonti"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
-msgstr "Nomi alternativi:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:17
 msgid "Address:"
-msgstr "Indirizzo:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:27
 msgid "Wikidata:"
-msgstr "Wikidata:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:33
 msgid "GeoNames:"
-msgstr "GeoNames:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:50
 msgid "Born here"
-msgstr "Nato/a qui"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:59
 msgid "Died here"
-msgstr "Morto/a qui"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:114
 msgid "No coordinates available."
-msgstr "Nessuna coordinata disponibile."
+msgstr ""
 
 #: templates/mmt_motm/location_list.html:7
 msgid "Filter places…"
-msgstr "Filtra luoghi…"
+msgstr ""
 
 #: templates/mmt_motm/location_list.html:22
 msgid "No places found."
-msgstr "Nessun luogo trovato."
+msgstr ""
 
 #: templates/mmt_motm/location_map.html:15
 msgid "events"
-msgstr "eventi"
+msgstr ""
 
 #: templates/mmt_motm/location_map.html:33
 msgid "No places with coordinates found."
-msgstr "Nessun luogo con coordinate trovato."
+msgstr ""
 
 #: templates/mmt_motm/location_taxonomy.html:55
 msgid "Places Taxonomy"
-msgstr "Tassonomia dei luoghi"
+msgstr ""
 
 #: templates/mmt_motm/location_taxonomy.html:65
 msgid "Other Places"
-msgstr "Altri luoghi"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:12
 msgid "Previous name:"
-msgstr "Nome precedente:"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:16
 msgid "Identifier:"
-msgstr "Identificativo:"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:20
 msgid "Gender:"
-msgstr "Genere:"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:24
 msgid "Born:"
-msgstr "Nato/a:"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:32
 #: templates/mmt_motm/person_detail.html:47
 msgid "in"
-msgstr "a"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:39
 msgid "Died:"
-msgstr "Morto/a:"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:60
 msgid "Biography"
-msgstr "Biografia"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
-msgstr "top 20"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:124
 msgid "Relationships"
-msgstr "Relazioni"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:128
 msgid "is"
-msgstr "è"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:135
 msgid "of"
-msgstr "di"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:144
 msgid "Sources conducted"
-msgstr "Fonti condotte"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:150
 msgid "with"
-msgstr "con"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:157
 msgid "Sources given"
-msgstr "Fonti fornite"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:163
 msgid "by"
-msgstr "da"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:220
 msgid "No geolocated events to display."
-msgstr "Nessun evento geolocalizzato da visualizzare."
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:7
 msgid "Search by name…"
-msgstr "Cerca per nome…"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:11
 msgid "Family Name"
-msgstr "Cognome"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:13
 msgid "Given Name"
-msgstr "Nome"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:14
 msgid "Birth Date"
-msgstr "Data di nascita"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:16
 msgid "Birth Place"
-msgstr "Luogo di nascita"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:17
 msgid "Death Date"
-msgstr "Data di morte"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:19
 msgid "Death Place"
-msgstr "Luogo di morte"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:21
 msgid "Top Concepts"
-msgstr "Concetti principali"
+msgstr ""
 
 #: templates/mmt_motm/person_list.html:76
 msgid "No people found."
-msgstr "Nessuna persona trovata."
+msgstr ""
 
 #: templates/mmt_motm/source_category_heatmap.html:6
 #: templates/mmt_motm/text_only.html:83
 msgid "Sources × Categories"
-msgstr "Fonti × Categorie"
+msgstr ""
 
 #: templates/mmt_motm/source_category_heatmap.html:11
 msgid "Category \\ Source"
-msgstr "Categoria \\ Fonte"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:6
 msgid "Site Overview"
-msgstr "Panoramica del sito"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:17
 msgid "Searchable and browsable table"
-msgstr "Tabella ricercabile e consultabile"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:24
 msgid "Searchable table of all events"
-msgstr "Tabella ricercabile di tutti gli eventi"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:31
 msgid "Persons × Life Journey Heatmap"
-msgstr "Persone × Mappa di calore del percorso di vita"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
-msgstr "Tutti i luoghi in elenco"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:46
 msgid "Concepts & Themes"
-msgstr "Concetti e temi"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:53
 msgid "Word cloud"
-msgstr "Nuvola di parole"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:57
 msgid "Hierarchy"
-msgstr "Gerarchia"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:63
 msgid "Sources & Quotes"
-msgstr "Fonti e citazioni"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:69
 msgid "Recorded"
-msgstr "Registrato"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:76
 msgid "Extractions"
-msgstr "Estrazioni"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:89
 msgid "Map-based pages"
-msgstr "Pagine basate su mappa"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:95
 msgid "Interactive Map"
-msgstr "Mappa interattiva"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:96
 msgid "Places & events"
-msgstr "Luoghi ed eventi"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"
-msgstr "Mappa dei luoghi"
+msgstr ""
 
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
-msgstr "Vista mappa"
+msgstr ""
+
