@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 08:39\n"
+"PO-Revision-Date: 2026-09-07 10:21\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
 "Language: en_US\n"
@@ -14,8 +14,8 @@ msgstr ""
 "X-Crowdin-Project: motm\n"
 "X-Crowdin-Project-ID: 925547\n"
 "X-Crowdin-Language: en\n"
-"X-Crowdin-File: /alignment/locale/en/LC_MESSAGES/django.po\n"
-"X-Crowdin-File-ID: 14\n"
+"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/django.po\n"
+"X-Crowdin-File-ID: 20\n"
 
 #: mmt_map/forms.py:16 mmt_map/forms.py:30 mmt_map/forms.py:46
 #: mmt_map/forms.py:60
@@ -93,7 +93,7 @@ msgstr "New Homeland"
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
-msgstr "Travel back"
+msgstr "Journey Back"
 
 #: mmt_motm/models.py:144
 msgid "Altro"
