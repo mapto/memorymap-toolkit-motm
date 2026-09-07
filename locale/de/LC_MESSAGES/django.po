@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 08:39\n"
+"PO-Revision-Date: 2026-09-07 10:21\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -14,8 +14,8 @@ msgstr ""
 "X-Crowdin-Project: motm\n"
 "X-Crowdin-Project-ID: 925547\n"
 "X-Crowdin-Language: de\n"
-"X-Crowdin-File: /alignment/locale/en/LC_MESSAGES/django.po\n"
-"X-Crowdin-File-ID: 14\n"
+"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/django.po\n"
+"X-Crowdin-File-ID: 20\n"
 
 #: mmt_map/forms.py:16 mmt_map/forms.py:30 mmt_map/forms.py:46
 #: mmt_map/forms.py:60
@@ -146,7 +146,7 @@ msgstr "Liste"
 #: templates/mmt_map/base.html:134 templates/mmt_map/base.html:147
 #: templates/mmt_motm/text_only.html:82
 msgid "Heatmap"
-msgstr "Heatmap"
+msgstr ""
 
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
@@ -490,11 +490,11 @@ msgstr "Adresse:"
 
 #: templates/mmt_motm/location_detail.html:27
 msgid "Wikidata:"
-msgstr "Wikidata:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:33
 msgid "GeoNames:"
-msgstr "GeoNames:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:50
 msgid "Born here"
