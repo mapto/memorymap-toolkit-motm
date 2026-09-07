@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 08:19\n"
+"PO-Revision-Date: 2026-09-07 08:23\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -93,7 +93,7 @@ msgstr ""
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
-msgstr ""
+msgstr "Reise zurück"
 
 #: mmt_motm/models.py:144
 msgid "Altro"
@@ -146,7 +146,7 @@ msgstr "Liste"
 #: templates/mmt_map/base.html:134 templates/mmt_map/base.html:147
 #: templates/mmt_motm/text_only.html:82
 msgid "Heatmap"
-msgstr ""
+msgstr "Heatmap"
 
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
@@ -490,11 +490,11 @@ msgstr "Adresse:"
 
 #: templates/mmt_motm/location_detail.html:27
 msgid "Wikidata:"
-msgstr ""
+msgstr "Wikidata:"
 
 #: templates/mmt_motm/location_detail.html:33
 msgid "GeoNames:"
-msgstr ""
+msgstr "GeoNames:"
 
 #: templates/mmt_motm/location_detail.html:50
 msgid "Born here"
