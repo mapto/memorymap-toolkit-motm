@@ -217,7 +217,7 @@ msgstr "Ortsverzeichnis"
 #: templates/mmt_map/index.html:18 templates/mmt_motm/event_list.html:14
 #: templates/mmt_motm/text_only.html:30
 msgid "Life Journey"
-msgstr "Lebensweg"
+msgstr "Lebenslauf"
 
 #: templates/mmt_motm/_breadcrumb.html:13
 msgid "breadcrumb"
@@ -280,7 +280,7 @@ msgstr "Details"
 
 #: templates/mmt_motm/event_detail.html:15
 msgid "Life Journey:"
-msgstr "Lebensweg:"
+msgstr "Lebenslauf:"
 
 #: templates/mmt_motm/event_detail.html:22
 #: templates/mmt_motm/interview_detail.html:14
@@ -479,7 +479,7 @@ msgstr "Keine Quellen gefunden."
 
 #: templates/mmt_motm/life_journey_heatmap.html:6
 msgid "Life Journey × Sources"
-msgstr "Lebensweg × Quellen"
+msgstr "Lebenslauf × Quellen"
 
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
@@ -657,7 +657,7 @@ msgstr "Durchsuchbare Tabelle aller Ereignisse"
 
 #: templates/mmt_motm/text_only.html:31
 msgid "Persons × Life Journey Heatmap"
-msgstr "Personen × Lebensweg-Heatmap"
+msgstr "Personen × Lebenslauf-Heatmap"
 
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
