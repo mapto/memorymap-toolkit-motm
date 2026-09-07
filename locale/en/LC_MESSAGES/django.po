@@ -93,7 +93,7 @@ msgstr "New Homeland"
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
-msgstr "Travel back"
+msgstr "Journey Back"
 
 #: mmt_motm/models.py:144
 msgid "Altro"
