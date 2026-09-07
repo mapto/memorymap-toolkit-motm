@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 10:21\n"
+"PO-Revision-Date: 2026-09-07 11:05\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
 "Language: en_US\n"
@@ -250,28 +250,28 @@ msgstr ""
 #: templates/mmt_motm/extraction_list.html:15
 #: templates/mmt_motm/life_journey_heatmap.html:11
 msgid "Source"
-msgstr ""
+msgstr "Source"
 
 #: templates/mmt_motm/concept_detail.html:31
 msgid "Related Concepts"
-msgstr ""
+msgstr "Related Concepts"
 
 #: templates/mmt_motm/concept_list.html:7
 msgid "Filter concepts…"
-msgstr ""
+msgstr "Filter concepts…"
 
 #: templates/mmt_motm/concept_list.html:19
 msgid "No concepts found."
-msgstr ""
+msgstr "No concepts found."
 
 #: templates/mmt_motm/concept_taxonomy.html:55
 msgid "Concept Taxonomy"
-msgstr ""
+msgstr "Concept Taxonomy"
 
 #: templates/mmt_motm/event_detail.html:8
 #: templates/mmt_motm/location_detail.html:8
 msgid "Back"
-msgstr ""
+msgstr "Back"
 
 #: templates/mmt_motm/event_detail.html:11
 msgid "Details"
@@ -518,7 +518,7 @@ msgstr ""
 
 #: templates/mmt_motm/location_map.html:15
 msgid "events"
-msgstr ""
+msgstr "events"
 
 #: templates/mmt_motm/location_map.html:33
 msgid "No places with coordinates found."
@@ -555,11 +555,11 @@ msgstr ""
 
 #: templates/mmt_motm/person_detail.html:39
 msgid "Died:"
-msgstr ""
+msgstr "Died:"
 
 #: templates/mmt_motm/person_detail.html:60
 msgid "Biography"
-msgstr ""
+msgstr "Biography"
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
@@ -700,9 +700,9 @@ msgstr ""
 
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"
-msgstr ""
+msgstr "Places Map"
 
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
-msgstr ""
+msgstr "Map view"
 
