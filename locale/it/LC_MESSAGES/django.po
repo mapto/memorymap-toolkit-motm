@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-11 10:14\n"
+"PO-Revision-Date: 2026-09-21 14:55\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it_IT\n"
@@ -20,12 +20,12 @@ msgstr ""
 #: mmt_map/forms.py:16 mmt_map/forms.py:30 mmt_map/forms.py:46
 #: mmt_map/forms.py:60
 msgid "If you have added an audio file to the popup, make sure you give it a title as well"
-msgstr "Se hai aggiunto un file audio al popup, assicurati di dargli anche un titolo"
+msgstr "Se è stato aggiunto un file audio al pop-up, ricordarsi di assegnargli un titolo"
 
 #: mmt_map/forms.py:17 mmt_map/forms.py:31 mmt_map/forms.py:47
 #: mmt_map/forms.py:61
 msgid "A short description of the location."
-msgstr "Una breve descrizione del luogo."
+msgstr "Breve descrizione del luogo."
 
 #: mmt_map/forms.py:20
 msgid "Point"
