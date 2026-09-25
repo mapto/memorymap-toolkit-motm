@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-21 14:55\n"
+"PO-Revision-Date: 2026-09-25 10:58\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it_IT\n"
@@ -81,7 +81,7 @@ msgstr "Data contestata"
 
 #: mmt_motm/models.py:140
 msgid "Alte Heimat"
-msgstr "Vecchia patria"
+msgstr "Alte Heimat"
 
 #: mmt_motm/models.py:141
 msgid "Auswanderung"
@@ -89,7 +89,7 @@ msgstr "Emigrazione"
 
 #: mmt_motm/models.py:142
 msgid "Neue Heimat"
-msgstr "Nuova patria"
+msgstr "Neue Heimat"
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
@@ -220,7 +220,7 @@ msgstr "Percorso di vita"
 
 #: templates/mmt_motm/_breadcrumb.html:13
 msgid "breadcrumb"
-msgstr "briciole di pane"
+msgstr "percorso di navigazione"
 
 #: templates/mmt_motm/concept_detail.html:7
 #: templates/mmt_motm/extraction_detail.html:6
@@ -279,7 +279,7 @@ msgstr "Dettagli"
 
 #: templates/mmt_motm/event_detail.html:15
 msgid "Life Journey:"
-msgstr "Percorso di vita:"
+msgstr "Percorso biografico:"
 
 #: templates/mmt_motm/event_detail.html:22
 #: templates/mmt_motm/interview_detail.html:14
@@ -332,7 +332,7 @@ msgstr "Note:"
 
 #: templates/mmt_motm/event_detail.html:134
 msgid "No geolocated data to display."
-msgstr "Nessun dato geolocalizzato da visualizzare."
+msgstr "Nessun dato geolocalizzato disponibile."
 
 #: templates/mmt_motm/event_list.html:7
 msgid "Filter events…"
@@ -378,7 +378,7 @@ msgstr "Evento:"
 
 #: templates/mmt_motm/extraction_detail.html:41
 msgid "Event confidence:"
-msgstr "Affidabilità dell'evento:"
+msgstr "Stato di documentazione: "
 
 #: templates/mmt_motm/extraction_detail.html:46
 msgid "Source:"
@@ -407,7 +407,7 @@ msgstr "Lingua"
 
 #: templates/mmt_motm/extraction_list.html:49
 msgid "No extractions found."
-msgstr "Nessuna estrazione trovata."
+msgstr "Nessuna estrazione."
 
 #: templates/mmt_motm/interview_detail.html:7
 #, python-format
@@ -478,7 +478,7 @@ msgstr "Nessuna fonte trovata."
 
 #: templates/mmt_motm/life_journey_heatmap.html:6
 msgid "Life Journey × Sources"
-msgstr "Percorso di vita × Fonti"
+msgstr "Percorso biografico × Fonti"
 
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
@@ -490,7 +490,7 @@ msgstr "Indirizzo:"
 
 #: templates/mmt_motm/location_detail.html:27
 msgid "Wikidata:"
-msgstr ""
+msgstr "Wikidata:"
 
 #: templates/mmt_motm/location_detail.html:33
 msgid "GeoNames:"
@@ -563,7 +563,7 @@ msgstr "Biografia"
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
-msgstr ""
+msgstr "top 20"
 
 #: templates/mmt_motm/person_detail.html:124
 msgid "Relationships"
@@ -579,7 +579,7 @@ msgstr "di"
 
 #: templates/mmt_motm/person_detail.html:144
 msgid "Sources conducted"
-msgstr "Fonti condotte"
+msgstr "Fonti consultate"
 
 #: templates/mmt_motm/person_detail.html:150
 msgid "with"
@@ -587,7 +587,7 @@ msgstr "con"
 
 #: templates/mmt_motm/person_detail.html:157
 msgid "Sources given"
-msgstr "Fonti fornite"
+msgstr "Fonti indicate"
 
 #: templates/mmt_motm/person_detail.html:163
 msgid "by"
@@ -595,7 +595,7 @@ msgstr "da"
 
 #: templates/mmt_motm/person_detail.html:220
 msgid "No geolocated events to display."
-msgstr "Nessun evento geolocalizzato da visualizzare."
+msgstr "Nessun evento geolocalizzato."
 
 #: templates/mmt_motm/person_list.html:7
 msgid "Search by name…"
@@ -656,7 +656,7 @@ msgstr "Tabella ricercabile di tutti gli eventi"
 
 #: templates/mmt_motm/text_only.html:31
 msgid "Persons × Life Journey Heatmap"
-msgstr "Persone × Mappa di calore del percorso di vita"
+msgstr "Persone × Heatmap del percorso biografico"
 
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
