@@ -83,8 +83,13 @@ def api_get(endpoint, params=None):
     return data["results"] if isinstance(data, dict) and "results" in data else data
 
 
-def api_post(endpoint, payload):
+def api_post(endpoint, payload, fail_on_error=True):
     resp = _retry(SESSION.post, f"{BASE_URL}/{endpoint}/", json=payload)
+    if resp.status_code >= 400:
+        error_msg = f"API Error {resp.status_code}: {resp.text}"
+        print(f"  ⚠️ {error_msg}")
+        if not fail_on_error:
+            return None
     resp.raise_for_status()
     return resp.json()
 
@@ -93,6 +98,11 @@ def api_patch(endpoint, obj_id, payload):
     resp = _retry(SESSION.patch, f"{BASE_URL}/{endpoint}/{obj_id}/", json=payload)
     resp.raise_for_status()
     return resp.json()
+
+
+def api_delete(endpoint, obj_id):
+    resp = _retry(SESSION.delete, f"{BASE_URL}/{endpoint}/{obj_id}/")
+    resp.raise_for_status()
 
 
 def api_bulk_upsert(endpoint, items):

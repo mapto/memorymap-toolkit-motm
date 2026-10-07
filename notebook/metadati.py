@@ -276,14 +276,9 @@ def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
     # Family sheet
     if "Familie" in wb.sheetnames:
         sheet_fam = wb["Familie"]
-        for idx, row in enumerate(sheet_fam.iter_rows(values_only=True)):
-            if idx <= 1:
+        for row in sheet_fam.iter_rows(min_row=4, max_col=7, values_only=True):
+            if all(cell is None for cell in row):
                 continue
-            if not row or all(cell is None for cell in row):
-                continue
-            cells = list(row)[:7]
-            while len(cells) < 7:
-                cells.append(None)
             (
                 _,
                 relation,
@@ -292,7 +287,7 @@ def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
                 birth_date_raw,
                 birth_place,
                 notes,
-            ) = cells
+            ) = row
             birth_date, death_date = (
                 parse_date_range(str(birth_date_raw))
                 if birth_date_raw
@@ -695,7 +690,7 @@ def import_from_xlsx(xlsx_path):
 def import_all_metadati(directory=None):
     """Find and import all metadati_*.xlsx files from the data directory."""
     if directory is None:
-        directory = Path(__file__).resolve().parent.parent / "data" / "schede mappatura"
+        directory = Path(__file__).resolve().parent.parent / "data" / "nuove schede"
     directory = Path(directory)
     results = []
     for xlsx_path in sorted(directory.rglob("metadati_*.xlsx")):

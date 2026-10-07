@@ -26,6 +26,8 @@ echo "Importing quotes..."
 uv run jupyter execute belege.ipynb
 
 echo "Importing chronotopi..."
-uv run jupyter execute chronotopi-v4.ipynb
+# uv run jupyter execute chronotopi-v4.ipynb
+uv run jupyter nbconvert --execute --to markdown --stdout chronotopi-v4.ipynb
+# uv run papermill chronotopi-v4.ipynb /tmp/executed.ipynb && uv run jupyter nbconvert --to markdown --stdout /tmp/executed.ipynb && rm /tmp/executed.ipynb
 
 echo "Import complete."

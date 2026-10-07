@@ -443,7 +443,10 @@ def get_or_create_location(
         payload["wikidata_id"] = wid
     if gid:
         payload["geonames_id"] = gid
-    created = api_post("locations", payload)
+    created = api_post("locations", payload, fail_on_error=False)
+    if created is None:
+        print(f"      → Skipping location '{name}' due to API error")
+        return None
     _location_cache[key] = created["id"]
     return created["id"]
 

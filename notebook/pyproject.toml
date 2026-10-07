@@ -23,4 +23,7 @@ dependencies = [
     "fast-langdetect>=1.0.1",
     "fuzzywuzzy>=0.18.0",
     "jupyter-ruff>=0.3.1",
+    "jupyter-console>=6.6.3",
+    "python-levenshtein>=0.27.5",
+    "papermill>=2.7.0",
 ]

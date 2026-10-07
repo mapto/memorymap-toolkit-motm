@@ -125,7 +125,17 @@ def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int
             batch = payloads[i : i + BATCH]
             try:
                 resp = api_bulk_upsert("extractions", batch)
-                results.extend(item["id"] for item in resp.get("items", []))
+                imported_items = [
+                    *resp.get("created_items", []),
+                    *resp.get("updated_items", []),
+                ]
+                results.extend(
+                    item["id"] for item in imported_items if item.get("id") is not None
+                )
+                errors.extend(
+                    f"bulk item {item.get('index', '?')}: {item.get('error', item)}"
+                    for item in resp.get("errors", [])
+                )
             except Exception as e:
                 errors.append(f"bulk batch {i}: {e}")
 
