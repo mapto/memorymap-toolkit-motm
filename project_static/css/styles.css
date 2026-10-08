@@ -516,7 +516,7 @@ article img {
 .year-label { min-width: 32px; text-align: center; }
 .year-slider-track {
     position: relative;
-    width: 220px;
+	width: 440px;
     height: 20px;
 }
 .year-slider-track input[type=range] {

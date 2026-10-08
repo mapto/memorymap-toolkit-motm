@@ -51,6 +51,10 @@ msgstr ""
 msgid "Estimated"
 msgstr ""
 
+#: mmt_motm/models.py
+msgid "Unknown"
+msgstr ""
+
 #: mmt_motm/models.py:11
 msgid "Probable"
 msgstr ""
@@ -392,6 +396,10 @@ msgstr ""
 msgid "Search by quote, concept or person…"
 msgstr ""
 
+#: templates/mmt_motm/extraction_list.html
+msgid "citations"
+msgstr ""
+
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
 msgstr ""
@@ -558,7 +566,7 @@ msgid "Died:"
 msgstr ""
 
 #: templates/mmt_motm/person_detail.html:60
-msgid "Biography"
+msgid "Persecuted group"
 msgstr ""
 
 #: templates/mmt_motm/person_detail.html:104
@@ -705,3 +713,8 @@ msgstr ""
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
 msgstr ""
+
+#: templates/mmt_motm/person_detail.html:170
+msgid "See all"
+msgstr ""
+

@@ -3,6 +3,8 @@ from django.template.defaultfilters import date as date_filter
 from django.utils.translation import gettext_lazy as _
 from parler.models import TranslatableModel, TranslatedFields
 
+from .language_names import language_name
+
 
 class Timespan(models.Model):
     CERTAINTY_CHOICES = [
@@ -11,6 +13,7 @@ class Timespan(models.Model):
         ("probable", _("Probable")),
         ("uncertain", _("Uncertain")),
         ("disputed", _("Disputed")),
+        ("unknown", _("Unknown")),
     ]
 
     start = models.DateField(null=True, blank=True)
@@ -451,19 +454,7 @@ class Extraction(TranslatableModel):
     @property
     def language_label(self):
         """Return a human-readable language name for the ISO code."""
-        if not self.language:
-            return ""
-        _LANG_NAMES = {
-            "de": "German", "en": "English", "fr": "French", "it": "Italian",
-            "es": "Spanish", "pt": "Portuguese", "nl": "Dutch", "pl": "Polish",
-            "cs": "Czech", "ru": "Russian", "uk": "Ukrainian", "he": "Hebrew",
-            "yi": "Yiddish", "ar": "Arabic", "tr": "Turkish", "hu": "Hungarian",
-            "ro": "Romanian", "bg": "Bulgarian", "hr": "Croatian", "sr": "Serbian",
-            "sk": "Slovak", "sl": "Slovenian", "el": "Greek", "da": "Danish",
-            "sv": "Swedish", "no": "Norwegian", "fi": "Finnish", "ja": "Japanese",
-            "zh": "Chinese", "ko": "Korean",
-        }
-        return _LANG_NAMES.get(self.language, self.language)
+        return language_name(self.language)
 
 class Concept(TranslatableModel):
     translations = TranslatedFields(

@@ -51,6 +51,10 @@ msgstr "Sicher"
 msgid "Estimated"
 msgstr "Geschätzt"
 
+#: mmt_motm/models.py
+msgid "Unknown"
+msgstr "Unbekannt"
+
 #: mmt_motm/models.py:11
 msgid "Probable"
 msgstr "Wahrscheinlich"
@@ -392,6 +396,10 @@ msgstr "Notizen"
 msgid "Search by quote, concept or person…"
 msgstr "Suche nach Zitat, Konzept oder Person…"
 
+#: templates/mmt_motm/extraction_list.html
+msgid "citations"
+msgstr "Zitate"
+
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
 msgstr "Person"
@@ -558,8 +566,8 @@ msgid "Died:"
 msgstr "Gestorben:"
 
 #: templates/mmt_motm/person_detail.html:60
-msgid "Biography"
-msgstr "Biografie"
+msgid "Persecuted group"
+msgstr "Verfolgungsgruppe"
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
@@ -705,3 +713,8 @@ msgstr "Ortskarte"
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
 msgstr "Kartenansicht"
+
+#: templates/mmt_motm/person_detail.html:170
+msgid "See all"
+msgstr "Alle anzeigen"
+

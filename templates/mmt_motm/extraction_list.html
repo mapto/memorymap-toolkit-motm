@@ -6,23 +6,34 @@
     <h1>{% trans "Quotes" %}</h1>
     <input type="text" id="extraction-search" class="form-control mb-3"
            placeholder="{% trans 'Search by quote, concept or person…' %}">
+    <p class="text-muted" aria-live="polite">
+        <span id="extraction-count">{{ extractions|length }}</span>
+        {% trans "citations" %}
+    </p>
     <table class="table table-striped" id="extraction-table">
         <thead>
             <tr>
-                <th class="sortable" data-col="0">{% trans "Person" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="1">{% trans "Concept" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">{% trans "Quote" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">{% trans "Source" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="4">{% trans "Language" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="0">{% trans "Person Mentioned" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">{% trans "Interviewee" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{% trans "Concept" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{% trans "Quote" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">{% trans "Source" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="5">{% trans "Language" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
             {% for extraction in extractions %}
-            <tr>
+            <tr class="extraction-row">
                 <td>
                     {% if extraction.people_mentioned %}
                         <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">
                             {{ extraction.people_mentioned }}</a>
+                    {% else %}–{% endif %}
+                </td>
+                <td>
+                    {% if extraction.interview and extraction.interview.interviewee %}
+                        <a href="{% url 'person_detail' extraction.interview.interviewee.pk %}">
+                            {{ extraction.interview.interviewee }}</a>
                     {% else %}–{% endif %}
                 </td>
                 <td>
@@ -38,15 +49,22 @@
                 </td>
                 <td>
                     {% if extraction.interview %}
-                        <a href="{% url 'interview_detail' extraction.interview.pk %}">
-                            {{ extraction.interview }}</a>
+                        {% for source_url in extraction.interview.urls.all %}
+                            {% if forloop.first %}
+                                <a href="{{ source_url.url }}" target="_blank" rel="noopener">
+                                    {{ source_url.url }}</a>
+                            {% endif %}
+                        {% empty %}
+                            <a href="{% url 'interview_detail' extraction.interview.pk %}">
+                                {{ extraction.interview }}</a>
+                        {% endfor %}
                     {% else %}–{% endif %}
                 </td>
                 <td>{{ extraction.language_label|default:"–" }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5">{% trans "No extractions found." %}</td>
+                <td colspan="6">{% trans "No extractions found." %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -58,13 +76,20 @@ document.addEventListener("DOMContentLoaded", function () {
     var table = document.getElementById("extraction-table");
     var tbody = table.querySelector("tbody");
     var headers = table.querySelectorAll("th.sortable");
-
-    input.addEventListener("input", function () {
-        var query = this.value.toLowerCase();
-        Array.from(tbody.rows).forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
-        });
+    var count = document.getElementById("extraction-count");
+    var listFilter = MmtList.attachFilter({
+        input: input,
+        count: count,
+        itemSelector: "#extraction-table tbody tr.extraction-row"
     });
+    var dataRows = listFilter.items;
+
+    var params = new URLSearchParams(window.location.search);
+    var q = params.get("q");
+    if (q) {
+        input.value = q.replace(/\+/g, " ");
+        listFilter.filter(input.value);
+    }
 
     var currentSort = { col: -1, dir: "asc" };
     headers.forEach(function (th) {
@@ -74,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
             currentSort = { col: col, dir: dir };
             headers.forEach(function (h) { h.classList.remove("asc", "desc"); });
             this.classList.add(dir);
-            var rows = Array.from(tbody.rows);
+            var rows = dataRows.slice();
             rows.sort(function (a, b) {
                 var av = (a.cells[col].dataset.sort !== undefined
                     ? a.cells[col].dataset.sort

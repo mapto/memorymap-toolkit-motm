@@ -59,6 +59,14 @@ class LocationPointSerializer(serializers.ModelSerializer):
             validated_data["location"] = GeoPoint(lon, lat)
         return super().create(validated_data)
 
+    def update(self, instance, validated_data):
+        lat = validated_data.pop("latitude", None)
+        lon = validated_data.pop("longitude", None)
+        from django.contrib.gis.geos import Point as GeoPoint
+        if lat is not None and lon is not None:
+            instance.location = GeoPoint(lon, lat)
+        return super().update(instance, validated_data)
+
 
 class PersonSerializer(serializers.ModelSerializer):
     # description is a django-parler translated field on Person.
@@ -86,7 +94,7 @@ class RelationshipSerializer(serializers.ModelSerializer):
 
 class ExtractionSerializer(serializers.ModelSerializer):
     # notes is a django-parler translated field on Extraction.
-    notes = serializers.CharField()
+    notes = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Extraction

@@ -5,6 +5,10 @@
 <div class="container mt-4">
     <h1>{% trans "People" %}</h1>
     <input type="text" id="person-search" class="form-control mb-3" placeholder="{% trans 'Search by name…' %}">
+    <p class="text-muted" aria-live="polite">
+        <span id="person-count">{{ persons|length }}</span>
+        {% trans "people" %}
+    </p>
     <table class="table table-striped" id="person-table">
         <thead>
             <tr>
@@ -23,7 +27,7 @@
         </thead>
         <tbody>
             {% for person in persons %}
-            <tr>
+            <tr class="person-row">
                 <td class="col-group-name">
                     <a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}</a>
                 </td>
@@ -85,15 +89,15 @@ document.addEventListener("DOMContentLoaded", function () {
     var table = document.getElementById("person-table");
     var tbody = table.querySelector("tbody");
     var headers = table.querySelectorAll("th.sortable");
-
-    // Search filter
-    input.addEventListener("input", function () {
-        var query = this.value.toLowerCase();
-        Array.from(tbody.rows).forEach(function (row) {
-            var text = row.cells[0].textContent.toLowerCase() + " " + row.cells[1].textContent.toLowerCase();
-            row.style.display = text.includes(query) ? "" : "none";
-        });
+    var listFilter = MmtList.attachFilter({
+        input: input,
+        count: document.getElementById("person-count"),
+        itemSelector: "#person-table tbody tr.person-row",
+        getText: function (row) {
+            return row.cells[0].textContent + " " + row.cells[1].textContent;
+        }
     });
+    var dataRows = listFilter.items;
 
     // Column sorting
     var currentSort = { col: 0, dir: "asc" };
@@ -105,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
             headers.forEach(function (h) { h.classList.remove("asc", "desc"); });
             this.classList.add(dir);
 
-            var rows = Array.from(tbody.rows);
+            var rows = dataRows.slice();
             rows.sort(function (a, b) {
                 var av = (a.cells[col].dataset.sort !== undefined
                     ? a.cells[col].dataset.sort

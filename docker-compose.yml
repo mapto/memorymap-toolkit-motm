@@ -6,8 +6,8 @@ services:
   db:
     image: postgis/postgis:17-3.5-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql
-      - backups:/backups
+      - ./tmp/postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
     environment:
       - POSTGRES_USER=${DJANGO_DB_USER}
       - POSTGRES_DB=${DJANGO_DB_NAME}
@@ -29,9 +29,9 @@ services:
       context: .
       dockerfile: ./Dockerfile
     volumes:
-      - static:/app/static
-      - media:/app/media
-      - backups:/app/backups
+      - ./static:/app/static
+      - ./media:/app/media
+      - ./backups:/app/backups
       - .:/app
     depends_on:
       db:
@@ -63,8 +63,3 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
     restart: always
 
-volumes:
-  postgres_data:
-  static:
-  media:
-  backups:

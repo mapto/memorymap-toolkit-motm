@@ -26,4 +26,6 @@ dependencies = [
     "jupyter-console>=6.6.3",
     "python-levenshtein>=0.27.5",
     "papermill>=2.7.0",
+    "psycopg2-binary>=2.9.9",
+    "docpie>=0.4.4",
 ]

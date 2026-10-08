@@ -8,15 +8,15 @@
     <p><a href="javascript:history.back()">&larr; {% trans "Back" %}</a></p>
     <h1>{{ event.description|truncatewords:10 }}</h1>
 
-    <h3>{% trans "Details" %}</h3>
-    <p>{{ event.description }}</p>
-
-    {% if event.lifecycle %}
-    <p><strong>{% trans "Life Journey:" %}</strong>
-        <a href="{% url 'life_journey_heatmap' %}" style="color:{{ event.lifecycle_color }};">
-            <i class="fas {{ event.lifecycle_icon }}"></i> {{ event.get_lifecycle_display }}</a>
-    </p>
+    {% if event.persons.exists %}
+    <h2>{% trans "People:" %}
+        {% for person in event.persons.all %}
+            <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </h2>
     {% endif %}
+
+    <h3>{% trans "Details" %}</h3>
 
     {% if event.timespan %}
     <p><strong>{% trans "Date:" %}</strong>
@@ -46,11 +46,10 @@
     </p>
     {% endif %}
 
-    {% if event.persons.exists %}
-    <p><strong>{% trans "People:" %}</strong>
-        {% for person in event.persons.all %}
-            <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
+    {% if event.lifecycle %}
+    <p><strong>{% trans "Life Journey:" %}</strong>
+        <a href="{% url 'life_journey_heatmap' %}" style="color:{{ event.lifecycle_color }};">
+            <i class="fas {{ event.lifecycle_icon }}"></i> {{ event.get_lifecycle_display }}</a>
     </p>
     {% endif %}
 

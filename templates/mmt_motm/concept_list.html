@@ -5,6 +5,10 @@
 <div class="container mt-4">
     <h1>{% trans "Concepts" %}</h1>
     <input type="text" id="concept-search" class="form-control mb-3" placeholder="{% trans 'Filter concepts…' %}">
+    <p class="text-muted" aria-live="polite">
+        <span id="concept-count">{{ concepts|length }}</span>
+        {% trans "concepts" %}
+    </p>
     <div id="word-cloud" style="line-height:2.2;text-align:center;">
         {% for concept in concepts %}
         <a href="{% url 'concept_detail' concept.pk %}"
@@ -22,24 +26,10 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    var words = document.querySelectorAll(".cloud-word");
-    var counts = Array.from(words).map(function(w) { return parseInt(w.dataset.count) || 0; });
-    var maxCount = Math.max.apply(null, counts) || 1;
-    var minCount = Math.min.apply(null, counts) || 0;
-    var minSize = 0.85, maxSize = 3.0;
-    words.forEach(function(w) {
-        var c = parseInt(w.dataset.count) || 0;
-        var ratio = maxCount > minCount ? (c - minCount) / (maxCount - minCount) : 0.5;
-        var size = minSize + ratio * (maxSize - minSize);
-        w.style.fontSize = size.toFixed(2) + "rem";
-    });
-
-    var input = document.getElementById("concept-search");
-    input.addEventListener("input", function () {
-        var query = this.value.toLowerCase();
-        words.forEach(function (w) {
-            w.style.display = w.dataset.label.includes(query) ? "" : "none";
-        });
+    MmtList.attachWordCloud({
+        input: document.getElementById("concept-search"),
+        count: document.getElementById("concept-count"),
+        itemSelector: "#word-cloud .cloud-word"
     });
 });
 </script>

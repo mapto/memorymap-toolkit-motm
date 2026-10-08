@@ -57,7 +57,7 @@
     {% endif %}
 
     {% if person.description %}
-    <h3>{% trans "Biography" %}</h3>
+    <h3>{% trans "Persecuted group" %}</h3>
     <p>{{ person.description }}</p>
     {% endif %}
 
@@ -167,7 +167,7 @@
     {% endif %}
 
     {% if random_quotes %}
-    <h3>{% trans "Quotes" %}</h3>
+    <h3>{% trans "Quotes" %} <small><a href="{% url 'extraction_list' %}?q={{ person.given_name|urlencode }}+{{ person.family_name|urlencode }}">{% trans "See all" %}</a></small></h3>
         {% for extraction in random_quotes %}
         <div class="mb-2">
           <blockquote class="list-unstyled">

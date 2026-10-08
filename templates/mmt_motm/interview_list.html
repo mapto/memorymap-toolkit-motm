@@ -5,22 +5,24 @@
 <div class="container mt-4">
     <h1>{% trans "Sources" %}</h1>
     <input type="text" id="interview-search" class="form-control mb-3" placeholder="{% trans 'Search by archive ID or quotes…' %}">
+    <p class="text-muted" aria-live="polite">
+        <span id="interview-count">{{ interviews|length }}</span>
+        {% trans "sources" %}
+    </p>
     <table class="table table-striped" id="interview-table">
         <thead>
             <tr>
                 <th class="sortable" data-col="0">{% trans "Archive ID" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="1">{% trans "Type" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">{% trans "Date" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">{% trans "Place" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="4">{% trans "Interviewee" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="5">{% trans "Interviewer" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">{% trans "Date" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{% trans "Place" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{% trans "Interviewee" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">{% trans "Interviewer" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
             {% for interview in interviews %}
-            <tr>
+            <tr class="interview-row">
                 <td><a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a></td>
-                <td>{{ interview.interview_type|default:"–" }}</td>
                 <td data-sort="{{ interview.date|date:'Y-m-d'|default:'' }}">
                     {{ interview.date|date:"j N Y"|default:"–" }}
                 </td>
@@ -40,7 +42,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6">{% trans "No sources found." %}</td>
+                <td colspan="5">{% trans "No sources found." %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -52,22 +54,19 @@ document.addEventListener("DOMContentLoaded", function () {
     var table = document.getElementById("interview-table");
     var tbody = table.querySelector("tbody");
     var headers = table.querySelectorAll("th.sortable");
-
-    function filterRows() {
-        var query = input.value.toLowerCase();
-        Array.from(tbody.rows).forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
-        });
-    }
-
-    input.addEventListener("input", filterRows);
+    var listFilter = MmtList.attachFilter({
+        input: input,
+        count: document.getElementById("interview-count"),
+        itemSelector: "#interview-table tbody tr.interview-row"
+    });
+    var dataRows = listFilter.items;
 
     // Pre-fill from URL parameter
     var params = new URLSearchParams(window.location.search);
     var q = params.get("q");
     if (q) {
         input.value = q.replace(/\+/g, " ");
-        filterRows();
+        listFilter.filter(input.value);
     }
 
     var currentSort = { col: -1, dir: "asc" };
@@ -78,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
             currentSort = { col: col, dir: dir };
             headers.forEach(function (h) { h.classList.remove("asc", "desc"); });
             this.classList.add(dir);
-            var rows = Array.from(tbody.rows);
+            var rows = dataRows.slice();
             rows.sort(function (a, b) {
                 var av = (a.cells[col].dataset.sort !== undefined
                     ? a.cells[col].dataset.sort

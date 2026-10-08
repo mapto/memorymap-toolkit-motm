@@ -30,6 +30,7 @@
 		<!-- Custom Styles -->
 		<link rel="stylesheet" href="{% static 'css/styles.css' %}">
 		<link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+		<script src="{% static 'js/listCounter.js' %}"></script>
 
 		{% get_media_prefix as MEDIA_URL %}
 		{% if config.CUSTOM_CSS != 'default.css' %}
@@ -144,6 +145,7 @@
 								aria-expanded="false">{% trans "Quotes" %}</a>
 							<div class="dropdown-menu" aria-labelledby="quotesDropdown">
 								<a class="dropdown-item" href="{% url 'extraction_list' %}">{% trans "List" %}</a>
+								<a class="dropdown-item" href="{% url 'interview_list' %}">{% trans "Interviews" %}</a>
 								<a class="dropdown-item" href="{% url 'source_category_heatmap' %}">{% trans "Heatmap" %}</a>
 							</div>
 						</li>
@@ -255,7 +257,6 @@
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 		<script src="{% static 'underscore/underscore-min.js' %}"></script>
-
 		{% block scripts %}
 		{% endblock %}
 

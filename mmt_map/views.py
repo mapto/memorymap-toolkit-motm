@@ -4,7 +4,7 @@ import json
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.db import connection
-from django.views.decorators.cache import cache_page
+from django.conf import settings
 from django.utils import translation
 from django.core.cache import cache
 
@@ -209,6 +209,7 @@ def _append_motm_layers(response, env, lang_code):
 		'xmax': env['xmax'], 'ymax': env['ymax'],
 		'segSize': env['segSize'],
 		'lang_code': lang_code,
+		'fallback_lang_code': settings.PARLER_DEFAULT_LANGUAGE_CODE,
 	}
 
 	# LocationPoints with dominant lifecycle icon from events
@@ -256,12 +257,23 @@ def _append_motm_layers(response, env, lang_code):
 				"bounds"."b2d"
 			) AS "geom",
 			"e"."id",
-			COALESCE("et"."description", "e"."id"::text) AS "name",
+			COALESCE("et"."description", "et_fallback"."description", "e"."id"::text) AS "description",
+			COALESCE((
+				SELECT STRING_AGG(
+					CONCAT_WS(' ', "p"."given_name", "p"."family_name"),
+					', ' ORDER BY "p"."family_name", "p"."given_name"
+				)
+				FROM "mmt_motm_event_persons" "ep"
+				JOIN "mmt_motm_person" "p" ON "p"."id" = "ep"."person_id"
+				WHERE "ep"."event_id" = "e"."id"
+			), '') AS "person_name",
 			COALESCE(EXTRACT(YEAR FROM "ts"."start"), EXTRACT(YEAR FROM "ts"."end"))::int AS "year",
 			{_lc_case} AS "icon"
 			FROM "mmt_motm_event" "e"
 			LEFT JOIN "mmt_motm_event_translation" "et"
 				ON "et"."master_id" = "e"."id" AND "et"."language_code" = %(lang_code)s
+			LEFT JOIN "mmt_motm_event_translation" "et_fallback"
+				ON "et_fallback"."master_id" = "e"."id" AND "et_fallback"."language_code" = %(fallback_lang_code)s
 			JOIN "mmt_motm_locationpoint" "sl" ON "e"."start_location_id" = "sl"."id"
 			JOIN "mmt_motm_locationpoint" "el" ON "e"."end_location_id" = "el"."id"
 			LEFT JOIN "mmt_motm_timespan" "ts" ON "e"."timespan_id" = "ts"."id",

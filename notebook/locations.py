@@ -1,16 +1,132 @@
-import requests
-import regex as re
+import logging
 import os
 import time
+import math
 import openpyxl
+import requests
+import regex as re
 from typing import Any
 
 from utils import extract_id_from_url, is_empty
 
 
+logger = logging.getLogger(__name__)
+
+
 GEONAMES_USERNAME = "mapto"
 
 domains = ["geonames.org", "wikidata.org"]
+
+
+def _coordinate_pair(entry: dict) -> tuple[float, float] | None:
+    """Return a finite ``(latitude, longitude)`` pair when both values exist."""
+    try:
+        latitude = float(entry.get("lat"))
+        longitude = float(entry.get("long"))
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(latitude) or not math.isfinite(longitude):
+        return None
+    return latitude, longitude
+
+
+def extract_geonames_id(value) -> str | None:
+    """Return the numeric GeoNames ID from an ID or GeoNames URL.
+
+    GeoNames entity URLs end with a slug, so taking the final URL component
+    would produce values such as ``republic-of-france.html`` instead of the
+    API-safe ID ``3017382``.
+    """
+    raw_value = str(value or "").strip()
+    if not raw_value or raw_value in ("nan", "None"):
+        return None
+    raw_value = raw_value.removesuffix(".0")
+    if raw_value.isdigit():
+        return raw_value
+    match = re.search(r"geonames\.org/(\d+)(?:/|$)", raw_value, flags=re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def resolve_location_coordinates(entry: dict) -> tuple[float, float] | None:
+    """Resolve coordinates table-first, then source IDs, then by place name.
+
+    Successful fallback values are written back to *entry* so
+    :func:`save_locations_db` can persist them to ``locations.xlsx``.
+    """
+    coordinates = _coordinate_pair(entry)
+    if coordinates is not None:
+        entry["lat"], entry["long"] = coordinates
+        return coordinates
+
+    for url_key, resolver in (
+        ("geonames_url", extract_geonames_coordinates),
+        ("wikidata_url", extract_wikidata_coordinates),
+    ):
+        url = entry.get(url_key)
+        if not url:
+            continue
+        try:
+            coordinates = resolver(url)
+        except requests.RequestException as exc:
+            logger.warning(
+                "Coordinate lookup failed for %s via %s (%s): %s",
+                entry.get("name", "<unnamed location>"),
+                url_key,
+                url,
+                exc,
+            )
+            continue
+        except Exception:
+            logger.exception(
+                "Unexpected coordinate lookup failure for %s via %s (%s)",
+                entry.get("name", "<unnamed location>"),
+                url_key,
+                url,
+            )
+            continue
+        if coordinates is None:
+            logger.warning(
+                "No coordinates returned for %s via %s (%s)",
+                entry.get("name", "<unnamed location>"),
+                url_key,
+                url,
+            )
+            continue
+        coordinates = _coordinate_pair(
+            {"lat": coordinates.get("lat"), "long": coordinates.get("long")}
+        )
+        if coordinates is not None:
+            entry["lat"], entry["long"] = coordinates
+            return coordinates
+
+    has_source_id = any(
+        not is_empty(entry.get(field))
+        for field in (
+            "geonames_id",
+            "wikidata_id",
+            "geonames_url",
+            "wikidata_url",
+        )
+    )
+    if not has_source_id and not is_empty(entry.get("name")):
+        name = str(entry["name"]).strip()
+        try:
+            coordinates = query_geocoder(name)
+        except Exception:
+            logger.exception("Name geocoder failed for %s", name)
+            coordinates = None
+        if coordinates is not None:
+            coordinates = _coordinate_pair(coordinates)
+            if coordinates is not None:
+                entry["lat"], entry["long"] = coordinates
+                return coordinates
+        logger.warning("Name geocoder returned no usable coordinates for %s", name)
+
+    logger.warning(
+        "No usable coordinate source for %s",
+        entry.get("name", "<unnamed location>"),
+    )
+    return None
 
 
 def extract_geonames_coordinates(url: str) -> dict | None:
@@ -30,28 +146,54 @@ def extract_geonames_coordinates(url: str) -> dict | None:
     if map_match:
         try:
             return {"lat": float(map_match.group(1)), "long": float(map_match.group(2))}
-        except ValueError:
+        except ValueError as exc:
+            logger.warning("Invalid coordinates embedded in GeoNames URL %s: %s", url, exc)
             return None
 
     # Entity URL with numeric ID
     match = re.search(r"geonames\.org/(\d+)", url)
     if not match:
+        logger.warning("GeoNames URL has no entity ID: %s", url)
         return None
 
     geoname_id = match.group(1)
 
-    response = requests.get(
-        "http://api.geonames.org/getJSON",
-        params={"geonameId": geoname_id, "username": GEONAMES_USERNAME},
-        headers={"User-Agent": "coord-extractor/1.0"},
-    )
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = requests.get(
+            "https://api.geonames.org/getJSON",
+            params={"geonameId": geoname_id, "username": GEONAMES_USERNAME},
+            headers={"User-Agent": "coord-extractor/1.0"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+        coordinates = {"lat": float(data["lat"]), "long": float(data["lng"])}
+        if _coordinate_pair(coordinates) is not None:
+            return coordinates
+    except (KeyError, TypeError, ValueError, requests.RequestException) as exc:
+        logger.warning(
+            "GeoNames API lookup failed for %s (%s): %s", url, geoname_id, exc
+        )
 
     try:
-        return {"lat": float(data["lat"]), "long": float(data["lng"])}
-    except (KeyError, ValueError):
-        return None
+        response = requests.get(
+            url,
+            headers={"User-Agent": "coord-extractor/1.0"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        match = re.search(
+            r'"@type"\s*:\s*"GeoCoordinates".*?'
+            r'"latitude"\s*:\s*(-?[\d.]+).*?'
+            r'"longitude"\s*:\s*(-?[\d.]+)',
+            response.text,
+            flags=re.DOTALL,
+        )
+        if match:
+            return {"lat": float(match.group(1)), "long": float(match.group(2))}
+    except (ValueError, requests.RequestException) as exc:
+        logger.warning("GeoNames page lookup failed for %s: %s", url, exc)
+    return None
 
 
 def extract_wikidata_coordinates(url: str) -> dict | None:
@@ -64,6 +206,7 @@ def extract_wikidata_coordinates(url: str) -> dict | None:
     """
     match = re.search(r"/wiki/(Q\d+)", url)
     if not match:
+        logger.warning("Wikidata URL has no entity ID: %s", url)
         return None
 
     qid = match.group(1)
@@ -77,6 +220,7 @@ def extract_wikidata_coordinates(url: str) -> dict | None:
             "format": "json",
         },
         headers={"User-Agent": "coord-extractor/1.0"},
+        timeout=10,
     )
     response.raise_for_status()
     data = response.json()
@@ -85,7 +229,8 @@ def extract_wikidata_coordinates(url: str) -> dict | None:
         claims = data["entities"][qid]["claims"]
         p625 = claims["P625"][0]["mainsnak"]["datavalue"]["value"]
         return {"lat": p625["latitude"], "long": p625["longitude"]}
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        logger.warning("Wikidata entity %s has no usable coordinates: %s", qid, exc)
         return None
 
 
@@ -94,6 +239,7 @@ GEOCODER_URL = "http://localhost:3000/at"
 
 
 def query_geocoder(name):
+    """Resolve *name* through the whereami multi-provider geocoder service."""
     try:
         time.sleep(1.1)
         resp = requests.get(GEOCODER_URL, params={"name": name}, timeout=5)
@@ -101,8 +247,8 @@ def query_geocoder(name):
         parts = resp.text.strip().split(",")
         if len(parts) >= 2:
             return {"lat": float(parts[0]), "long": float(parts[1])}
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Geocoder lookup failed for %s: %s", name, exc)
     return None
 
 
@@ -219,16 +365,22 @@ def normalize_location(name):
     return " ".join(sorted(name.split()))
 
 
-def load_locations_db(xlsx_path=None):
-    """Load locations.xlsx into _locations_db."""
+def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=True):
+    """Load locations.xlsx and optionally backfill missing coordinates.
+
+    Coordinates already present in the workbook always win. Missing pairs are
+    resolved from GeoNames first and Wikidata second, then persisted back to
+    the same workbook when ``save_enriched`` is true.
+    """
     if xlsx_path is None:
         xlsx_path = os.path.join(
             os.path.dirname(__file__) if "__file__" in dir() else ".",
             "locations.xlsx",
         )
     if not os.path.exists(xlsx_path):
-        print(f"  locations.xlsx not found at {xlsx_path}, starting fresh")
+        logger.warning("locations.xlsx not found at %s, starting fresh", xlsx_path)
         return _locations_db
+    _locations_db.clear()
     wb = openpyxl.load_workbook(xlsx_path)
     ws = wb.active
     assert ws is not None
@@ -246,7 +398,7 @@ def load_locations_db(xlsx_path=None):
             "long": ws.cell(r, 5).value,
             "label": str(ws.cell(r, 6).value or "").strip(),
             "wikidata_id": extract_id_from_url(wikidata_url),
-            "geonames_id": extract_id_from_url(geonames_url),
+            "geonames_id": extract_geonames_id(geonames_url),
             "wikidata_url": wikidata_url
             if wikidata_url and wikidata_url != "nan"
             else "",
@@ -255,6 +407,17 @@ def load_locations_db(xlsx_path=None):
             else "",
             "extra_url": extra_url if extra_url and extra_url != "nan" else "",
         }
+    if enrich_coordinates:
+        changed = False
+        for entry in _locations_db.values():
+            before = _coordinate_pair(entry)
+            # Coordinates in the workbook are the trusted local cache. Do not
+            # query external providers when both cached values are present.
+            after = before if before is not None else resolve_location_coordinates(entry)
+            if after is not None and after != before:
+                changed = True
+        if changed and save_enriched:
+            save_locations_db(xlsx_path)
     print(f"  Loaded {len(_locations_db)} locations from locations.xlsx")
     return _locations_db
 
@@ -409,43 +572,70 @@ def get_or_create_location(
     name, wikidata_qid=None, geonames_id=None, *, locations_db=None, normalize_fn=None
 ):
     """Create or retrieve a LocationPoint, using locations_db for coordinates."""
-    from api_client import api_get, api_post
+    from api_client import api_get, api_patch, api_post
 
     if not name or str(name).strip() in ("", "nan"):
         return None
     name = str(name).strip()
-    norm = normalize_fn or (lambda n: n.lower())
+    norm = normalize_fn or normalize_location
     key = norm(name)
     if key in _location_cache:
         return _location_cache[key]
-    existing = api_get("locations", params={"search": name})
-    match = next((loc for loc in existing if norm(loc["current_name"]) == key), None)
-    if match:
-        _location_cache[key] = match["id"]
-        return match["id"]
-    db_entry = (locations_db or {}).get(key, {})
-    payload: dict[str, Any] = {"current_name": name}
-    lat = db_entry.get("lat")
-    lng = db_entry.get("long")
-    if lat and lng:
-        try:
-            payload["latitude"] = float(lat)
-            payload["longitude"] = float(lng)
-        except (ValueError, TypeError):
-            pass
+    db_entry = dict((locations_db or {}).get(key, {}))
+    db_entry.setdefault("name", name)
+    if wikidata_qid and not db_entry.get("wikidata_url"):
+        db_entry["wikidata_url"] = f"https://www.wikidata.org/wiki/{wikidata_qid}"
+    if geonames_id and not db_entry.get("geonames_url"):
+        db_entry["geonames_url"] = f"https://www.geonames.org/{geonames_id}"
+    # A complete workbook cache wins and must not trigger external lookups.
+    coordinates = _coordinate_pair(db_entry)
+    if coordinates is None:
+        coordinates = resolve_location_coordinates(db_entry)
     wid = db_entry.get("wikidata_id") or (
         wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
     )
-    gid = db_entry.get("geonames_id") or (
-        geonames_id if geonames_id and geonames_id not in ("", "nan") else None
+    gid = (
+        extract_geonames_id(db_entry.get("geonames_id"))
+        or extract_geonames_id(db_entry.get("geonames_url"))
+        or extract_geonames_id(geonames_id)
     )
+    try:
+        existing = api_get("locations", params={"search": name})
+    except Exception:
+        logger.exception("Location API lookup failed for %s", name)
+        return None
+    match = next((loc for loc in existing if norm(loc["current_name"]) == key), None)
+    if match:
+        updates = {}
+        if coordinates is not None and not match.get("location"):
+            updates["latitude"], updates["longitude"] = coordinates
+        if wid and not match.get("wikidata_id"):
+            updates["wikidata_id"] = wid
+        if gid and not match.get("geonames_id"):
+            updates["geonames_id"] = gid
+        if updates:
+            try:
+                api_patch("locations", match["id"], updates)
+            except Exception:
+                logger.exception(
+                    "Location API update failed for %s (id=%s)", name, match["id"]
+                )
+        _location_cache[key] = match["id"]
+        return match["id"]
+    payload: dict[str, Any] = {"current_name": name}
+    if coordinates is not None:
+        payload["latitude"], payload["longitude"] = coordinates
     if wid:
         payload["wikidata_id"] = wid
     if gid:
         payload["geonames_id"] = gid
-    created = api_post("locations", payload, fail_on_error=False)
+    try:
+        created = api_post("locations", payload, fail_on_error=False)
+    except Exception:
+        logger.exception("Location API create failed for %s", name)
+        return None
     if created is None:
-        print(f"      → Skipping location '{name}' due to API error")
+        logger.error("Skipping location %r because the API rejected it", name)
         return None
     _location_cache[key] = created["id"]
     return created["id"]

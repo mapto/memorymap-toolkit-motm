@@ -155,7 +155,7 @@ class LocationListView(ListView):
         return LocationPoint.objects.select_related('region').annotate(
             event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True),
             dominant_icon=Subquery(dominant_icon)
-        ).order_by('current_name')
+        ).order_by('-event_count', 'current_name')
 
 
 class LocationMapView(ListView):
@@ -287,7 +287,7 @@ def extraction_search(request):
         return JsonResponse([], safe=False)
     extractions = Extraction.objects.filter(
         Q(identifier__icontains=query) | Q(quote__icontains=query)
-        | Q(concepts__label__icontains=query)
+        | Q(concepts__translations__label__icontains=query)
     ).distinct().order_by("identifier")[:10]
     results = [
         {"id": e.pk, "label": e.identifier or "(no ID)", "quote": (e.quote[:60] + "…") if len(e.quote) > 60 else e.quote}
@@ -317,8 +317,8 @@ def concept_search(request):
     if len(query) < 2:
         return JsonResponse([], safe=False)
     concepts = Concept.objects.filter(
-        label__icontains=query
-    ).order_by("label")[:10]
+        translations__label__icontains=query
+    ).order_by("translations__label")[:10]
     results = [
         {"id": c.pk, "label": c.label or "(no label)"}
         for c in concepts
@@ -524,7 +524,17 @@ class ExtractionListView(ListView):
     model = Extraction
     template_name = "mmt_motm/extraction_list.html"
     context_object_name = "extractions"
-    ordering = ["identifier"]
+
+    def get_queryset(self):
+        return (
+            Extraction.objects.select_related(
+                "people_mentioned",
+                "interview",
+                "interview__interviewee",
+            )
+            .prefetch_related("concepts", "interview__urls")
+            .order_by("identifier")
+        )
 
 
 class ExtractionDetailView(DetailView):
@@ -540,8 +550,6 @@ class SourceCategoryHeatmapView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Root concept categories (no parent)
-        categories = Concept.objects.filter(parent__isnull=True).order_by('label')
         interviews = Interview.objects.order_by('archive_id')
 
         # Build root-id lookup: concept_id → root category id
@@ -570,6 +578,13 @@ class SourceCategoryHeatmapView(ListView):
             root_id = find_root(concept_id)
             key = (interview_id, root_id)
             counts[key] = counts.get(key, 0) + 1
+
+        # Only show root categories that occur in at least one interview.
+        used_root_ids = {root_id for _, root_id in counts if root_id is not None}
+        categories = Concept.objects.filter(
+            parent__isnull=True,
+            id__in=used_root_ids,
+        ).order_by('translations__label')
 
         max_count = max(counts.values()) if counts else 1
 
@@ -721,4 +736,4 @@ class ConceptTaxonomyView(ListView):
     def get_queryset(self):
         return Concept.objects.filter(
             parent__isnull=True
-        ).prefetch_related("children").order_by("label")
+        ).prefetch_related("children").order_by("translations__label")

@@ -5,9 +5,13 @@
 <div class="container mt-4">
     <h1>{% trans "Events" %}</h1>
     <input type="text" id="events-filter" class="form-control mb-2" placeholder="{% trans 'Filter events…' %}">
+    <p class="text-muted" aria-live="polite">
+        <span id="event-count">{{ events|length }}</span>
+        {% trans "events" %}
+    </p>
     <table class="table table-sm table-striped table-hover" id="events-table">
         <thead>
-            <tr>
+            <tr class="event-row">
                 <th class="sortable" data-col="0">{% trans "Date" %} <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="1">{% trans "Place" %} <span class="sort-arrow"></span></th>
                 <th class="sortable" data-col="2">{% trans "Description" %} <span class="sort-arrow"></span></th>
@@ -55,6 +59,13 @@
     if (!table) return;
     var headers = table.querySelectorAll('th.sortable');
     var tbody = table.querySelector('tbody');
+    var filterInput = document.getElementById('events-filter');
+    var listFilter = MmtList.attachFilter({
+        input: filterInput,
+        count: document.getElementById('event-count'),
+        itemSelector: '#events-table tbody tr.event-row'
+    });
+    var dataRows = listFilter.items;
     var currentSort = { col: 0, dir: 'asc' };
 
     headers.forEach(function(th) {
@@ -65,7 +76,7 @@
             headers.forEach(function(h) { h.classList.remove('asc', 'desc'); });
             this.classList.add(dir);
 
-            var rows = Array.from(tbody.querySelectorAll('tr'));
+            var rows = dataRows.slice();
             rows.sort(function(a, b) {
                 var aVal = a.cells[col].getAttribute('data-value') || a.cells[col].textContent.trim().toLowerCase();
                 var bVal = b.cells[col].getAttribute('data-value') || b.cells[col].textContent.trim().toLowerCase();
@@ -77,14 +88,6 @@
         });
     });
 
-    // Filter
-    var filterInput = document.getElementById('events-filter');
-    filterInput.addEventListener('input', function() {
-        var q = this.value.toLowerCase();
-        Array.from(tbody.querySelectorAll('tr')).forEach(function(row) {
-            row.style.display = row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
-        });
-    });
 })();
 </script>
 {% endblock %}

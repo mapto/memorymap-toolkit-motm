@@ -11,7 +11,16 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from api_client import api_get, api_post, api_patch, SESSION, BASE_URL
+from api_client import (
+    BASE_URL,
+    SESSION,
+    api_get,
+    api_patch,
+    api_post,
+    build_interview_payload,
+    get_or_create_url,
+    upsert_interviews,
+)
 from utils import is_empty
 from timespan import parse_date, parse_date_range
 
@@ -106,6 +115,18 @@ def parse_name(full_name):
     return full_name, "UNKNOWN"
 
 
+def parse_source_label(value):
+    """Extract interviewer text and corpus ID from a metadata source label."""
+    source_label = clean_value(value)
+    if not source_label:
+        return None, None
+    match = re.search(r"\b([A-Z]+_[A-Z]_\d+)\b", source_label)
+    if not match:
+        return source_label, None
+    interviewer = source_label[: match.start()].strip(" ,\u2013-+") or None
+    return interviewer, match.group(1)
+
+
 # ---------------------------------------------------------------------------
 # Timespan (metadati-specific: searches API before creating)
 # ---------------------------------------------------------------------------
@@ -133,12 +154,7 @@ def get_or_create_timespan(start=None, end=None):
 # ---------------------------------------------------------------------------
 
 
-def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
-    """Parse a metadati xlsx file into a structured record dict."""
-    wb = load_workbook(xlsx_path)
-    sheet = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
-    assert sheet is not None, f"No sheet found in {xlsx_path}"
-
+def _read_sheet_rows(sheet):
     rows = []
     for row in sheet.iter_rows(values_only=True):
         if not row:
@@ -147,165 +163,199 @@ def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
         value = row[1] if len(row) > 1 else None
         extra = row[2] if len(row) > 2 else None
         rows.append((field, value, extra))
+    return rows
 
-    record = {
-        "identifier": None,
-        "person": {
-            "given_name": None,
-            "previous_given_name": None,
-            "family_name": None,
-            "previous_family_name": None,
-            "gender": None,
-            "birth_date": None,
-            "attributes": {},
-        },
-        "birth_place": {
-            "name": None,
-            "coordinates": None,
-            "wikidata_id": None,
-            "regions": [],
-        },
-        "interviews": [],
-        "family": [],
+
+def _parse_identifier(field, value_str):
+    if field == "ID Sprecher":
+        return value_str
+
+    combined = " ".join([x for x in [field, value_str] if x]).replace("\u2013", "-")
+    match = re.search(r"Metadaten\s*-\s*([A-Za-z0-9_]+)", combined)
+    return match.group(1) if match else None
+
+
+def _update_birth_place(birth_place, value_str, extra_str):
+    birth_place["name"] = value_str
+    if not extra_str:
+        return
+
+    for part in (p.strip() for p in extra_str.split("|") if p.strip()):
+        if part.startswith("Land:"):
+            birth_place["regions"].append(part.split(":", 1)[1].strip())
+        elif part.startswith("Region:"):
+            birth_place["regions"].append(part.split(":", 1)[1].strip())
+        elif part.startswith("Kreis:"):
+            birth_place["regions"].append(part.split(":", 1)[1].strip())
+        elif part.startswith("Koordinaten:"):
+            birth_place["coordinates"] = parse_coordinates(part)
+        elif part.startswith("Wikidata:"):
+            birth_place["wikidata_id"] = part.split(":", 1)[1].strip()
+
+
+def _parse_person_field(person, birth_place, field, value_str, extra_str):
+    if field == "Vorname":
+        person["given_name"] = value_str
+    elif field in {"ehem. Vorname", "ehemaliger Vorname"}:
+        person["previous_given_name"] = value_str
+    elif field == "Nachname":
+        person["family_name"] = value_str
+    elif field in {"ehem. Nachname", "ehemaliger Nachname"}:
+        person["previous_family_name"] = value_str
+    elif field == "Geschlecht":
+        person["gender"] = value_str
+    elif field == "Geburtsdatum":
+        person["birth_date"] = parse_date(value_str) if value_str else None
+    elif field in {"Verfolgtengruppe NS", "Verfolgtengruppe(n) NS"}:
+        person["attributes"]["ns_persecution_group"] = value_str
+    elif field == "Geburtsort":
+        _update_birth_place(birth_place, value_str, extra_str)
+
+
+def _new_interview():
+    return {
+        "type": None,
+        "place": None,
+        "date": None,
+        "interviewer": None,
+        "archive_id": None,
+        "url": None,
     }
 
+
+def _parse_source_field(field, value, value_str, interviews):
+    match = re.match(r"Quelle\s+(\d+)\s*[-\u2013\u2014]\s*(.+)", field)
+    if not match:
+        return
+
+    index = int(match.group(1))
+    subfield = match.group(2)
+    while len(interviews) < index:
+        interviews.append(_new_interview())
+    current = interviews[index - 1]
+
+    if subfield == "Typ":
+        current["type"] = clean_value(value)
+    elif subfield == "Ort":
+        current["place"] = clean_value(value)
+    elif subfield == "Datum":
+        current["date"] = parse_date(value_str) if value_str else None
+    elif subfield == "Gesprächspartner/in":
+        current["interviewer"] = clean_value(value)
+    elif subfield == "Bezeichnung":
+        interviewer, archive_id = parse_source_label(value)
+        current["interviewer"] = interviewer
+        current["archive_id"] = archive_id
+    elif subfield == "Handle/URL":
+        current["url"] = clean_value(value)
+    elif subfield == "ID":
+        current["archive_id"] = clean_value(value)
+
+
+def _parse_person_sheet(rows):
+    person = {
+        "given_name": None,
+        "previous_given_name": None,
+        "family_name": None,
+        "previous_family_name": None,
+        "gender": None,
+        "birth_date": None,
+        "attributes": {},
+    }
+    birth_place = {
+        "name": None,
+        "coordinates": None,
+        "wikidata_id": None,
+        "regions": [],
+    }
+    interviews = []
+    identifier = None
     in_sources_section = False
 
     for field, value, extra in rows:
-        field = field.strip() if field else ""
         value_str = clean_value(value)
         extra_str = clean_value(extra)
 
-        # Identifier from "ID Sprecher" field
-        if record["identifier"] is None:
-            if field == "ID Sprecher":
-                record["identifier"] = value_str
-            else:
-                # Fallback: extract from title row
-                combined = " ".join([x for x in [field, value_str] if x]).replace(
-                    "\u2013", "-"
-                )
-                match = re.search(r"Metadaten\s*-\s*([A-Za-z0-9_]+)", combined)
-                if match:
-                    record["identifier"] = match.group(1)
+        if identifier is None:
+            identifier = _parse_identifier(field, value_str)
 
-        # Section markers (optional, for future format compatibility)
         if field == "QUELLEN":
             in_sources_section = True
             continue
         if field == "MIGRATION":
             in_sources_section = False
 
-        # Person fields (parse directly without section markers)
-        if field == "Vorname":
-            record["person"]["given_name"] = value_str
-        elif field == "ehem. Vorname" or field == "ehemaliger Vorname":
-            record["person"]["previous_given_name"] = value_str
-        elif field == "Nachname":
-            record["person"]["family_name"] = value_str
-        elif field == "ehem. Nachname" or field == "ehemaliger Nachname":
-            record["person"]["previous_family_name"] = value_str
-        elif field == "Geschlecht":
-            record["person"]["gender"] = value_str
-        elif field == "Geburtsdatum":
-            record["person"]["birth_date"] = (
-                parse_date(value_str) if value_str else None
-            )
-        elif field == "Verfolgtengruppe NS" or field == "Verfolgtengruppe(n) NS":
-            record["person"]["attributes"]["ns_persecution_group"] = value_str
-        elif field == "Geburtsort":
-            record["birth_place"]["name"] = value_str
-            if extra_str:
-                for part in (p.strip() for p in extra_str.split("|") if p.strip()):
-                    if part.startswith("Land:"):
-                        record["birth_place"]["regions"].append(
-                            part.split(":", 1)[1].strip()
-                        )
-                    elif part.startswith("Region:"):
-                        record["birth_place"]["regions"].append(
-                            part.split(":", 1)[1].strip()
-                        )
-                    elif part.startswith("Kreis:"):
-                        record["birth_place"]["regions"].append(
-                            part.split(":", 1)[1].strip()
-                        )
-                    elif part.startswith("Koordinaten:"):
-                        record["birth_place"]["coordinates"] = parse_coordinates(
-                            part
-                        )
-                    elif part.startswith("Wikidata:"):
-                        record["birth_place"]["wikidata_id"] = part.split(":", 1)[
-                            1
-                        ].strip()
+        _parse_person_field(person, birth_place, field, value_str, extra_str)
 
-        # Interviews/Sources
         if in_sources_section or field.startswith("Quelle "):
-            m = re.match(r"Quelle (\d+)\s*\u2013\s*(.+)", field)
-            if not m:
-                continue
-            index = int(m.group(1))
-            subfield = m.group(2)
-            while len(record["interviews"]) < index:
-                record["interviews"].append(
-                    {
-                        "type": None,
-                        "place": None,
-                        "date": None,
-                        "interviewer": None,
-                        "archive_id": None,
-                    }
-                )
-            current = record["interviews"][index - 1]
-            if subfield == "Typ":
-                current["type"] = clean_value(value)
-            elif subfield == "Ort":
-                current["place"] = clean_value(value)
-            elif subfield == "Datum":
-                current["date"] = parse_date(value_str) if value_str else None
-            elif subfield == "Gesprächspartner/in":
-                current["interviewer"] = clean_value(value)
-            elif subfield == "ID":
-                current["archive_id"] = clean_value(value)
+            _parse_source_field(field, value, value_str, interviews)
 
-    record["interviews"] = [
-        i
-        for i in record["interviews"]
-        if any([i["type"], i["place"], i["date"], i["interviewer"], i["archive_id"]])
+    interviews = [
+        interview
+        for interview in interviews
+        if any(
+            [
+                interview["type"],
+                interview["place"],
+                interview["date"],
+                interview["interviewer"],
+                interview["archive_id"],
+                interview["url"],
+            ]
+        )
     ]
+    return identifier, person, birth_place, interviews
 
-    # Family sheet
-    if "Familie" in wb.sheetnames:
-        sheet_fam = wb["Familie"]
-        for row in sheet_fam.iter_rows(min_row=4, max_col=7, values_only=True):
-            if all(cell is None for cell in row):
-                continue
-            (
-                _,
-                relation,
-                given_name,
-                family_name,
-                birth_date_raw,
-                birth_place,
-                notes,
-            ) = row
-            birth_date, death_date = (
-                parse_date_range(str(birth_date_raw))
-                if birth_date_raw
-                else (None, None)
-            )
-            record["family"].append(
-                {
-                    "relation": clean_value(relation),
-                    "given_name": clean_value(given_name),
-                    "family_name": clean_value(family_name),
-                    "birth_date": birth_date,
-                    "death_date": death_date,
-                    "birth_place": clean_value(birth_place),
-                    "notes": clean_value(notes),
-                }
-            )
 
-    return record
+def _parse_family_sheet(sheet):
+    family = []
+    for row in sheet.iter_rows(min_row=4, max_col=7, values_only=True):
+        if all(cell is None for cell in row):
+            continue
+        (
+            _,
+            relation,
+            given_name,
+            family_name,
+            birth_date_raw,
+            birth_place,
+            notes,
+        ) = row
+        birth_date, death_date = (
+            parse_date_range(str(birth_date_raw)) if birth_date_raw else (None, None)
+        )
+        family.append(
+            {
+                "relation": clean_value(relation),
+                "given_name": clean_value(given_name),
+                "family_name": clean_value(family_name),
+                "birth_date": birth_date,
+                "death_date": death_date,
+                "birth_place": clean_value(birth_place),
+                "notes": clean_value(notes),
+            }
+        )
+    return family
+
+
+def read_person_record(xlsx_path, sheet_name="Scheda individuale"):
+    """Parse a metadati xlsx file into a structured record dict."""
+    wb = load_workbook(xlsx_path)
+    sheet = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
+    assert sheet is not None, f"No sheet found in {xlsx_path}"
+
+    identifier, person, birth_place, interviews = _parse_person_sheet(
+        _read_sheet_rows(sheet)
+    )
+    family = _parse_family_sheet(wb["Familie"]) if "Familie" in wb.sheetnames else []
+
+    return {
+        "identifier": identifier,
+        "person": person,
+        "birth_place": birth_place,
+        "interviews": interviews,
+        "family": family,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -508,27 +558,12 @@ def get_or_create_person(data, identifier=None):
 # ---------------------------------------------------------------------------
 
 
-def _clean_interview_type(raw):
-    """Remove 'Interview' prefix and clean Excel errors from type field."""
-    if not raw or raw.startswith("#"):
-        return ""
-    cleaned = re.sub(r"^Interview\s*", "", raw, flags=re.IGNORECASE).strip()
-    cleaned = cleaned.strip("()")
-    return cleaned
-
-
 def create_interview(person_id, data):
-    """Create an Interview via the API."""
-    if is_empty(data.get("archive_id")):
-        return None
+    """Upsert an Interview from one metadata source record.
 
-    archive_id = data["archive_id"]
-
-    existing = api_get("interviews", params={"search": archive_id})
-    match = next((i for i in existing if i["archive_id"] == archive_id), None)
-    if match:
-        return match["id"]
-
+    Person-specific parsing stays here, while archive-ID normalization and the
+    actual Interview write are shared with the Belege importer.
+    """
     interviewer_id = None
     if not is_empty(data.get("interviewer")):
         given, family = parse_name(data["interviewer"])
@@ -539,18 +574,24 @@ def create_interview(person_id, data):
             }
         )
 
-    payload = {
-        "archive_id": archive_id,
-        "interviewee": person_id,
-        "interview_type": _clean_interview_type(data.get("type")),
-        "date": data.get("date"),
-        "place": data.get("place") or "",
-    }
-    if interviewer_id:
-        payload["interviewer"] = interviewer_id
+    url_id = get_or_create_url(data.get("url")) if data.get("url") else None
 
-    created = api_post("interviews", payload)
-    return created["id"]
+    payload = build_interview_payload(
+        data.get("archive_id"),
+        interviewee=person_id,
+        interviewer=interviewer_id,
+        interview_type=data.get("type"),
+        interview_date=data.get("date"),
+        place=data.get("place"),
+        urls=[url_id] if url_id else None,
+    )
+    if not payload:
+        return None
+
+    interview_ids, errors = upsert_interviews([payload])
+    for error in errors:
+        print(f"\u274c {error}")
+    return interview_ids.get(payload["archive_id"])
 
 
 # ---------------------------------------------------------------------------

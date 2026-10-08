@@ -47,6 +47,15 @@
     </p>
     {% endif %}
 
+    {% if interview.urls.all %}
+    <h3>{% trans "Related URLs" %}</h3>
+    <ul>
+        {% for url in interview.urls.all %}
+        <li><a href="{{ url.url }}" target="_blank" rel="noopener">{{ url.url }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     {% if interview.extracted_from.all %}
     <h3>{% trans "Quotes" %}</h3>
     <input type="text" id="quote-filter" class="form-control mb-3" placeholder="{% trans 'Filter quotes…' %}">
@@ -55,7 +64,7 @@
             <tr>
                 <th>{% trans "Quote" %}</th>
                 <th>{% trans "Concept" %}</th>
-                <th>{% trans "Person Mentioned" %}</th>
+                <th>{% trans "Interviewee" %}</th>
                 <th>{% trans "Timecode" %}</th>
             </tr>
         </thead>
@@ -74,9 +83,9 @@
                     {% empty %}–{% endfor %}
                 </td>
                 <td>
-                    {% if extraction.people_mentioned %}
-                        <a href="{% url 'person_detail' extraction.people_mentioned.pk %}">
-                            {{ extraction.people_mentioned }}</a>
+                    {% if interview.interviewee %}
+                        <a href="{% url 'person_detail' interview.interviewee.pk %}">
+                            {{ interview.interviewee }}</a>
                     {% else %}–{% endif %}
                 </td>
                 <td>{{ extraction.timecode|default:"–" }}</td>
@@ -86,14 +95,6 @@
     </table>
     {% endif %}
 
-    {% if interview.urls.all %}
-    <h3>{% trans "Related URLs" %}</h3>
-    <ul>
-        {% for url in interview.urls.all %}
-        <li><a href="{{ url.url }}" target="_blank">{{ url.url }}</a></li>
-        {% endfor %}
-    </ul>
-    {% endif %}
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {

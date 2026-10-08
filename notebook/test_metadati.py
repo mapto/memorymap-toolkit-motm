@@ -24,6 +24,20 @@ def test_parse_name(full_name, expected):
     assert metadati.parse_name(full_name) == expected
 
 
+@pytest.mark.parametrize(
+    "source_label",
+    [
+        "Anne Betten, IS_E_00124",
+        "Anne Betten + IS_E_00124",
+    ],
+)
+def test_parse_source_label_extracts_interviewer_and_corpus_id(source_label):
+    assert metadati.parse_source_label(source_label) == (
+        "Anne Betten",
+        "IS_E_00124",
+    )
+
+
 def test_read_person_record_starts_family_rows_at_row_four(tmp_path):
     workbook = Workbook()
     person_sheet = workbook.active
@@ -87,3 +101,81 @@ def test_read_person_record_skips_empty_family_rows(tmp_path):
 
     assert len(record["family"]) == 1
     assert record["family"][0]["relation"] == "Bruder"
+
+
+def test_create_interview_uses_shared_normalized_upsert(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        metadati,
+        "get_or_create_person",
+        lambda data: 8,
+    )
+
+    def fake_upsert(payloads):
+        calls.extend(payloads)
+        return {"IS_E_00170": 17}, []
+
+    monkeypatch.setattr(metadati, "upsert_interviews", fake_upsert)
+    monkeypatch.setattr(metadati, "get_or_create_url", lambda value: 31)
+
+    interview_id = metadati.create_interview(
+        7,
+        {
+            "archive_id": "IS_E_170",
+            "type": "Interview (oral)",
+            "date": "08.05.1991",
+            "place": "Berlin",
+            "interviewer": "Doe, Jane",
+            "url": "https://example.test/interview/1",
+        },
+    )
+
+    assert interview_id == 17
+    assert calls == [
+        {
+            "archive_id": "IS_E_00170",
+            "interviewee": 7,
+            "interviewer": 8,
+            "interview_type": "oral",
+            "date": "1991-05-08",
+            "place": "Berlin",
+            "urls": [31],
+        }
+    ]
+
+
+def test_read_person_record_extracts_source_url(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Scheda individuale"
+    sheet.append(["ID Sprecher", "P001"])
+    sheet.append(["Quelle 1", None])
+    sheet.append(["Quelle 1 – Bezeichnung", "Anne Betten, IS_E_00124"])
+    sheet.append(["Quelle 1 – Ort", "Jerusalem"])
+    sheet.append(["Quelle 1 – Handle/URL", "https://example.test/interview/1"])
+
+    workbook_path = tmp_path / "metadati_P001.xlsx"
+    workbook.save(workbook_path)
+
+    record = metadati.read_person_record(workbook_path)
+
+    assert record["interviews"] == [
+        {
+            "type": None,
+            "place": "Jerusalem",
+            "date": None,
+            "interviewer": "Anne Betten",
+            "archive_id": "IS_E_00124",
+            "url": "https://example.test/interview/1",
+        }
+    ]
+
+
+def test_create_interview_skips_missing_archive_id(monkeypatch):
+    monkeypatch.setattr(
+        metadati,
+        "upsert_interviews",
+        lambda payloads: pytest.fail("should not upsert without archive ID"),
+    )
+
+    assert metadati.create_interview(7, {"archive_id": None}) is None

@@ -102,6 +102,7 @@ media/
 notebook/.ipynb_checkpoints
 media_old/
 backups/
+tmp/
 
 secret_settings.py
 

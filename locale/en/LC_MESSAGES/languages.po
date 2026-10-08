@@ -1,0 +1,102 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: memorymap-toolkit-language-names\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-07 00:00+0000\n"
+"PO-Revision-Date: 2026-10-07 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "German"
+msgstr "German"
+
+msgid "English"
+msgstr "English"
+
+msgid "French"
+msgstr "French"
+
+msgid "Italian"
+msgstr "Italian"
+
+msgid "Spanish"
+msgstr "Spanish"
+
+msgid "Portuguese"
+msgstr "Portuguese"
+
+msgid "Dutch"
+msgstr "Dutch"
+
+msgid "Polish"
+msgstr "Polish"
+
+msgid "Czech"
+msgstr "Czech"
+
+msgid "Russian"
+msgstr "Russian"
+
+msgid "Ukrainian"
+msgstr "Ukrainian"
+
+msgid "Hebrew"
+msgstr "Hebrew"
+
+msgid "Yiddish"
+msgstr "Yiddish"
+
+msgid "Arabic"
+msgstr "Arabic"
+
+msgid "Turkish"
+msgstr "Turkish"
+
+msgid "Hungarian"
+msgstr "Hungarian"
+
+msgid "Romanian"
+msgstr "Romanian"
+
+msgid "Bulgarian"
+msgstr "Bulgarian"
+
+msgid "Croatian"
+msgstr "Croatian"
+
+msgid "Serbian"
+msgstr "Serbian"
+
+msgid "Slovak"
+msgstr "Slovak"
+
+msgid "Slovenian"
+msgstr "Slovenian"
+
+msgid "Greek"
+msgstr "Greek"
+
+msgid "Danish"
+msgstr "Danish"
+
+msgid "Swedish"
+msgstr "Swedish"
+
+msgid "Norwegian"
+msgstr "Norwegian"
+
+msgid "Finnish"
+msgstr "Finnish"
+
+msgid "Japanese"
+msgstr "Japanese"
+
+msgid "Chinese"
+msgstr "Chinese"
+
+msgid "Korean"
+msgstr "Korean"
