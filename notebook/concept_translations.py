@@ -26,6 +26,7 @@ import html
 import json
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -372,29 +373,68 @@ def translate_text(text: str, source: str, target: str, delay: float = 0.15) -> 
     )
     url = f"https://api.mymemory.translated.net/get?{query}"
     request = urllib.request.Request(url, headers={"User-Agent": "memorymap-toolkit/1.0"})
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.load(response)
-    except Exception as error:
-        raise ConceptTranslationError(
-            f"Translation request failed for {source}->{target}: {text}"
-        ) from error
-    if payload.get("responseStatus") != 200:
-        raise ConceptTranslationError(
-            f"Translation service rejected {source}->{target}: "
-            f"{payload.get('responseDetails', 'unknown error')}"
-        )
-    translated = html.unescape(payload.get("responseData", {}).get("translatedText", "")).strip()
-    if not translated or translated.upper().startswith("MYMEMORY WARNING"):
-        raise ConceptTranslationError(f"Empty translation returned for: {text}")
-    time.sleep(delay)
-    return translated
+    last_error = None
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                payload = json.load(response)
+            if payload.get("responseStatus") != 200:
+                raise ConceptTranslationError(
+                    f"Translation service rejected {source}->{target}: "
+                    f"{payload.get('responseDetails', 'unknown error')}"
+                )
+            translated = html.unescape(
+                payload.get("responseData", {}).get("translatedText", "")
+            ).strip()
+            if not translated or translated.upper().startswith("MYMEMORY WARNING"):
+                raise ConceptTranslationError(f"Empty translation returned for: {text}")
+            time.sleep(delay)
+            return translated
+        except (ConceptTranslationError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+            last_error = error
+            if attempt < 3:
+                time.sleep(2 ** attempt)
+
+    raise ConceptTranslationError(
+        f"Translation request failed for {source}->{target}: {text}"
+    ) from last_error
+
+
+def reusable_translation_values(
+    existing_catalogs: dict[str, dict[int, dict[str, str]]] | None,
+    source_label: str,
+    source_language: str,
+) -> dict[str, str] | None:
+    """Reuse one unambiguous complete entry from an older PO catalog set."""
+    if not existing_catalogs:
+        return None
+
+    candidates = []
+    source_entries = existing_catalogs.get(source_language, {})
+    for concept_id, source_entry in source_entries.items():
+        if source_entry.get("msgstr", "").strip().casefold() != source_label.casefold():
+            continue
+        entries = {
+            language: existing_catalogs.get(language, {}).get(concept_id)
+            for language in LANGUAGES
+        }
+        if any(not entry or not entry.get("msgstr", "").strip() for entry in entries.values()):
+            continue
+        if len({entry.get("msgid", "") for entry in entries.values()}) != 1:
+            continue
+        candidates.append(tuple(entry["msgstr"].strip() for entry in entries.values()))
+
+    distinct_candidates = set(candidates)
+    if len(distinct_candidates) != 1:
+        return None
+    return dict(zip(LANGUAGES, distinct_candidates.pop()))
 
 
 def bootstrap_catalogs(
     concepts: dict[int, dict[str, str]],
     use_machine_translation: bool,
     delay: float,
+    existing_catalogs: dict[str, dict[int, dict[str, str]]] | None = None,
 ) -> dict[str, dict[int, dict[str, str]]]:
     """Build complete English, German, and Italian catalogs from DB rows.
 
@@ -419,10 +459,16 @@ def bootstrap_catalogs(
         if use_machine_translation and set(existing) == {"en"}:
             source_label = canonical_source_label(existing["en"])
             source_language = infer_source_language(existing["en"])
-            values = {source_language: source_label}
-            for target in LANGUAGES:
-                if target not in values:
-                    values[target] = translated(source_label, source_language, target)
+            values = reusable_translation_values(
+                existing_catalogs,
+                source_label,
+                source_language,
+            )
+            if values is None:
+                values = {source_language: source_label}
+                for target in LANGUAGES:
+                    if target not in values:
+                        values[target] = translated(source_label, source_language, target)
         else:
             values = {language: existing.get(language, "") for language in LANGUAGES}
             if use_machine_translation:

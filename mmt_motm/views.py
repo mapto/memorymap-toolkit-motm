@@ -1,8 +1,13 @@
 import json
+import re
+from functools import lru_cache
+from pathlib import Path
 
+from django.conf import settings
 from django.db.models import Q, Count, Subquery, OuterRef
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils import translation
 from django.views.generic import ListView, DetailView
 
 from rest_framework import viewsets, filters, status
@@ -23,6 +28,7 @@ from .serializers import (
     ExtractionSerializer, ConceptSerializer, TimespanSerializer,
     URLSerializer,
 )
+from memorymap_toolkit.catalogs import localized_concept_label, localized_event_description
 
 
 class PersonListView(ListView):
@@ -236,33 +242,158 @@ class LocationDetailView(DetailView):
 
 
 class LocationTaxonomyView(ListView):
-    model = LocationRegion
+    model = Concept
     template_name = "mmt_motm/location_taxonomy.html"
-    context_object_name = "regions"
+    context_object_name = "roots"
+
+    def get_queryset(self):
+        language_code = translation.get_language() or "en"
+        go_root = Concept.objects.active_translations(
+            language_code,
+            label="GO – geographischer Ort",
+        ).filter(
+            parent__isnull=True
+        ).first()
+        if go_root is None:
+            return Concept.objects.none()
+        concepts = list(
+            Concept.objects.active_translations(language_code)
+            .select_related("location_point")
+            .order_by("id")
+        )
+        concepts_by_parent = {}
+        for concept in concepts:
+            concepts_by_parent.setdefault(concept.parent_id, []).append(concept)
+
+        go_ids = set()
+        pending = [go_root.pk]
+        while pending:
+            parent_id = pending.pop()
+            if parent_id in go_ids:
+                continue
+            go_ids.add(parent_id)
+            pending.extend(concept.pk for concept in concepts_by_parent.get(parent_id, []))
+
+        go_nodes = {
+            concept.pk: concept
+            for concept in concepts
+            if concept.pk in go_ids
+        }
+        children_by_parent = {
+            parent_id: [child for child in children if child.pk in go_nodes]
+            for parent_id, children in concepts_by_parent.items()
+        }
+        for concept in go_nodes.values():
+            concept.taxonomy_children = children_by_parent.get(concept.pk, [])
+            concept.location_points = []
+            concept.location_link = None
+
+        points_by_concept = {}
+        linked_points = LocationPoint.objects.filter(
+            concept_id__in=go_ids
+        ).order_by("current_name")
+        for point in linked_points:
+            points_by_concept.setdefault(point.concept_id, []).append(point)
+
+        orphan_points = LocationPoint.objects.filter(
+            concept__isnull=True
+        ).select_related("region").order_by("current_name")
+        matchable_nodes = sorted(
+            (
+                concept
+                for concept in go_nodes.values()
+                if concept.pk != go_root.pk
+            ),
+            key=lambda concept: len(_location_taxonomy_key(concept.label)),
+            reverse=True,
+        )
+        matched_orphans = set()
+        for point in orphan_points:
+            match = _match_location_to_go_concept(point, matchable_nodes)
+            if match:
+                points_by_concept.setdefault(match.pk, []).append(point)
+                matched_orphans.add(point.pk)
+
+        for concept_id, points in points_by_concept.items():
+            concept = go_nodes.get(concept_id)
+            if concept is None:
+                continue
+            concept.location_points = sorted(points, key=lambda point: point.current_name.casefold())
+            exact = [
+                point
+                for point in concept.location_points
+                if _location_taxonomy_key(point.current_name)
+                == _location_taxonomy_key(concept.label)
+            ]
+            concept.location_link = exact[0] if exact else None
+
+        self._location_unassigned_ids = matched_orphans
+        self._location_go_roots = children_by_parent.get(go_root.pk, [])
+        return self._location_go_roots
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Build region tree: root regions with subregions and points
-        def build_tree(region):
-            node = {
-                "region": region,
-                "points": list(region.points.order_by("current_name")),
-                "children": [build_tree(sub) for sub in region.subregions.order_by("name")],
-            }
-            return node
-
-        roots = LocationRegion.objects.filter(part_of__isnull=True).order_by("name")
-        region_tree = [build_tree(r) for r in roots]
-
-        # Locations not belonging to any region
-        unassigned = LocationPoint.objects.filter(
-            region__isnull=True
+        context["unassigned"] = LocationPoint.objects.filter(
+            concept__isnull=True
+        ).exclude(
+            pk__in=getattr(self, "_location_unassigned_ids", set())
         ).order_by("current_name")
-
-        context["region_tree"] = region_tree
-        context["unassigned"] = unassigned
         return context
+
+
+def _location_taxonomy_key(value):
+    """Normalize location labels for safe GO-tree matching."""
+    return " ".join(re.sub(r"[^\w\s]", " ", str(value or "").casefold()).split())
+
+
+@lru_cache(maxsize=1)
+def _location_taxonomy_synonym_data():
+    path = Path(str(settings.BASE_DIR)) / "data" / "location_taxonomy_synonyms.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["aliases"] = {
+        _location_taxonomy_key(source): target
+        for source, target in data.get("aliases", {}).items()
+    }
+    data["excluded_contains"] = [
+        _location_taxonomy_key(value)
+        for value in data.get("excluded_contains", [])
+    ]
+    return data
+
+
+def _location_taxonomy_alias(value):
+    key = _location_taxonomy_key(value)
+    return _location_taxonomy_synonym_data()["aliases"].get(key, value)
+
+
+def _location_taxonomy_match_excluded(value):
+    key = _location_taxonomy_key(value)
+    return any(
+        term in key
+        for term in _location_taxonomy_synonym_data()["excluded_contains"]
+    )
+
+
+def _match_location_to_go_concept(point, candidates):
+    """Find the most specific GO concept matching an orphan location point."""
+    if _location_taxonomy_match_excluded(point.current_name):
+        return None
+    names = [
+        _location_taxonomy_key(point.current_name),
+        _location_taxonomy_key(_location_taxonomy_alias(point.current_name)),
+    ]
+    if point.region_id and point.region:
+        names.append(_location_taxonomy_key(point.region.name))
+    for candidate in candidates:
+        label = _location_taxonomy_key(candidate.label)
+        if not label:
+            continue
+        if any(
+            name == label or re.search(rf"(?:^| ){re.escape(label)}(?: |$)", name)
+            for name in names
+        ):
+            return candidate
+    return None
 
 
 def person_search(request):
@@ -344,6 +475,95 @@ def event_search(request):
             label = f"{e.timespan} — {label}"
         results.append({"id": e.pk, "label": label})
     return JsonResponse(results, safe=False)
+
+
+def global_search(request):
+    """Return localized map-search suggestions and their map filter metadata."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({"concepts": [], "places": [], "people": [], "events": []})
+
+    language_code = translation.get_language() or request.LANGUAGE_CODE or "en"
+    query_folded = query.casefold()
+
+    concept_results = []
+    for concept in Concept.objects.all().order_by("id"):
+        label = localized_concept_label(concept, language_code)
+        if query_folded in label.casefold():
+            concept_results.append({
+                "id": concept.pk,
+                "label": label,
+                "url": reverse("concept_detail", args=[concept.pk]),
+                "type": "concept",
+            })
+        if len(concept_results) == 10:
+            break
+
+    places = LocationPoint.objects.filter(
+        Q(current_name__icontains=query) | Q(alternate_names__icontains=query)
+    ).order_by("current_name")[:10]
+    place_results = [
+        {
+            "id": place.pk,
+            "label": place.current_name,
+            "url": reverse("location_detail", args=[place.pk]),
+            "type": "place",
+        }
+        for place in places
+    ]
+
+    people = Person.objects.filter(
+        Q(given_name__icontains=query) | Q(family_name__icontains=query)
+    ).order_by("family_name", "given_name")[:10]
+    person_results = []
+    for person in people:
+        event_data = list(
+            Event.objects.filter(
+                persons=person,
+                start_location__location__isnull=False,
+                end_location__location__isnull=False,
+            )
+            .values("id", "start_location_id", "end_location_id")
+        )
+        person_results.append({
+            "id": person.pk,
+            "label": f"{person.family_name}, {person.given_name}",
+            "url": reverse("person_detail", args=[person.pk]),
+            "type": "person",
+            "event_ids": [item["id"] for item in event_data],
+            "location_ids": sorted({
+                location_id
+                for item in event_data
+                for location_id in (item["start_location_id"], item["end_location_id"])
+            }),
+        })
+
+    event_results = []
+    events = Event.objects.select_related("timespan", "start_location", "end_location").order_by("id")
+    for event in events:
+        label = localized_event_description(event, language_code)
+        if query_folded not in label.casefold():
+            continue
+        location_ids = [
+            location_id for location_id in (event.start_location_id, event.end_location_id)
+            if location_id is not None
+        ]
+        event_results.append({
+            "id": event.pk,
+            "label": label,
+            "url": reverse("event_detail", args=[event.pk]),
+            "type": "event",
+            "location_ids": location_ids,
+        })
+        if len(event_results) == 10:
+            break
+
+    return JsonResponse({
+        "concepts": concept_results,
+        "places": place_results,
+        "people": person_results,
+        "events": event_results,
+    })
 
 
 # ---- DRF API ViewSets ----
@@ -734,6 +954,7 @@ class ConceptTaxonomyView(ListView):
     context_object_name = "roots"
 
     def get_queryset(self):
-        return Concept.objects.filter(
+        language_code = translation.get_language() or "en"
+        return Concept.objects.active_translations(language_code).filter(
             parent__isnull=True
-        ).prefetch_related("children").order_by("translations__label")
+        ).prefetch_related("children").order_by("id")

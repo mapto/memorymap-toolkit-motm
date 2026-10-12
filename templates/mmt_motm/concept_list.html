@@ -14,9 +14,9 @@
         <a href="{% url 'concept_detail' concept.pk %}"
            class="cloud-word d-inline-block mx-1"
            data-count="{{ concept.quote_count }}"
-           data-label="{{ concept.label|lower }}"
+           data-label="{{ concept.localized_label|lower }}"
            style="text-decoration:none;">
-            {{ concept.label }}
+            {{ concept.localized_label }}
             <small class="text-muted">({{ concept.quote_count }})</small>
         </a>
         {% empty %}

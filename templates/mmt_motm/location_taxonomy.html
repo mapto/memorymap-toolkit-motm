@@ -55,10 +55,10 @@
     <h1>{% trans "Places Taxonomy" %}</h1>
     <div class="file-tree">
         <ul class="tree-list">
-        {% for node in region_tree %}
-            {% include "mmt_motm/_region_node.html" with node=node %}
+        {% for root in roots %}
+            {% include "mmt_motm/_location_concept_node.html" with node=root %}
         {% endfor %}
-
+<!--
         {% if unassigned %}
         <li class="tree-item">
             <span class="tree-label">
@@ -75,6 +75,7 @@
             </ul>
         </li>
         {% endif %}
+-->
         </ul>
     </div>
 </div>

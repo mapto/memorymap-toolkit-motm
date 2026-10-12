@@ -92,7 +92,159 @@ def classify_lifecycle(*texts):
     return "altro"
 
 
-def create_event_from_row(row, protagonist, locations_db=None, start_location=None):
+def prepare_event_data(row):
+    """Normalize and validate the fields required to create an event."""
+    event_label = clean_str(row.get("event_label", ""))
+    if not event_label:
+        return None
+
+    place_name = clean_str(row.get("place_name", ""))
+    if not place_name:
+        return None
+
+    place_detail = clean_str(row.get("place_detail", ""))
+    location_name = f"{place_name} ({place_detail})" if place_detail else place_name
+    return {
+        "event_label": event_label,
+        "place_name": place_name,
+        "location_name": location_name,
+    }
+
+
+def create_event_locations(
+    row,
+    event_data,
+    locations_db=None,
+    start_location=None,
+    location_concept_resolver=None,
+):
+    """Create the end and optional start locations for an event."""
+    location_kwargs = {
+        "wikidata_qid": clean_str(row.get("wikidata_qid", "")) or None,
+        "geonames_id": clean_str(row.get("geonames_id", "")) or None,
+        "locations_db": locations_db,
+    }
+    if location_concept_resolver:
+        concept_id = location_concept_resolver(event_data["place_name"])
+        if concept_id:
+            location_kwargs["concept_id"] = concept_id
+    location_id = get_or_create_location(
+        event_data["location_name"], **location_kwargs
+    )
+
+    normalized_start = clean_str(start_location) if start_location else ""
+    start_location_id = None
+    if normalized_start and normalized_start != event_data["location_name"]:
+        start_kwargs = {"locations_db": locations_db}
+        if location_concept_resolver:
+            concept_id = location_concept_resolver(normalized_start)
+            if concept_id:
+                start_kwargs["concept_id"] = concept_id
+        start_location_id = get_or_create_location(normalized_start, **start_kwargs)
+
+    return location_id, start_location_id
+
+
+def create_event_timespan(row):
+    """Create the event's timespan and return it with normalized certainty."""
+    date_certainty = clean_str(row.get("date_certainty", ""))
+    start_iso = parse_date(clean_str(row.get("date_start", "")))
+    end_iso = parse_date(clean_str(row.get("date_end", "")))
+    timespan_id = None
+    if start_iso or end_iso:
+        timespan_id = get_or_create_timespan(
+            start_iso,
+            end_iso,
+            certainty=date_certainty or None,
+        )
+    return timespan_id, date_certainty
+
+
+def resolve_event_concepts(
+    row,
+    protagonist=None,
+    concept_resolver=None,
+    time_concept_resolver=None,
+    person_concept_resolver=None,
+):
+    """Resolve source categories and the optional date label to concept IDs."""
+    categories = []
+    for field in ["event_type", "transport_mode", "place_category"]:
+        value = clean_str(row.get(field, ""))
+        if value:
+            categories.append(value)
+
+    resolver = concept_resolver or get_or_create_concept
+    concept_ids = [concept_id for concept_id in (resolver(c) for c in categories) if concept_id]
+    if time_concept_resolver:
+        time_concept_id = time_concept_resolver(clean_str(row.get("date_label", "")))
+        if time_concept_id and time_concept_id not in concept_ids:
+            concept_ids.append(time_concept_id)
+    if person_concept_resolver and protagonist:
+        person_concept_id = person_concept_resolver(protagonist)
+        if person_concept_id and person_concept_id not in concept_ids:
+            concept_ids.append(person_concept_id)
+    return concept_ids
+
+
+def resolve_event_urls(external_links):
+    """Create URLs from a source cell and return their IDs."""
+    url_ids = []
+    external_links = clean_str(external_links)
+    if not external_links:
+        return url_ids
+
+    url_map, _ = extract_url_map(external_links)
+    for url_str in url_map.values():
+        url_id = get_or_create_url(url_str)
+        if url_id:
+            url_ids.append(url_id)
+    return url_ids
+
+
+def build_event_payload(
+    event_data,
+    lifecycle,
+    date_certainty,
+    timespan_id,
+    location_id,
+    start_location_id,
+    person_id,
+    concept_ids,
+    url_ids,
+):
+    """Build the API payload, omitting optional empty relationships."""
+    payload = {
+        "description": event_data["event_label"],
+        "lifecycle": lifecycle,
+        "is_confirmed": date_certainty.lower() == "certain",
+    }
+    if timespan_id:
+        payload["timespan"] = timespan_id
+    if location_id:
+        payload["end_location"] = location_id
+    if start_location_id:
+        payload["start_location"] = start_location_id
+    if person_id:
+        payload["persons"] = [person_id]
+    if concept_ids:
+        payload["concepts"] = concept_ids
+    if url_ids:
+        payload["urls"] = url_ids
+    return payload
+
+
+def create_event_from_row(
+    row,
+    protagonist,
+    locations_db=None,
+    start_location=None,
+    *,
+    concept_resolver=None,
+    location_concept_resolver=None,
+    time_concept_resolver=None,
+    person_concept_resolver=None,
+):
     """Create an Event object and persist to API from a chronotopi dataframe row.
 
     Populates every field available on the Event model:
@@ -117,112 +269,69 @@ def create_event_from_row(row, protagonist, locations_db=None, start_location=No
     Returns:
         Event ID if created successfully, None otherwise.
     """
-    event_label = clean_str(row.get("event_label", ""))
-    print(f"Creating event: {event_label}")
-    if not event_label:
+    event_data = prepare_event_data(row)
+    print(f"Creating event: {event_data['event_label'] if event_data else ''}")
+    if event_data is None:
         print(f"Failed to create event due to missing label: {row}")
         return None
+    print(f"End place: {event_data['place_name']}")
 
-    # Create location from place_name + place_detail
-    place_name = clean_str(row.get("place_name", ""))
-    place_detail = clean_str(row.get("place_detail", ""))
-
-    print(f"End place: {place_name}")
-    if not place_name:
-        print(f"Failed to create event due to missing location: {row}")
-        return None
-
-    # Combine place_name and place_detail if both present
-    location_name = f"{place_name} ({place_detail})" if place_detail else place_name
-
-    # Get or create end location
-    location_id = get_or_create_location(
-        location_name,
-        wikidata_qid=clean_str(row.get("wikidata_qid", "")) or None,
-        geonames_id=clean_str(row.get("geonames_id", "")) or None,
+    location_id, start_location_id = create_event_locations(
+        row,
+        event_data,
         locations_db=locations_db,
+        start_location=start_location,
+        location_concept_resolver=location_concept_resolver,
     )
-    print(f"End location: [{location_id}] {location_name}")
+    print(f"End location: [{location_id}] {event_data['location_name']}")
+    print(f"Start location: [{start_location_id}] {clean_str(start_location) if start_location else ''}")
 
-    # Get or create start location if provided and distinct from the end location
-    start_location_id = None
-    start_location = clean_str(start_location) if start_location else ""
-    if start_location and start_location != location_name:
-        start_location_id = get_or_create_location(start_location, locations_db=locations_db)
-    print(f"Start location: [{start_location_id}] {start_location}")
-
-    # Parse dates and build a Timespan (preserving the source certainty)
-    date_certainty = clean_str(row.get("date_certainty", ""))
-    start_iso = parse_date(clean_str(row.get("date_start", "")))
-    end_iso = parse_date(clean_str(row.get("date_end", "")))
-    print(f"Dates: {start_iso}-{end_iso} ({date_certainty or 'no certainty'})")
-
-    timespan_id = None
-    if start_iso or end_iso:
-        timespan_id = get_or_create_timespan(start_iso, end_iso, certainty=date_certainty or None)
+    timespan_id, date_certainty = create_event_timespan(row)
     print(f"Timespan: [{timespan_id}]")
 
     # Classify the life-journey stage
     lifecycle = classify_lifecycle(
-        row.get("place_category"), row.get("event_type"), event_label
+        row.get("place_category"), row.get("event_type"), event_data["event_label"]
     )
     print(f"Lifecycle: {lifecycle}")
 
-    # Collect categories from event_type, transport_mode, place_category as Concepts
-    categories = []
-    for field in ["event_type", "transport_mode", "place_category"]:
-        val = clean_str(row.get(field, ""))
-        if val:
-            categories.append(val)
-    print(f"Categories: {categories}")
-    concept_ids = [cid for cid in (get_or_create_concept(c) for c in categories) if cid]
+    concept_ids = resolve_event_concepts(
+        row,
+        protagonist=protagonist,
+        concept_resolver=concept_resolver,
+        time_concept_resolver=time_concept_resolver,
+        person_concept_resolver=person_concept_resolver,
+    )
 
     # Resolve the protagonist to a Person
     person_id = get_person_id(protagonist, protagonist)
     print(f"Person: [{person_id}] {protagonist}")
 
-    # Extract URLs from external_links
-    external_links = clean_str(row.get("external_links", ""))
-    url_ids = []
-    if external_links:
-        url_map, _ = extract_url_map(external_links)
-        for url_str in url_map.values():
-            url_id = get_or_create_url(url_str)
-            if url_id:
-                url_ids.append(url_id)
+    url_ids = resolve_event_urls(row.get("external_links", ""))
     print(f"Links: {url_ids}")
 
-    is_confirmed = date_certainty.lower() == "certain"
-
-    # Build event payload with every available field
-    payload = {
-        "description": event_label,
-        "lifecycle": lifecycle,
-        "is_confirmed": is_confirmed,
-    }
-    if timespan_id:
-        payload["timespan"] = timespan_id
-    if location_id:
-        payload["end_location"] = location_id
-    if start_location_id:
-        payload["start_location"] = start_location_id
-    if person_id:
-        payload["persons"] = [person_id]
-    if concept_ids:
-        payload["concepts"] = concept_ids
-    if url_ids:
-        payload["urls"] = url_ids
+    payload = build_event_payload(
+        event_data,
+        lifecycle,
+        date_certainty,
+        timespan_id,
+        location_id,
+        start_location_id,
+        person_id,
+        concept_ids,
+        url_ids,
+    )
 
     print(f"Payload: {payload}")
     # Create event via API
     try:
         event = api_post("events", payload, fail_on_error=False)
         if event is None:
-            print(f"Failed to create event: {event_label}")
+            print(f"Failed to create event: {event_data['event_label']}")
             return None
         return event.get("id")
     except Exception as e:
-        print(f"Error creating event {event_label}: {e}")
+        print(f"Error creating event {event_data['event_label']}: {e}")
         return None
 
 

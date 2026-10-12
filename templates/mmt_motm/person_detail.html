@@ -1,10 +1,10 @@
 {% extends "mmt_map/base.html" %}
-{% load i18n %}
+{% load i18n l10n %}
 
 {% block content %}
-<div class="container-fluid mt-4 px-0">
+<div class="container-fluid px-0">
     <div class="row no-gutters">
-    <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
+    <div class="col-md-6 px-3 pt-4" style="max-height: calc(100vh - 56px); overflow-y: auto;">
     <p><a href="{% url 'person_list' %}">&larr; {% trans "Back to list" %}</a></p>
     <h1>{{ person.given_name }} {{ person.family_name }}</h1>
 
@@ -18,6 +18,22 @@
 
     {% if person.gender %}
     <p><strong>{% trans "Gender:" %}</strong> {{ person.gender }}</p>
+    {% endif %}
+
+    {% if person.education %}
+    <p><strong>{% trans "Education / qualification:" %}</strong> {{ person.localized_education }}</p>
+    {% endif %}
+
+    {% if person.occupation_at_emigration %}
+    <p><strong>{% trans "Occupation at emigration:" %}</strong> {{ person.localized_occupation_at_emigration }}</p>
+    {% endif %}
+
+    {% if person.occupation_at_source %}
+    <p><strong>{% trans "Occupation at source:" %}</strong> {{ person.localized_occupation_at_source }}</p>
+    {% endif %}
+
+    {% if person.residence_at_source %}
+    <p><strong>{% trans "Residence at source:" %}</strong> {{ person.residence_at_source }}</p>
     {% endif %}
 
     {% if person.lifespan and person.lifespan.start %}
@@ -58,7 +74,7 @@
 
     {% if person.description %}
     <h3>{% trans "Persecuted group" %}</h3>
-    <p>{{ person.description }}</p>
+    <p>{{ person.localized_description }}</p>
     {% endif %}
 
     {% if events %}
@@ -93,7 +109,7 @@
                         <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>
                     {% endif %}
                 </td>
-                <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:10 }}</a></td>
+                <td><a href="{% url 'event_detail' event.pk %}">{{ event.localized_description|truncatewords:10 }}</a></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -201,10 +217,10 @@
         {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
         {
             id: {{ event.pk }},
-            desc: "{{ event.description|truncatewords:6|escapejs }}",
+                desc: "{{ event.localized_description|truncatewords:6|escapejs }}",
             url: "{% url 'event_detail' event.pk %}",
-            start: [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}],
-            end: [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}],
+            start: [{{ event.start_location.location.x|unlocalize }}, {{ event.start_location.location.y|unlocalize }}],
+            end: [{{ event.end_location.location.x|unlocalize }}, {{ event.end_location.location.y|unlocalize }}],
             startName: "{{ event.start_location.current_name|escapejs }}",
             endName: "{{ event.end_location.current_name|escapejs }}",
             date: "{% if event.timespan %}{{ event.timespan|escapejs }}{% endif %}",

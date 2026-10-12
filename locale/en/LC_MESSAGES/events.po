@@ -1,0 +1,1267 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: memorymap-toolkit-events\n"
+"PO-Revision-Date: 2026-10-08 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "event:1"
+msgid "Alte Heimat Wohnort"
+msgstr "Old home Place of residence"
+
+msgctxt "event:2"
+msgid "Besorgung eines Auswanderungszertifikats"
+msgstr "Obtaining an emigration certificate"
+
+msgctxt "event:3"
+msgid "Besorgung eines Auswanderungszertifikats"
+msgstr "Obtaining an emigration certificate"
+
+msgctxt "event:4"
+msgid "Besorgung eines Auswanderungszertifikats"
+msgstr "Obtaining an emigration certificate"
+
+msgctxt "event:5"
+msgid "Zurückreise nach Elberfeld"
+msgstr "Return trip to Elberfeld"
+
+msgctxt "event:6"
+msgid "Auswanderung (1) Etappe  Deutschland-Italien"
+msgstr "Emigration (1) Stage  Germany-Italy"
+
+msgctxt "event:7"
+msgid "Auswanderung (2) - Etappe Italien-Singapur"
+msgstr "Emigration (2) - Stage Italy-Singapore"
+
+msgctxt "event:8"
+msgid "Aufenthalt Singapur"
+msgstr "Stay in Singapore"
+
+msgctxt "event:9"
+msgid "Auswanderung (3) Etappe Singapur-Bombay"
+msgstr "Emigration (3) Singapore-Bombay stage"
+
+msgctxt "event:10"
+msgid "Auswanderung - Endpunkt der Reise: Bombay-Palästina"
+msgstr "Emigration - end point of the journey: Bombay-Palestine"
+
+msgctxt "event:11"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:12"
+msgid "(Zweite) Heirat"
+msgstr "(Second) Marriage"
+
+msgctxt "event:13"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:14"
+msgid "Realgymnasium an der Aue"
+msgstr "Realgymnasium an der Aue"
+
+msgctxt "event:15"
+msgid "Beruf - Schuhfabrik"
+msgstr "Occupation - Shoe factory"
+
+msgctxt "event:16"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:17"
+msgid "Antrag auf Ausreise von Kindern nach Palästina"
+msgstr "Application for children to leave for Palestine"
+
+msgctxt "event:18"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:19"
+msgid "Alte Heimat Wohnort"
+msgstr "Old home Place of residence"
+
+msgctxt "event:20"
+msgid "Auswanderung (1) Etappe Deutschland-Italien"
+msgstr "Emigration (1) Stage Germany-Italy"
+
+msgctxt "event:21"
+msgid "Aufenthalt in Italien"
+msgstr "Stay in Italy"
+
+msgctxt "event:22"
+msgid "Zwangsausweisung"
+msgstr "Forced expulsion"
+
+msgctxt "event:23"
+msgid "Abfahrt aus Italien"
+msgstr "Departure from Italy"
+
+msgctxt "event:24"
+msgid "Auswanderung (2) Etappe Italien-Singapur"
+msgstr "Emigration (2) Stage Italy-Singapore"
+
+msgctxt "event:25"
+msgid "Aufenthalt in Singapur"
+msgstr "Stay in Singapore"
+
+msgctxt "event:26"
+msgid "Auswanderung (3) Etappe Singapur-Bombay"
+msgstr "Emigration (3) Singapore-Bombay stage"
+
+msgctxt "event:27"
+msgid "Auswanderung Endpunkt der Reise"
+msgstr "Emigration end point of the journey"
+
+msgctxt "event:28"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:29"
+msgid "Realgymnasium an der Aue"
+msgstr "Realgymnasium an der Aue"
+
+msgctxt "event:30"
+msgid "Abgang von der Schule"
+msgstr "Graduation from school"
+
+msgctxt "event:31"
+msgid "Auswanderung (1) Etappe Deutschland-Frankreich"
+msgstr "Emigration (1) Stage Germany-France"
+
+msgctxt "event:32"
+msgid "Aufenthalt inFrankreich"
+msgstr "Stay inFrance"
+
+msgctxt "event:33"
+msgid "Auswanderung Endpunkt der Reise"
+msgstr "Emigration end point of the journey"
+
+msgctxt "event:34"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:35"
+msgid "Besorgung eines Auswanderungszertifikats für seinen Bruder"
+msgstr "Obtaining an emigration certificate for his brother"
+
+msgctxt "event:36"
+msgid "berufliche Laufbahn"
+msgstr "vocational activity"
+
+msgctxt "event:37"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:38"
+msgid "Alte Heimat Wohnort"
+msgstr "Old home Place of residence"
+
+msgctxt "event:39"
+msgid "Alte Heimat Privatschule, Herder-Schule"
+msgstr "Alte Heimat Private School, Herder School"
+
+msgctxt "event:40"
+msgid "Realgymnasium an der Aue"
+msgstr "Realgymnasium an der Aue"
+
+msgctxt "event:41"
+msgid "Teilnahme an zionistischen und nicht-zionistischen Jugendbewegungen"
+msgstr "Participation in Zionist and non-Zionist youth movements"
+
+msgctxt "event:42"
+msgid "Erlernen der hebräischen Sprache"
+msgstr "Learning the Hebrew language"
+
+msgctxt "event:43"
+msgid "Gründung eines Zirkels geschichtlich interessierter jüdischer Freunde"
+msgstr "Establishment of a circle of historically interested Jewish friends"
+
+msgctxt "event:44"
+msgid "Antrag auf Ausreise nach Palästina (vom Vater eingereicht)"
+msgstr "Application for departure to Palestine (submitted by the father)"
+
+msgctxt "event:45"
+msgid "Trennung von Schwester"
+msgstr "Separation of sister"
+
+msgctxt "event:46"
+msgid "Trennung von Bruder"
+msgstr "Separation of brother"
+
+msgctxt "event:47"
+msgid "Abitur"
+msgstr "General qualification for university entrance (Abitur)"
+
+msgctxt "event:48"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:49"
+msgid "Begegnung mit zukünftiger Ehefrau"
+msgstr "Encounter with future wife"
+
+msgctxt "event:50"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:51"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:52"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:53"
+msgid "Verhaftung"
+msgstr "Arrested"
+
+msgctxt "event:54"
+msgid "Deportation aus Breslau"
+msgstr "Deportation from Wroclaw"
+
+msgctxt "event:55"
+msgid "Ankunft KZ Buchenwald"
+msgstr "Arrival at Buchenwald Concentration Camp"
+
+msgctxt "event:56"
+msgid "Ankunft KZ Buchenwald"
+msgstr "Arrival at Buchenwald Concentration Camp"
+
+msgctxt "event:57"
+msgid "Schwere Krankheit und Lazarettaufenthalt im Lager"
+msgstr "Serious illness and hospital stay in the camp"
+
+msgctxt "event:58"
+msgid "Austritt aus dem Lazarett und Konzentrationslager"
+msgstr "Leaving the hospital and concentration camp"
+
+msgctxt "event:59"
+msgid "Auswanderung (1) \nEtappe Deutschland-Italien"
+msgstr "Emigration (1) \nStage Germany-Italy"
+
+msgctxt "event:60"
+msgid "Auswanderung \nEnpunkt der Reise (Italien - Palästina)"
+msgstr "Emigration \nEnpunkt der Reise (Italy - Palestine)"
+
+msgctxt "event:61"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:62"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:63"
+msgid "Studium Geschichte, jüdischen Geschichte und Soziologie"
+msgstr "Studied history, Jewish history and sociology"
+
+msgctxt "event:64"
+msgid "Hochschulpreis für philologische Studien"
+msgstr "University Prize for Philological Studies"
+
+msgctxt "event:65"
+msgid "Hochschulabschluss"
+msgstr "Degree"
+
+msgctxt "event:66"
+msgid "Stellenangebot - Kinder von Teheran (abgelehnt)"
+msgstr "Job Offer - Children of Tehran (Rejected)"
+
+msgctxt "event:67"
+msgid "Arbeit als Schreiner"
+msgstr "Work as a carpenter"
+
+msgctxt "event:68"
+msgid "Beginn der Dissertation/Doktorarbeit (nicht beendet)"
+msgstr "Start of dissertation/doctoral thesis (not completed)"
+
+msgctxt "event:69"
+msgid "Wiedervereinigung mit der Mutter und der Schwester"
+msgstr "Reunion with Mother and Sister"
+
+msgctxt "event:70"
+msgid "Militärzeit als Sanitäter"
+msgstr "Military time as a paramedic"
+
+msgctxt "event:71"
+msgid "Archivar im Zionistischen Zentralarchiv"
+msgstr "Archivist at the Zionist Central Archive"
+
+msgctxt "event:72"
+msgid "Doktorat in zionistischer Geschichte"
+msgstr "Doctorate in Zionist History"
+
+msgctxt "event:73"
+msgid "Europareise zum\nFotografieren von Dokumenten für Yad Vashem"
+msgstr "European trip to\nPhotographing documents for Yad Vashem"
+
+msgctxt "event:74"
+msgid "Europareise zum\nFotografieren von Dokumenten für Yad Vashem"
+msgstr "European trip to\nPhotographing documents for Yad Vashem"
+
+msgctxt "event:75"
+msgid "Leitung des Staatsarchivs"
+msgstr "Head of the State Archives"
+
+msgctxt "event:76"
+msgid "Staatsarchivar von Israel"
+msgstr "State Archivist of Israel"
+
+msgctxt "event:77"
+msgid "Vorsitz Irgun Olej Merkas Europa (Verbands der mitteleuropäischen Einwanderer)"
+msgstr "Chair: Irgun Olej Merkas Europa (Association of Central European Immigrants)"
+
+msgctxt "event:78"
+msgid "Mitgliedschaft bei der wissenschaftlichen Kommission von Leo Baeck Institut"
+msgstr "Membership of the scientific committee of the Leo Baeck Institute"
+
+msgctxt "event:79"
+msgid "Mitarbeit bei dem Institut für Zionistische Geschichte bei der Universität Tel Aviv"
+msgstr "Participation in the Institute of Zionist History at Tel Aviv University"
+
+msgctxt "event:80"
+msgid "Leitung und Vorsitz der wissenschaftlichen Kommission von Yad Vashem"
+msgstr "Head and Chairman of the Scientific Commission of Yad Vashem"
+
+msgctxt "event:81"
+msgid "Mitarbeit bei Jabotinsky Institut"
+msgstr "Collaboration at the Jabotinsky Institute"
+
+msgctxt "event:82"
+msgid "Platzbenennung"
+msgstr "Place naming"
+
+msgctxt "event:83"
+msgid "Webseite"
+msgstr "Website"
+
+msgctxt "event:84"
+msgid "Webseite"
+msgstr "Website"
+
+msgctxt "event:85"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:86"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:87"
+msgid "Begegnung mit Paul Alsberg (zukünftigem Mann)"
+msgstr "Encounter with Paul Alsberg (future man)"
+
+msgctxt "event:88"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:89"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:90"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:91"
+msgid "Rabbinerseminar"
+msgstr "Rabbinical seminar"
+
+msgctxt "event:92"
+msgid "Besorgung eines Auswanderungszertifikats für Paul Alsberg"
+msgstr "Obtaining an emigration certificate for Paul Alsberg"
+
+msgctxt "event:93"
+msgid "Auswanderung (1) \nEtappe Deutschland-Italien"
+msgstr "Emigration (1) \nStage Germany-Italy"
+
+msgctxt "event:94"
+msgid "Auswanderung \nEnpunkt der Reise (Italien - Palästina)"
+msgstr "Emigration \nEnpunkt der Reise (Italy - Palestine)"
+
+msgctxt "event:95"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:96"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:97"
+msgid "Ausbildung als Volksschullehrerin"
+msgstr "Education as a primary school teacher"
+
+msgctxt "event:98"
+msgid "Ausbildung als Krankenschwester"
+msgstr "Training as a nurse"
+
+msgctxt "event:99"
+msgid "Alte Heimat Geburt"
+msgstr "Old homeland birth"
+
+msgctxt "event:100"
+msgid "Alte Heimat Grundschule"
+msgstr "Alte Heimat Primary School"
+
+msgctxt "event:101"
+msgid "Alte Heimat Realgymnasium"
+msgstr "Alte Heimat Realgymnasium"
+
+msgctxt "event:102"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:103"
+msgid "Zwangsausweisung Marktplatz 11"
+msgstr "Forced Expulsion Marketplace 11"
+
+msgctxt "event:104"
+msgid "Abgang von der Schule"
+msgstr "Graduation from school"
+
+msgctxt "event:105"
+msgid "Hachschara"
+msgstr "Hakhshara"
+
+msgctxt "event:106"
+msgid "Bei Verwandten"
+msgstr "With relatives"
+
+msgctxt "event:107"
+msgid "Jeschiwa"
+msgstr "Yeshiva"
+
+msgctxt "event:108"
+msgid "Aliyah-Anruf"
+msgstr "Aliyah Call"
+
+msgctxt "event:109"
+msgid "Abfahrt > Abschied von den Eltern"
+msgstr "Departure > Farewell to parents"
+
+msgctxt "event:110"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:111"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:112"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:113"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:114"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:115"
+msgid "Neue Heimat\nEinwanderung"
+msgstr "New home\nImmigration"
+
+msgctxt "event:116"
+msgid "Neue Heimat\n\nReise durchs Land"
+msgstr "New home\n\nJourney through the country"
+
+msgctxt "event:117"
+msgid "Neue Heimat"
+msgstr "My New Home"
+
+msgctxt "event:118"
+msgid "Neue Heimat"
+msgstr "My New Home"
+
+msgctxt "event:119"
+msgid "Neue Heimat"
+msgstr "My New Home"
+
+msgctxt "event:120"
+msgid "Reise zurück als Soldat"
+msgstr "Journey back as a soldier"
+
+msgctxt "event:121"
+msgid "Reise zurück als Soldat"
+msgstr "Journey back as a soldier"
+
+msgctxt "event:122"
+msgid "Reise zurück als Soldat"
+msgstr "Journey back as a soldier"
+
+msgctxt "event:123"
+msgid "Reise zurück als Soldat"
+msgstr "Journey back as a soldier"
+
+msgctxt "event:124"
+msgid "Neue Heimat\nHeirat"
+msgstr "New home\nMarriage"
+
+msgctxt "event:125"
+msgid "Neue Heimat\nHaifa\nBeruf"
+msgstr "New home\nHaifa\nOccupation"
+
+msgctxt "event:126"
+msgid "Reise zurück"
+msgstr "The journey back"
+
+msgctxt "event:127"
+msgid "Fahrt Frankfurt-Gießen"
+msgstr "Frankfurt-Gießen trip"
+
+msgctxt "event:128"
+msgid "Klein Linden"
+msgstr "Klein Linden"
+
+msgctxt "event:129"
+msgid "Großen-Linden"
+msgstr "Großen-Linden"
+
+msgctxt "event:130"
+msgid "Geburtshaus Marktplatz 11"
+msgstr "Birthplace Marktplatz 11"
+
+msgctxt "event:131"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:132"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:133"
+msgid "Umzug nach Berlin"
+msgstr "Moves to Berlin"
+
+msgctxt "event:134"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:135"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:136"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:137"
+msgid "Umzug nach Berlin"
+msgstr "Moves to Berlin"
+
+msgctxt "event:138"
+msgid "Deportation"
+msgstr "Deportation"
+
+msgctxt "event:139"
+msgid "Tod/Ermordung"
+msgstr "Death/Assassination"
+
+msgctxt "event:140"
+msgid "Erinnerung: Eintrag im Bundesarchiv-Gedenkbuch"
+msgstr "Reminder: Entry in the Federal Archives Memorial Book"
+
+msgctxt "event:141"
+msgid "Erinnerung: Eintrag im Berliner Gedenkbuch"
+msgstr "Reminder: Entry in the Berlin Memorial Book"
+
+msgctxt "event:142"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Ora Hadari)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Ora Hadari)"
+
+msgctxt "event:143"
+msgid "Erinnerung: Stolperstein"
+msgstr "Reminder: Stolperstein"
+
+msgctxt "event:144"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:145"
+msgid "Umzug von Lollar nach Gießen"
+msgstr "Relocation from Lollar to Gießen"
+
+msgctxt "event:146"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:147"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:148"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:149"
+msgid "Umzug von Lollar nach Gießen"
+msgstr "Relocation from Lollar to Gießen"
+
+msgctxt "event:150"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:151"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:152"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:153"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:154"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:155"
+msgid "Heirat mit Johanna Stern, geb. Kaminka"
+msgstr "Married to Johanna Stern, née Kaminka"
+
+msgctxt "event:156"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:157"
+msgid "Heirat mit Claire Thalheimer"
+msgstr "Married to Claire Thalheimer"
+
+msgctxt "event:158"
+msgid "Zwangsausweisung Marktplatz 11"
+msgstr "Forced Expulsion Marketplace 11"
+
+msgctxt "event:159"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:160"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:161"
+msgid "Visumantrag"
+msgstr "Visa Application"
+
+msgctxt "event:162"
+msgid "Abschied"
+msgstr "The Farewell"
+
+msgctxt "event:163"
+msgid "Verhaftung"
+msgstr "Arrested"
+
+msgctxt "event:164"
+msgid "Walltorstraße 48 wird zum Judenhaus/Ghettohaus erklärt"
+msgstr "Walltorstraße 48 is declared the Judenhaus/Ghettohaus"
+
+msgctxt "event:165"
+msgid "Deportation"
+msgstr "Deportation"
+
+msgctxt "event:166"
+msgid "↳ Walltorstraße 48"
+msgstr "↳ Walltorstraße 48"
+
+msgctxt "event:167"
+msgid "↳ Darmstadt"
+msgstr "Darmstadt"
+
+msgctxt "event:168"
+msgid "Transport (Abfahrt)"
+msgstr "Transport (Departure)"
+
+msgctxt "event:169"
+msgid "Transport (Ankunft)"
+msgstr "Transport (Arrival)"
+
+msgctxt "event:170"
+msgid "Mord"
+msgstr "murder"
+
+msgctxt "event:171"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Josef Stern)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Josef Stern)"
+
+msgctxt "event:172"
+msgid "Erinnerung: Eintrag im Bundesarchiv-Gedenkbuch"
+msgstr "Reminder: Entry in the Federal Archives Memorial Book"
+
+msgctxt "event:173"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Ora Hadari)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Ora Hadari)"
+
+msgctxt "event:174"
+msgid "Erinnerung: Stolperstein"
+msgstr "Reminder: Stolperstein"
+
+msgctxt "event:175"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:176"
+msgid "Umzug nach Gießen (mit Eltern)"
+msgstr "Moving to Gießen (with parents)"
+
+msgctxt "event:177"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:178"
+msgid "Heirat mit Julius Stern"
+msgstr "Marriage to Julius Stern"
+
+msgctxt "event:179"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:180"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:181"
+msgid "Heirat mit Julius Stern"
+msgstr "Marriage to Julius Stern"
+
+msgctxt "event:182"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:183"
+msgid "Zwangsausweisung Marktplatz 11"
+msgstr "Forced Expulsion Marketplace 11"
+
+msgctxt "event:184"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:185"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:186"
+msgid "Deportation"
+msgstr "Deportation"
+
+msgctxt "event:187"
+msgid "Transport (Abfahrt)"
+msgstr "Transport (Departure)"
+
+msgctxt "event:188"
+msgid "Transport (Ankunft)"
+msgstr "Transport (Arrival)"
+
+msgctxt "event:189"
+msgid "Mord"
+msgstr "murder"
+
+msgctxt "event:190"
+msgid "Erinnerung: Eintrag im Bundesarchiv-Gedenkbuch"
+msgstr "Reminder: Entry in the Federal Archives Memorial Book"
+
+msgctxt "event:191"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Ora Hadari)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Ora Hadari)"
+
+msgctxt "event:192"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Alex Salm, researcher)"
+msgstr "Reminder: memorial sheet Yad Vashem (Alex Salm, researcher)"
+
+msgctxt "event:193"
+msgid "Erinnerung: Stolperstein"
+msgstr "Reminder: Stolperstein"
+
+msgctxt "event:194"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:195"
+msgid "Wohnort (bei Eltern)"
+msgstr "Place of residence (for parents)"
+
+msgctxt "event:196"
+msgid "Wohnort (bei Großeltern Stern)"
+msgstr "Place of residence (for grandparents Stern)"
+
+msgctxt "event:197"
+msgid "Wohnort (zurück bei Familie)"
+msgstr "Place of residence (back to family)"
+
+msgctxt "event:198"
+msgid "Zwangsausweisung Marktplatz 11"
+msgstr "Forced Expulsion Marketplace 11"
+
+msgctxt "event:199"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:200"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:201"
+msgid "Auswanderung nach Palästina"
+msgstr "Emigration to Palestine"
+
+msgctxt "event:202"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:203"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:204"
+msgid "Schule"
+msgstr "School"
+
+msgctxt "event:205"
+msgid "Zwangsausweisung Marktplatz 11"
+msgstr "Forced Expulsion Marketplace 11"
+
+msgctxt "event:206"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:207"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:208"
+msgid "Deportation"
+msgstr "Deportation"
+
+msgctxt "event:209"
+msgid "Transport (Abfahrt)"
+msgstr "Transport (Departure)"
+
+msgctxt "event:210"
+msgid "Transport (Ankunft)"
+msgstr "Transport (Arrival)"
+
+msgctxt "event:211"
+msgid "Mord"
+msgstr "murder"
+
+msgctxt "event:212"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Sonja Stern Poper)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Sonja Stern Poper)"
+
+msgctxt "event:213"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Josef Stern)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Josef Stern)"
+
+msgctxt "event:214"
+msgid "Erinnerung: Eintrag im Bundesarchiv-Gedenkbuch"
+msgstr "Reminder: Entry in the Federal Archives Memorial Book"
+
+msgctxt "event:215"
+msgid "Erinnerung: Gedenkblatt Yad Vashem (Ora Hadari)"
+msgstr "Reminder: Memorial sheet Yad Vashem (Ora Hadari)"
+
+msgctxt "event:216"
+msgid "Erinnerung Stolperstein"
+msgstr "Reminder Stolperstein"
+
+msgctxt "event:217"
+msgid "Erinnerung Platz"
+msgstr "Reminder Place"
+
+msgctxt "event:218"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:219"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:220"
+msgid "Schule"
+msgstr "School"
+
+msgctxt "event:221"
+msgid "Teilnahme an der Jugendbewegung 'Kameraden'"
+msgstr "Participation in the youth movement 'Comrades'"
+
+msgctxt "event:222"
+msgid "zionistische Umgestaltung der Bewegung"
+msgstr "zionist transformation of the movement"
+
+msgctxt "event:223"
+msgid "Freundschaft mit einem Mädchen, das sich ebenfalls für Rilkes Werke interessiert"
+msgstr "Friendship with a girl who is also interested in Rilke's works"
+
+msgctxt "event:224"
+msgid "Verfassen der ersten Geschichten und Romane auf Deutsch"
+msgstr "Writing the first stories and novels in German"
+
+msgctxt "event:225"
+msgid "Erlernen der hebräischen Sprache"
+msgstr "Learning the Hebrew language"
+
+msgctxt "event:226"
+msgid "Stipendium der Jugend-Alija"
+msgstr "Youth Aliya Scholarship"
+
+msgctxt "event:227"
+msgid "Abgang von der Schule"
+msgstr "Graduation from school"
+
+msgctxt "event:228"
+msgid "Hachshara (Etappe 1)"
+msgstr "Hachshara (Stage 1)"
+
+msgctxt "event:229"
+msgid "Auswanderung (Etappe 2)"
+msgstr "Emigration (Stage 2)"
+
+msgctxt "event:230"
+msgid "Abschied"
+msgstr "The Farewell"
+
+msgctxt "event:231"
+msgid "Auswanderung (Etappe 3)"
+msgstr "Emigration (Stage 3)"
+
+msgctxt "event:232"
+msgid "Auswanderung (Etappe 4)"
+msgstr "Emigration (Stage 4)"
+
+msgctxt "event:233"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:234"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:235"
+msgid "Wiedersehen der Familie"
+msgstr "Reunion of the family"
+
+msgctxt "event:236"
+msgid "Übergang vom Kinderdorf zur Schule in Beth HaKerem"
+msgstr "Transition from children's village to school in Beth HaKerem"
+
+msgctxt "event:237"
+msgid "Arbeit als Nachhilferin"
+msgstr "Work as a tutor"
+
+msgctxt "event:238"
+msgid "Abitur"
+msgstr "General qualification for university entrance (Abitur)"
+
+msgctxt "event:239"
+msgid "Leben im Kibbuz"
+msgstr "Life on the Kibbutz"
+
+msgctxt "event:240"
+msgid "Studium (nicht abgeschlossen) - Judaistik und englische Literatur"
+msgstr "Studies (not completed) - Jewish Studies and English Literature"
+
+msgctxt "event:241"
+msgid "Tod des Vaters"
+msgstr "Death of his father."
+
+msgctxt "event:242"
+msgid "Aufenthalt im Elternhaus"
+msgstr "Stay in the parental home"
+
+msgctxt "event:243"
+msgid "Mitarbeiterin in einem  Internierungslager für Juden auf Zypern"
+msgstr "Employee in an  internment camp for Jews in Cyprus"
+
+msgctxt "event:244"
+msgid "Heirat"
+msgstr "Marriage"
+
+msgctxt "event:245"
+msgid "Rückkehr in die neue Heimat (als Mutter)"
+msgstr "Return to the new home (as a mother)"
+
+msgctxt "event:246"
+msgid "Aufenthalt bei der Mutter"
+msgstr "Staying with the mother"
+
+msgctxt "event:247"
+msgid "Studium - Musik"
+msgstr "Studies - Music"
+
+msgctxt "event:248"
+msgid "Mitarbeit an verschiedensten Bildungseinrichtungen"
+msgstr "Participation in a wide range of educational institutions"
+
+msgctxt "event:249"
+msgid "Rundfunkautorin in der Musikabteilung von Kol Israel"
+msgstr "Radio writer in the music department of Kol Israel"
+
+msgctxt "event:250"
+msgid "Vorzeitige Pensionierung - Neues Projekt: Monographie über Rainer Maria Rilke"
+msgstr "Early Retirement - New Project: Monograph on Rainer Maria Rilke"
+
+msgctxt "event:251"
+msgid "Übersetzungen von deutschen Liedtexten ins Hebräische und Publikationen im  Kibbuz Ha- Meuchad we- Sifriat Ha- Poalim"
+msgstr "Translations of German lyrics into Hebrew and publications in  Kibbutz Ha- Meuchad we- Sifriat Ha- Poalim"
+
+msgctxt "event:252"
+msgid "Reise nach Deutschland mit Mirjam Rothschild"
+msgstr "Travel to Germany with Mirjam Rothschild"
+
+msgctxt "event:253"
+msgid "Restitution"
+msgstr "Restitution"
+
+msgctxt "event:254"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:255"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:256"
+msgid "Wohnort"
+msgstr "Place of Residence"
+
+msgctxt "event:257"
+msgid "Ausbildung im antisemitischen Umfeld"
+msgstr "Training in an anti-Semitic environment"
+
+msgctxt "event:258"
+msgid "Teilnahme an der Jugendbewegung 'Kameraden'"
+msgstr "Participation in the youth movement 'Comrades'"
+
+msgctxt "event:259"
+msgid "zionistische Umgestaltung der Bewegung"
+msgstr "zionist transformation of the movement"
+
+msgctxt "event:260"
+msgid "Abfahrt/Umzug"
+msgstr "Departure/Relocation"
+
+msgctxt "event:261"
+msgid "Abfahrt/Umzug"
+msgstr "Departure/Relocation"
+
+msgctxt "event:262"
+msgid "Musikschule"
+msgstr "Musical schools [0]"
+
+msgctxt "event:263"
+msgid "Abitur"
+msgstr "General qualification for university entrance (Abitur)"
+
+msgctxt "event:264"
+msgid "Zertifikat als Akademieschüler in Jerusalem"
+msgstr "Certificate as an academy student in Jerusalem"
+
+msgctxt "event:265"
+msgid "Auswanderung"
+msgstr "Emigration"
+
+msgctxt "event:266"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:267"
+msgid "Akademieschüler - Palestine Conservatoire in Jerusalem"
+msgstr "Academy Student - Palestine Conservatoire in Jerusalem"
+
+msgctxt "event:268"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:269"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:270"
+msgid "Heirat"
+msgstr "Marriage"
+
+msgctxt "event:271"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:272"
+msgid "Stolperstein"
+msgstr "Stumbling block"
+
+msgctxt "event:273"
+msgid "Stolperstein"
+msgstr "Stumbling block"
+
+msgctxt "event:274"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:275"
+msgid "Übersiedlung nach Frankfurt an der Oder"
+msgstr "Relocation to Frankfurt an der Oder"
+
+msgctxt "event:276"
+msgid "Kinderarzt, Leiter der Säuglingsabteilung des Städtischen Krankenhauses, Anstellung bei der Krankenkasse"
+msgstr "Paediatrician, Head of the Infant Department of the Municipal Hospital, employment with the health insurance company"
+
+msgctxt "event:277"
+msgid "Entlassung aus allen Ämtern, Arbeit in Privatpraxis"
+msgstr "Dismissal from all offices, work in private practice"
+
+msgctxt "event:278"
+msgid "Zionismus"
+msgstr "Zionism"
+
+msgctxt "event:279"
+msgid "Verhaftung"
+msgstr "Arrested"
+
+msgctxt "event:280"
+msgid "Deportation"
+msgstr "Deportation"
+
+msgctxt "event:281"
+msgid "Ankunft KZ Sachsenhausen"
+msgstr "Arrival at Sachsenhausen Concentration Camp"
+
+msgctxt "event:282"
+msgid "Ankunft KZ Sachsenhausen"
+msgstr "Arrival at Sachsenhausen Concentration Camp"
+
+msgctxt "event:283"
+msgid "Austritt aus dem Konzentrationslager"
+msgstr "Leaving the concentration camp"
+
+msgctxt "event:284"
+msgid "Auswanderung (Etappe 1)"
+msgstr "Emigration (Stage 1)"
+
+msgctxt "event:285"
+msgid "Auswanderung (Etappe 2)"
+msgstr "Emigration (Stage 2)"
+
+msgctxt "event:286"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:287"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:288"
+msgid "Wiedersehen der Familie"
+msgstr "Reunion of the family"
+
+msgctxt "event:289"
+msgid "Arbeit"
+msgstr "Work"
+
+msgctxt "event:290"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:291"
+msgid "Stolperstein"
+msgstr "Stumbling block"
+
+msgctxt "event:292"
+msgid "Platzbenennung"
+msgstr "Place naming"
+
+msgctxt "event:293"
+msgid "Geburt"
+msgstr "Birth"
+
+msgctxt "event:294"
+msgid "Übersiedlung nach Frankfurt an der Oder"
+msgstr "Relocation to Frankfurt an der Oder"
+
+msgctxt "event:295"
+msgid "Teilnahme an zionistischen Bewegungen"
+msgstr "Participation in Zionist movements"
+
+msgctxt "event:296"
+msgid "Ende der Karriere als Sängerin"
+msgstr "End of career as a singer"
+
+msgctxt "event:297"
+msgid "Besorgung eines Auswanderungszertifikats"
+msgstr "Obtaining an emigration certificate"
+
+msgctxt "event:298"
+msgid "Auswanderung (Etappe 1)"
+msgstr "Emigration (Stage 1)"
+
+msgctxt "event:299"
+msgid "Auswanderung (Etappe 2)"
+msgstr "Emigration (Stage 2)"
+
+msgctxt "event:300"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:301"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:302"
+msgid "Wiedersehen der Familie"
+msgstr "Reunion of the family"
+
+msgctxt "event:303"
+msgid "Arbeit"
+msgstr "Work"
+
+msgctxt "event:304"
+msgid "Tod"
+msgstr "Mortality"
+
+msgctxt "event:305"
+msgid "Arbeit"
+msgstr "Work"
+
+msgctxt "event:306"
+msgid "Einwanderung"
+msgstr "Immigration"
+
+msgctxt "event:307"
+msgid "Arbeit"
+msgstr "Work"
+
+msgctxt "event:308"
+msgid "Umzug"
+msgstr "Relocating"
+
+msgctxt "event:309"
+msgid "Arbeit"
+msgstr "Work"
+
+msgctxt "event:310"
+msgid "Arbeit - Eröffnung eines Weingeschäfts in Tel Aviv"
+msgstr "Work - Opening a Wine Store in Tel Aviv"
+
+msgctxt "event:311"
+msgid "Geldsammlung fur das Auswanderungszertifikat"
+msgstr "Collection of money for the emigration certificate"
+
+msgctxt "event:312"
+msgid "Hilfe zur Auswanderung von Adas Vater"
+msgstr "Helping Ada's father emigrate"
+
+msgctxt "event:313"
+msgid "Hilfe zur Auswanderung von Adas Vater"
+msgstr "Helping Ada's father emigrate"
+
+msgctxt "event:314"
+msgid "Einwanderung"
+msgstr "Immigration"

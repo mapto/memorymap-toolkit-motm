@@ -1,5 +1,7 @@
 """Tests for location coordinate resolution and workbook backfilling."""
 
+from pathlib import Path
+
 from openpyxl import Workbook, load_workbook
 
 import locations
@@ -16,6 +18,71 @@ HEADERS = [
     "www.wikidata.org",
     "www.giessen.de",
 ]
+
+
+def test_prepare_location_metadata_uses_custom_normalizer(monkeypatch):
+    monkeypatch.setattr(
+        locations,
+        "resolve_location_coordinates",
+        lambda entry: (50.0, 8.0),
+    )
+
+    metadata = locations._prepare_location_metadata(
+        "A Place",
+        locations_db={"custom-key": {"lat": None, "long": None}},
+        normalize_fn=lambda value: "custom-key",
+    )
+
+    assert metadata["key"] == "custom-key"
+    assert metadata["coordinates"] == (50.0, 8.0)
+
+
+def test_canonical_location_name_maps_variants_to_workbook_entity():
+    workbook = {
+        "koblenz": {"name": "Koblenz"},
+        "grosen linden": {"name": "Großen-Linden"},
+    }
+
+    assert locations.canonical_location_name("Koblenz (Bundesarchiv)", workbook) == "Koblenz"
+    assert locations.canonical_location_name("Großen-Linden", workbook) == "Großen-Linden"
+    assert locations.canonical_location_name("?", workbook) is None
+    assert locations.canonical_location_name(
+        "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
+        workbook,
+    ) is None
+
+
+def test_existing_location_updates_include_only_missing_values():
+    metadata = {
+        "coordinates": (50.0, 8.0),
+        "wikidata_id": "Q1",
+        "geonames_id": "123",
+    }
+    match = {"location": None, "wikidata_id": "Q2", "concept": 9}
+
+    assert locations._existing_location_updates(metadata, match, 10) == {
+        "latitude": 50.0,
+        "longitude": 8.0,
+        "geonames_id": "123",
+    }
+
+
+def test_new_location_payload_contains_taxonomy_concept():
+    metadata = {
+        "name": "Place",
+        "coordinates": (50.0, 8.0),
+        "wikidata_id": "Q1",
+        "geonames_id": "123",
+    }
+
+    assert locations._new_location_payload(metadata, 10) == {
+        "current_name": "Place",
+        "latitude": 50.0,
+        "longitude": 8.0,
+        "wikidata_id": "Q1",
+        "geonames_id": "123",
+        "concept": 10,
+    }
 
 
 def write_locations(path, row):
@@ -63,6 +130,31 @@ def test_load_locations_prefers_table_coordinates(tmp_path, monkeypatch):
     entry = database[locations.normalize_location("Berlin")]
     assert (entry["lat"], entry["long"]) == (52.5, 13.4)
     assert read_coordinates(path) == (52.5, 13.4)
+
+
+def test_load_locations_reads_coordinate_fields_by_header_order(tmp_path, monkeypatch):
+    path = tmp_path / "locations.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append([
+        "location", "bag_of_words", "super_region", "wider_region",
+        "coordinate_source", "lat", "long", "label",
+        "www.geonames.org", "www.wikidata.org",
+    ])
+    sheet.append([
+        "Berlin", "berlin", "Deutschland", "GO > Deutschland > Berlin",
+        "chronotopi", 52.5, 13.4, "", "", "https://www.wikidata.org/wiki/Q64",
+    ])
+    workbook.save(path)
+
+    locations._locations_db.clear()
+    database = locations.load_locations_db(path, enrich_coordinates=False)
+
+    entry = database[locations.normalize_location("Berlin")]
+    assert entry["lat"] == 52.5
+    assert entry["long"] == 13.4
+    assert entry["wikidata_id"] == "Q64"
+    assert entry["wider_region"] == "GO > Deutschland > Berlin"
 
 
 def test_extract_geonames_id_uses_numeric_url_segment():
@@ -371,6 +463,141 @@ def test_get_or_create_location_uses_normalized_db_key_and_repairs_existing_api_
                 "longitude": 35.51,
                 "wikidata_id": "Q2095906",
                 "geonames_id": "295211",
+            },
+        )
+    ]
+
+
+def test_get_or_create_location_reuses_point_already_linked_to_concept(monkeypatch):
+    locations._location_cache.clear()
+    calls = []
+
+    def api_get(endpoint, params=None):
+        calls.append((endpoint, params))
+        if params and params.get("search") == "Jerusalem":
+            return []
+        return [
+            {
+                "id": 15,
+                "current_name": "Jerusalem (Hebrew University of Jerusalem)",
+                "concept": 547,
+            }
+        ]
+
+    monkeypatch.setattr("api_client.api_get", api_get)
+    monkeypatch.setattr(
+        "api_client.api_post",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("the concept-linked point should be reused")
+        ),
+    )
+
+    result = locations.get_or_create_location("Jerusalem", concept_id=547)
+
+    assert result == 15
+    assert calls == [
+        ("locations", {"search": "Jerusalem"}),
+        ("locations", None),
+    ]
+
+
+def test_rebuild_location_workbook_delegates_to_shared_rebuild(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(
+        "rebuild_locations.rebuild_workbook",
+        lambda **kwargs: calls.append(kwargs) or {"rows": 1},
+    )
+
+    result = locations.rebuild_location_workbook(
+        input_path="input.xlsx",
+        output_path="output.xlsx",
+        data_root="data",
+        taxonomy_path="taxonomy.mmd",
+    )
+
+    assert result == {"rows": 1}
+    assert calls == [{
+        "input_path": Path("input.xlsx"),
+        "output_path": Path("output.xlsx"),
+        "data_root": Path("data"),
+        "taxonomy_path": Path("taxonomy.mmd"),
+    }]
+
+
+def test_sync_location_concepts_patches_unlinked_resolvable_points():
+    locations = [
+        {"id": 1, "current_name": "Gießen", "concept": None},
+        {"id": 2, "current_name": "Koblenz", "concept": None},
+        {"id": 3, "current_name": "Already linked", "concept": 9},
+    ]
+    patches = []
+
+    result = __import__("locations").sync_location_concepts(
+        lambda name: {"Gießen": 42}.get(name),
+        api_get=lambda endpoint: locations,
+        api_patch=lambda endpoint, object_id, payload: patches.append(
+            (endpoint, object_id, payload)
+        ),
+    )
+
+    assert result == {"matched": [(1, 42)], "unmapped": ["Koblenz"]}
+    assert patches == [("locations", 1, {"concept": 42})]
+
+
+def test_sync_location_concepts_does_not_steal_an_existing_unique_concept():
+    locations = [
+        {"id": 1, "current_name": "Gießen", "concept": None},
+        {"id": 2, "current_name": "Gießen Marktplatz 15", "concept": 42},
+    ]
+    patches = []
+
+    result = __import__("locations").sync_location_concepts(
+        lambda name, **kwargs: 42,
+        api_get=lambda endpoint: locations,
+        api_patch=lambda endpoint, object_id, payload: patches.append(
+            (endpoint, object_id, payload)
+        ),
+    )
+
+    assert result == {"matched": [], "unmapped": ["Gießen"]}
+    assert patches == []
+
+
+def test_seed_location_entities_reuses_workbook_rows_and_resolves_concepts(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "api_client.api_get",
+        lambda endpoint: {"concept": 449} if endpoint == "locations/1" else [],
+    )
+    monkeypatch.setattr("api_client.api_patch", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        locations,
+        "get_or_create_location",
+        lambda name, **kwargs: calls.append((name, kwargs)) or len(calls),
+    )
+    workbook = {
+        "berlin": {
+            "name": "Berlin",
+            "wikidata_id": "Q64",
+            "geonames_id": "2950159",
+        }
+    }
+
+    result = locations.seed_location_entities(
+        workbook,
+        resolve_location=lambda name, **kwargs: 449,
+    )
+
+    assert result == [("Berlin", 1, 449)]
+    assert calls == [
+        (
+            "Berlin",
+            {
+                "wikidata_qid": "Q64",
+                "geonames_id": "2950159",
+                "locations_db": workbook,
+                "concept_id": 449,
             },
         )
     ]

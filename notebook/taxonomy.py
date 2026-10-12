@@ -1,4 +1,11 @@
-"""Parse the MQDA coding taxonomy from a Mermaid mindmap file.
+"""Parse and validate the MQDA coding taxonomy from a Mermaid mindmap file.
+
+This module owns the source-taxonomy side of the import boundary. It parses
+the Mermaid tree, normalizes labels, validates the rule that a label occurs at
+most once within a top-level category, and exposes an in-memory hierarchy.
+It deliberately does not call the Memory Map API or create database records;
+that keeps taxonomy interpretation deterministic and independently testable.
+The persistence and source-label-to-ID work belongs to :mod:`taxonomy_import`.
 
 Provides :func:`load_taxonomy` which reads ``docs/mqda_coding_taxonomy.mmd``
 and returns a :class:`Taxonomy` dataclass with the following fields::
@@ -74,6 +81,32 @@ ROOT_ICONS: dict[str, str] = {
     "Positionierung": "fa-compass",
 }
 
+
+class TaxonomyError(ValueError):
+    """Raised when the source taxonomy cannot provide stable concept IDs."""
+
+
+@dataclass(frozen=True)
+class TaxonomyNode:
+    """One taxonomy occurrence with a stable, top-level-scoped identity."""
+
+    key: tuple[str, ...]
+    label: str
+    parent_key: tuple[str, ...] | None
+    top_level: str
+    icon: str = ""
+
+
+@dataclass(frozen=True)
+class TaxonomyOccurrence:
+    """One source-tree occurrence, retaining its path and parent occurrence."""
+
+    label: str
+    parent_index: int | None
+    top_level: str
+    path: tuple[str, ...]
+
+
 _ABBREV_RE = re.compile(r"^([A-Z]{1,3})\s*[–\- ]\s*(?=[A-Za-zÄÖÜäöü])")
 
 
@@ -89,15 +122,11 @@ def _extract_key(label: str) -> str:
     return m.group(1) if m else label
 
 
-def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
-    """Parse a Mermaid mindmap file into a tree.
-
-    Returns a dict mapping each node label to its list of child labels,
-    plus a special :data:`ROOT_KEY` key listing the top-level nodes.
-    """
+def parse_mermaid_occurrences(path: str | Path) -> tuple[TaxonomyOccurrence, ...]:
+    """Parse a Mermaid mindmap while preserving repeated-label occurrences."""
     lines = Path(path).read_text().splitlines()
-    children: dict[str, list[str]] = {ROOT_KEY: []}
-    stack: list[tuple[int, str]] = []  # (indent_level, label)
+    occurrences: list[TaxonomyOccurrence] = []
+    stack: list[tuple[int, int]] = []  # (indent_level, occurrence_index)
 
     for line in lines:
         stripped = line.strip()
@@ -107,7 +136,7 @@ def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
             continue  # skip the root node itself
 
         indent = len(line) - len(line.lstrip())
-        # Extract label from bracket notation ["..."] or backtick escaping
+        # Extract label from bracket notation ["..."] or backtick escaping.
         label = stripped
         m = re.search(r'\["(.+?)"\]', label)
         if m:
@@ -117,18 +146,47 @@ def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
         if not label:
             continue
 
-        # Pop stack until we find the parent at a lower indent
+        # Pop stack until we find the parent at a lower indent.
         while stack and stack[-1][0] >= indent:
             stack.pop()
 
-        if not stack:
-            children[ROOT_KEY].append(label)
+        parent_index = stack[-1][1] if stack else None
+        if parent_index is None:
+            top_level = label
+            path = (label,)
         else:
-            parent_label = stack[-1][1]
-            children.setdefault(parent_label, []).append(label)
+            parent = occurrences[parent_index]
+            top_level = parent.top_level
+            path = parent.path + (label,)
+        occurrences.append(
+            TaxonomyOccurrence(
+                label=label,
+                parent_index=parent_index,
+                top_level=top_level,
+                path=path,
+            )
+        )
+        stack.append((indent, len(occurrences) - 1))
 
-        children.setdefault(label, [])
-        stack.append((indent, label))
+    return tuple(occurrences)
+
+
+def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
+    """Parse a Mermaid mindmap file into a label-keyed compatibility tree.
+
+    The importer uses :func:`parse_mermaid_occurrences` so repeated labels in
+    different top-level categories retain distinct paths. This older dict
+    representation remains available for taxonomy helpers and compatibility.
+    """
+    occurrences = parse_mermaid_occurrences(path)
+    children: dict[str, list[str]] = {ROOT_KEY: []}
+    for occurrence in occurrences:
+        if occurrence.parent_index is None:
+            children[ROOT_KEY].append(occurrence.label)
+        else:
+            parent = occurrences[occurrence.parent_index]
+            children.setdefault(parent.label, []).append(occurrence.label)
+        children.setdefault(occurrence.label, [])
 
     return children
 
@@ -136,6 +194,12 @@ def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
 @dataclass(frozen=True)
 class Taxonomy:
     """Parsed MQDA coding taxonomy.
+
+    ``Taxonomy`` is the side-effect-free representation of the source
+    taxonomy. Its methods answer questions about hierarchy, special
+    categories, and label validity; they do not know how concepts are stored
+    remotely. :mod:`taxonomy_import` consumes this representation when it
+    needs to create records and resolve their IDs.
 
     Attributes:
         hierarchy: {node_label: [child_labels, ...]} tree structure from mindmap.
@@ -148,6 +212,7 @@ class Taxonomy:
     """
 
     hierarchy: dict[str, list[str]]
+    occurrences: tuple[TaxonomyOccurrence, ...] = ()
     categories: dict[str, dict[str, str]] = field(default_factory=dict, init=False)
     sub_categories: dict[str, dict[str, str]] = field(default_factory=dict, init=False)
     concept_to_category: dict[str, str] = field(default_factory=dict, init=False)
@@ -254,6 +319,171 @@ class Taxonomy:
         True
         """
         return self._personae_data
+
+    def validate_unique_labels(self) -> None:
+        """Reject repeated labels within one top-level taxonomy category.
+
+        Labels may intentionally occur in different top-level categories, so
+        the import identity is scoped by the root category. This check runs
+        before :mod:`taxonomy_import` can perform any API writes.
+        """
+        if self.occurrences:
+            seen_by_top_level: dict[str, dict[str, tuple[str, ...]]] = {}
+            for occurrence in self.occurrences:
+                top_level = _label_key(_extract_key(occurrence.top_level))
+                seen = seen_by_top_level.setdefault(top_level, {})
+                label_key = _label_key(occurrence.label)
+                if label_key in seen:
+                    previous = " > ".join(seen[label_key])
+                    current = " > ".join(occurrence.path)
+                    raise TaxonomyError(
+                        f"Label {occurrence.label!r} occurs twice in top-level "
+                        f"category {occurrence.top_level!r}: {previous!r} and "
+                        f"{current!r}"
+                    )
+                seen[label_key] = occurrence.path
+            return
+
+        seen_by_top_level: dict[str, dict[str, tuple[str, ...]]] = {}
+        for root_label in self.hierarchy.get(ROOT_KEY, []):
+            top_level = _label_key(_extract_key(root_label))
+            seen = seen_by_top_level.setdefault(top_level, {})
+
+            def visit(label: str, path: tuple[str, ...]) -> None:
+                clean_label = label.strip()
+                label_key = _label_key(clean_label)
+                if label_key in seen:
+                    previous = " > ".join(seen[label_key])
+                    current = " > ".join(path)
+                    raise TaxonomyError(
+                        f"Label {clean_label!r} occurs twice in top-level "
+                        f"category {root_label!r}: {previous!r} and {current!r}"
+                    )
+                seen[label_key] = path
+                for child in self.hierarchy.get(label, []):
+                    visit(child, path + (child.strip(),))
+
+            visit(root_label, (root_label.strip(),))
+
+    def concept_nodes(self) -> list[TaxonomyNode]:
+        """Return validated hierarchy nodes for :mod:`taxonomy_import`.
+
+        The returned keys identify taxonomy paths, not database primary keys;
+        assigning and reusing those IDs is the importer module's job.
+        """
+        self.validate_unique_labels()
+        nodes: list[TaxonomyNode] = []
+
+        if self.occurrences:
+            keys_by_index: dict[int, tuple[str, ...]] = {}
+            for index, occurrence in enumerate(self.occurrences):
+                top_level_key = _label_key(_extract_key(occurrence.top_level))
+                node_key = (top_level_key,) + tuple(
+                    _label_key(part) for part in occurrence.path
+                )
+                parent_key = (
+                    keys_by_index[occurrence.parent_index]
+                    if occurrence.parent_index is not None
+                    else None
+                )
+                icon = ""
+                if parent_key is None:
+                    icon = ROOT_ICONS.get(
+                        _extract_key(occurrence.label),
+                        ROOT_ICONS.get(occurrence.label, ""),
+                    )
+                nodes.append(
+                    TaxonomyNode(
+                        key=node_key,
+                        label=occurrence.label,
+                        parent_key=parent_key,
+                        top_level=occurrence.top_level,
+                        icon=icon,
+                    )
+                )
+                keys_by_index[index] = node_key
+            return nodes
+
+        def visit(
+            label: str,
+            top_level: str,
+            top_level_key: str,
+            parent_key: tuple[str, ...] | None,
+            path: tuple[str, ...],
+        ) -> None:
+            clean_label = label.strip()
+            node_key = (top_level_key,) + tuple(_label_key(part) for part in path)
+            icon = ""
+            if parent_key is None:
+                icon = ROOT_ICONS.get(
+                    _extract_key(clean_label), ROOT_ICONS.get(clean_label, "")
+                )
+            nodes.append(
+                TaxonomyNode(
+                    key=node_key,
+                    label=clean_label,
+                    parent_key=parent_key,
+                    top_level=top_level,
+                    icon=icon,
+                )
+            )
+            for child in self.hierarchy.get(label, []):
+                visit(child, top_level, top_level_key, node_key, path + (child,))
+
+        for root_label in self.hierarchy.get(ROOT_KEY, []):
+            top_level_key = _label_key(_extract_key(root_label))
+            visit(
+                root_label,
+                root_label.strip(),
+                top_level_key,
+                None,
+                (root_label.strip(),),
+            )
+        return nodes
+
+    def import_aliases(self) -> dict[str, tuple[str, ...]]:
+        """Return normalized source aliases for the import layer.
+
+        This only maps source vocabulary to taxonomy path keys. It does not
+        resolve those keys to API/database IDs; :class:`taxonomy_import.TaxonomyImport`
+        performs that second step after records exist.
+        """
+        aliases = {
+            "alte_heimat": ("alte Heimat", None),
+            "neue_heimat": ("neue Heimat", None),
+            "reise_zurueck": ("Reise zurück", None),
+            "ort_der_zeit": ("OZ – Orte der Zeit", None),
+            "erinnerungsort": ("EO – Erinnerungsorte", None),
+            "verkehrsmittel": ("VM – Verkehr & Bewegungsräume", None),
+            "birth": ("Geburt", "LL"),
+            "death": ("Tod", "LL"),
+            "arrest": ("Verhaftung", "LL"),
+            "emigration": ("Auswanderung", "LL"),
+            "immigration": ("Einwanderung (Endstation)", "LL"),
+            "marriage": ("Heirat", "LL"),
+            "residence": ("Wohnung / Wohnort", "SR"),
+            "train": ("Zug", "VM"),
+            "ship": ("Schiff", "VM"),
+            "work": ("Beruf", "LL"),
+            "english": ("Englisch", "Sprache(n)"),
+        }
+        nodes = self.concept_nodes()
+        nodes_by_label = {}
+        for node in nodes:
+            nodes_by_label.setdefault(_label_key(node.label), []).append(node)
+        result: dict[str, tuple[str, ...]] = {}
+        for source, (target, top_level) in aliases.items():
+            candidates = nodes_by_label.get(_label_key(target), [])
+            if top_level is not None:
+                candidates = [
+                    node
+                    for node in candidates
+                    if _label_key(_extract_key(node.top_level))
+                    == _label_key(top_level)
+                ]
+            if len(candidates) == 1:
+                result[_label_key(source)] = candidates[0].key
+        return result
 
     def go(self) -> list[dict[str, str]]:
         """Return leaf geographic locations with compiled hierarchical paths.
@@ -430,7 +660,15 @@ def load_taxonomy(
             Path(__file__).resolve().parent.parent / "docs" / "mqda_coding_taxonomy.mmd"
         )
     tree = parse_mermaid_mindmap(mmd_path)
-    return Taxonomy(hierarchy=tree)
+    occurrences = parse_mermaid_occurrences(mmd_path)
+    return Taxonomy(hierarchy=tree, occurrences=occurrences)
+
+
+def _label_key(label: str) -> str:
+    """Normalize labels for import-time identity matching."""
+    return " ".join(
+        label.strip().casefold().replace("-", " ").replace("_", " ").split()
+    )
 
 
 def _walk_leaves(tree: dict[str, list], node: str) -> list[str]:

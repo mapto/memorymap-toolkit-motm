@@ -30,6 +30,7 @@ README.md
 **/static
 **/notebooks
 **/backups
+**/tmp/postgres_data
 #secret_settings.py
 **/*.tar.gz
 **/logs

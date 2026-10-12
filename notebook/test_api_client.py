@@ -191,7 +191,7 @@ def test_find_person_by_name_rejects_ambiguous_candidates():
     assert api_client._find_person_by_name(persons, "Alex Smith") is None
 
 
-def test_get_person_id_creates_normalized_name_when_no_match(monkeypatch):
+def test_get_person_id_preserves_display_case_when_creating_person(monkeypatch):
     posts = []
 
     monkeypatch.setattr(api_client, "api_get", lambda endpoint, params=None: [])
@@ -212,7 +212,7 @@ def test_get_person_id_creates_normalized_name_when_no_match(monkeypatch):
     assert posts == [
         (
             "persons",
-            {"given_name": "frau doktor", "family_name": "nelken"},
+            {"given_name": "Frau Doktor", "family_name": "Nelken"},
         )
     ]
 

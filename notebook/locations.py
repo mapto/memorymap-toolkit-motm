@@ -1,10 +1,13 @@
 import logging
+import json
 import os
 import time
 import math
 import openpyxl
 import requests
 import regex as re
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from utils import extract_id_from_url, is_empty
@@ -12,10 +15,91 @@ from utils import extract_id_from_url, is_empty
 
 logger = logging.getLogger(__name__)
 
+LOCATION_TAXONOMY_SYNONYMS_PATH = (
+    Path(__file__).resolve().parents[1] / "data" / "location_taxonomy_synonyms.json"
+)
+
 
 GEONAMES_USERNAME = "mapto"
 
 domains = ["geonames.org", "wikidata.org"]
+
+NON_LOCATION_NAMES = {
+    "?",
+    "aus Gießen nach Palästina",
+    "Association of Israelis of Central European Origin (AICEO)",
+    "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
+    "Digitales Archiv vom Else-Lasker-Schüler-Gesellschaft",
+}
+
+
+def taxonomy_label_key(value):
+    """Normalize a location label for taxonomy synonym matching."""
+    return " ".join(re.sub(r"[^\w\s]", " ", str(value or "").casefold()).split())
+
+
+@lru_cache(maxsize=1)
+def location_taxonomy_synonyms():
+    """Load the shared reviewed location-to-GO synonym table."""
+    data = json.loads(LOCATION_TAXONOMY_SYNONYMS_PATH.read_text(encoding="utf-8"))
+    data["aliases"] = {
+        taxonomy_label_key(source): target
+        for source, target in data.get("aliases", {}).items()
+    }
+    data["canonical_parents"] = {
+        taxonomy_label_key(source): target
+        for source, target in data.get("canonical_parents", {}).items()
+    }
+    data["excluded_contains"] = [
+        taxonomy_label_key(value) for value in data.get("excluded_contains", [])
+    ]
+    return data
+
+
+def taxonomy_alias(value):
+    """Return the reviewed canonical GO label for a source synonym."""
+    key = taxonomy_label_key(value)
+    return location_taxonomy_synonyms()["aliases"].get(key, value)
+
+
+def taxonomy_match_excluded(value):
+    """Return whether a reviewed location is intentionally left unmapped."""
+    key = taxonomy_label_key(value)
+    return any(term in key for term in location_taxonomy_synonyms()["excluded_contains"])
+
+
+def taxonomy_location_parent(value):
+    """Return the reviewed GO parent hint for a supplemental location concept."""
+    key = taxonomy_label_key(value)
+    return location_taxonomy_synonyms().get("canonical_parents", {}).get(key)
+
+
+def canonical_location_name(value, locations_db=None):
+    """Map a source location spelling to one workbook entity when possible."""
+    cleaned = str(value or "").strip()
+    if not cleaned or cleaned in NON_LOCATION_NAMES or cleaned.startswith("http"):
+        return None
+    if locations_db is None:
+        return cleaned
+
+    candidates = [cleaned, taxonomy_alias(cleaned)]
+    while re.search(r"\([^()]*\)", candidates[-1]):
+        candidates.append(re.sub(r"\s*\([^()]*\)", "", candidates[-1]).strip())
+    for candidate in candidates:
+        key = normalize_location(candidate)
+        if key in locations_db:
+            return locations_db[key].get("name", candidate)
+
+    source_tokens = set(normalize_location(cleaned).split())
+    matching = []
+    for record in locations_db.values():
+        name = record.get("name", "")
+        tokens = set(normalize_location(name).split())
+        if tokens and tokens <= source_tokens:
+            matching.append((len(tokens), name))
+    if matching:
+        return max(matching)[1]
+    return cleaned
 
 
 def _coordinate_pair(entry: dict) -> tuple[float, float] | None:
@@ -384,19 +468,30 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
     wb = openpyxl.load_workbook(xlsx_path)
     ws = wb.active
     assert ws is not None
+    headers = {
+        str(ws.cell(1, column).value or "").strip(): column
+        for column in range(1, ws.max_column + 1)
+    }
+
+    def cell(row, field, default=""):
+        column = headers.get(field)
+        return ws.cell(row, column).value if column else default
+
     for r in range(2, ws.max_row + 1):
-        name = ws.cell(r, 1).value
+        name = cell(r, "location")
         if not name:
             continue
         key = normalize_location(name)
-        wikidata_url = str(ws.cell(r, 8).value or "").strip()
-        geonames_url = str(ws.cell(r, 7).value or "").strip()
-        extra_url = str(ws.cell(r, 9).value or "").strip()
+        wikidata_url = str(cell(r, "www.wikidata.org") or "").strip()
+        geonames_url = str(cell(r, "www.geonames.org") or "").strip()
+        extra_url = str(cell(r, "www.giessen.de") or "").strip()
         _locations_db[key] = {
             "name": str(name).strip(),
-            "lat": ws.cell(r, 4).value,
-            "long": ws.cell(r, 5).value,
-            "label": str(ws.cell(r, 6).value or "").strip(),
+            "lat": cell(r, "lat"),
+            "long": cell(r, "long"),
+            "label": str(cell(r, "label") or "").strip(),
+            "wider_region": str(cell(r, "wider_region") or "").strip(),
+            "coordinate_source": str(cell(r, "coordinate_source") or "").strip(),
             "wikidata_id": extract_id_from_url(wikidata_url),
             "geonames_id": extract_geonames_id(geonames_url),
             "wikidata_url": wikidata_url
@@ -433,6 +528,8 @@ def save_locations_db(xlsx_path=None):
         "location",
         "bag_of_words",
         "super_region",
+        "wider_region",
+        "coordinate_source",
         "lat",
         "long",
         "label",
@@ -440,23 +537,29 @@ def save_locations_db(xlsx_path=None):
         "www.wikidata.org",
         "www.giessen.de",
     ]
-    FIELD_COL = {
-        1: "name",
-        4: "lat",
-        5: "long",
-        6: "label",
-        7: "geonames_url",
-        8: "wikidata_url",
-        9: "extra_url",
-    }
-
     if os.path.exists(xlsx_path):
         wb = openpyxl.load_workbook(xlsx_path)
         ws = wb.active
         assert ws is not None
+        headers = {
+            str(ws.cell(1, column).value or "").strip(): column
+            for column in range(1, ws.max_column + 1)
+        }
+        fields = {
+            "location": "name",
+            "lat": "lat",
+            "long": "long",
+            "label": "label",
+            "wider_region": "wider_region",
+            "coordinate_source": "coordinate_source",
+            "www.geonames.org": "geonames_url",
+            "www.wikidata.org": "wikidata_url",
+            "www.giessen.de": "extra_url",
+        }
         existing_rows = {}
         for r in range(2, ws.max_row + 1):
-            name = ws.cell(r, 1).value
+            name_column = headers.get("location")
+            name = ws.cell(r, name_column).value if name_column else None
             if name:
                 existing_rows[normalize_location(name)] = r
         added = 0
@@ -464,27 +567,21 @@ def save_locations_db(xlsx_path=None):
             loc = _locations_db[key]
             if key in existing_rows:
                 row_num = existing_rows[key]
-                for col_idx, field in FIELD_COL.items():
-                    if col_idx == 1:
+                for header, field in fields.items():
+                    column = headers.get(header)
+                    if column is None or header == "location":
                         continue
-                    if is_empty(ws.cell(row_num, col_idx).value):
+                    if is_empty(ws.cell(row_num, column).value):
                         new_val = loc.get(field)
                         if not is_empty(new_val):
-                            ws.cell(row_num, col_idx).value = new_val
+                            ws.cell(row_num, column).value = new_val
             else:
-                ws.append(
-                    [
-                        loc["name"],
-                        "",
-                        "",
-                        loc.get("lat") or "",
-                        loc.get("long") or "",
-                        loc.get("label", ""),
-                        loc.get("geonames_url", ""),
-                        loc.get("wikidata_url", ""),
-                        loc.get("extra_url", ""),
-                    ]
-                )
+                values = [""] * ws.max_column
+                for header, field in fields.items():
+                    column = headers.get(header)
+                    if column is not None:
+                        values[column - 1] = loc.get(field, "") or ""
+                ws.append(values)
                 added += 1
     else:
         wb = openpyxl.Workbook()
@@ -494,19 +591,18 @@ def save_locations_db(xlsx_path=None):
         added = 0
         for key in sorted(_locations_db.keys()):
             loc = _locations_db[key]
-            ws.append(
-                [
-                    loc["name"],
-                    "",
-                    "",
-                    loc.get("lat") or "",
-                    loc.get("long") or "",
-                    loc.get("label", ""),
-                    loc.get("geonames_url", ""),
-                    loc.get("wikidata_url", ""),
-                    loc.get("extra_url", ""),
-                ]
-            )
+            values = {
+                "location": loc["name"],
+                "lat": loc.get("lat") or "",
+                "long": loc.get("long") or "",
+                "label": loc.get("label", ""),
+                "wider_region": loc.get("wider_region", ""),
+                "coordinate_source": loc.get("coordinate_source", ""),
+                "www.geonames.org": loc.get("geonames_url", ""),
+                "www.wikidata.org": loc.get("wikidata_url", ""),
+                "www.giessen.de": loc.get("extra_url", ""),
+            }
+            ws.append([values.get(header, "") for header in HEADERS])
             added += 1
     wb.save(xlsx_path)
     print(
@@ -568,77 +664,329 @@ def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
 _location_cache = {}
 
 
-def get_or_create_location(
-    name, wikidata_qid=None, geonames_id=None, *, locations_db=None, normalize_fn=None
+def _prepare_location_metadata(
+    name,
+    wikidata_qid=None,
+    geonames_id=None,
+    *,
+    locations_db=None,
+    normalize_fn=None,
 ):
-    """Create or retrieve a LocationPoint, using locations_db for coordinates."""
-    from api_client import api_get, api_patch, api_post
-
-    if not name or str(name).strip() in ("", "nan"):
-        return None
+    """Normalize source values and resolve cached/source location metadata."""
     name = str(name).strip()
-    norm = normalize_fn or normalize_location
-    key = norm(name)
-    if key in _location_cache:
-        return _location_cache[key]
+    key = (normalize_fn or normalize_location)(name)
     db_entry = dict((locations_db or {}).get(key, {}))
     db_entry.setdefault("name", name)
     if wikidata_qid and not db_entry.get("wikidata_url"):
         db_entry["wikidata_url"] = f"https://www.wikidata.org/wiki/{wikidata_qid}"
     if geonames_id and not db_entry.get("geonames_url"):
         db_entry["geonames_url"] = f"https://www.geonames.org/{geonames_id}"
-    # A complete workbook cache wins and must not trigger external lookups.
+
     coordinates = _coordinate_pair(db_entry)
     if coordinates is None:
         coordinates = resolve_location_coordinates(db_entry)
-    wid = db_entry.get("wikidata_id") or (
-        wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
+    return {
+        "name": name,
+        "key": key,
+        "coordinates": coordinates,
+        "wikidata_id": db_entry.get("wikidata_id") or (
+            wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
+        ),
+        "geonames_id": (
+            extract_geonames_id(db_entry.get("geonames_id"))
+            or extract_geonames_id(db_entry.get("geonames_url"))
+            or extract_geonames_id(geonames_id)
+        ),
+    }
+
+
+def _find_location_match(existing, key, normalize_fn):
+    """Find an existing API location with the same normalized name."""
+    return next(
+        (location for location in existing if normalize_fn(location["current_name"]) == key),
+        None,
     )
-    gid = (
-        extract_geonames_id(db_entry.get("geonames_id"))
-        or extract_geonames_id(db_entry.get("geonames_url"))
-        or extract_geonames_id(geonames_id)
-    )
-    try:
-        existing = api_get("locations", params={"search": name})
-    except Exception:
-        logger.exception("Location API lookup failed for %s", name)
+
+
+def _find_concept_location(api_get, concept_id, exclude_id=None):
+    """Find the location already owning a unique taxonomy concept, if any."""
+    if not concept_id:
         return None
-    match = next((loc for loc in existing if norm(loc["current_name"]) == key), None)
+    return next(
+        (
+            location
+            for location in api_get("locations")
+            if location.get("concept") == concept_id
+            and location.get("id") != exclude_id
+        ),
+        None,
+    )
+
+
+def _reconcile_concept_owner(api_get, api_patch, match, linked, concept_id, key, norm):
+    """Keep the exact canonical name as the owner of a unique concept."""
+    if linked is None:
+        return match
+    if match is not None and norm(match["current_name"]) == key:
+        if linked["id"] != match["id"]:
+            api_patch("locations", linked["id"], {"concept": None})
+        api_patch("locations", match["id"], {"concept": concept_id})
+        return match
+    return linked
+
+
+def _existing_location_updates(metadata, match, concept_id):
+    """Build only missing metadata updates for an existing API location."""
+    updates = {}
+    if metadata["coordinates"] is not None and not match.get("location"):
+        updates["latitude"], updates["longitude"] = metadata["coordinates"]
+    if metadata["wikidata_id"] and not match.get("wikidata_id"):
+        updates["wikidata_id"] = metadata["wikidata_id"]
+    if metadata["geonames_id"] and not match.get("geonames_id"):
+        updates["geonames_id"] = metadata["geonames_id"]
+    if concept_id and not match.get("concept"):
+        updates["concept"] = concept_id
+    return updates
+
+
+def _new_location_payload(metadata, concept_id):
+    """Build the API payload for a new location point."""
+    payload: dict[str, Any] = {"current_name": metadata["name"]}
+    if metadata["coordinates"] is not None:
+        payload["latitude"], payload["longitude"] = metadata["coordinates"]
+    if metadata["wikidata_id"]:
+        payload["wikidata_id"] = metadata["wikidata_id"]
+    if metadata["geonames_id"]:
+        payload["geonames_id"] = metadata["geonames_id"]
+    if concept_id:
+        payload["concept"] = concept_id
+    return payload
+
+
+def get_or_create_location(
+    name,
+    wikidata_qid=None,
+    geonames_id=None,
+    *,
+    locations_db=None,
+    normalize_fn=None,
+    concept_id=None,
+):
+    """Create or retrieve a LocationPoint through focused import helpers."""
+    from api_client import api_get, api_patch, api_post
+
+    if not name or str(name).strip() in ("", "nan"):
+        return None
+    canonical_name = canonical_location_name(name, locations_db)
+    if canonical_name is None:
+        return None
+    name = canonical_name
+    norm = normalize_fn or normalize_location
+    metadata = _prepare_location_metadata(
+        name,
+        wikidata_qid,
+        geonames_id,
+        locations_db=locations_db,
+        normalize_fn=normalize_fn,
+    )
+    key = metadata["key"] if normalize_fn is None else norm(metadata["name"])
+    if key in _location_cache:
+        cached_id = _location_cache[key]
+        if not concept_id:
+            return cached_id
+        try:
+            cached = api_get(f"locations/{cached_id}")
+        except Exception:
+            cached = None
+        if cached and cached.get("concept") == concept_id:
+            return cached_id
+        linked = _find_concept_location(api_get, concept_id, cached_id)
+        if linked:
+            owner = _reconcile_concept_owner(
+                api_get,
+                api_patch,
+                cached,
+                linked,
+                concept_id,
+                key,
+                norm,
+            )
+            _location_cache[key] = owner["id"]
+            return owner["id"]
+        if cached and not cached.get("concept"):
+            api_patch("locations", cached_id, {"concept": concept_id})
+        return cached_id
+    try:
+        existing = api_get("locations", params={"search": metadata["name"]})
+    except Exception:
+        logger.exception("Location API lookup failed for %s", metadata["name"])
+        return None
+    match = _find_location_match(existing, key, norm)
+    linked = None
+    if concept_id and (match is None or not match.get("concept")):
+        linked = _find_concept_location(
+            api_get,
+            concept_id,
+            match["id"] if match else None,
+        )
+    if linked:
+        owner = _reconcile_concept_owner(
+            api_get,
+            api_patch,
+            match,
+            linked,
+            concept_id,
+            key,
+            norm,
+        )
+        _location_cache[key] = owner["id"]
+        return owner["id"]
     if match:
-        updates = {}
-        if coordinates is not None and not match.get("location"):
-            updates["latitude"], updates["longitude"] = coordinates
-        if wid and not match.get("wikidata_id"):
-            updates["wikidata_id"] = wid
-        if gid and not match.get("geonames_id"):
-            updates["geonames_id"] = gid
+        updates = _existing_location_updates(metadata, match, concept_id)
         if updates:
             try:
                 api_patch("locations", match["id"], updates)
             except Exception:
                 logger.exception(
-                    "Location API update failed for %s (id=%s)", name, match["id"]
+                    "Location API update failed for %s (id=%s)",
+                    metadata["name"],
+                    match["id"],
                 )
         _location_cache[key] = match["id"]
         return match["id"]
-    payload: dict[str, Any] = {"current_name": name}
-    if coordinates is not None:
-        payload["latitude"], payload["longitude"] = coordinates
-    if wid:
-        payload["wikidata_id"] = wid
-    if gid:
-        payload["geonames_id"] = gid
+    payload = _new_location_payload(metadata, concept_id)
     try:
         created = api_post("locations", payload, fail_on_error=False)
     except Exception:
-        logger.exception("Location API create failed for %s", name)
+        logger.exception("Location API create failed for %s", metadata["name"])
         return None
     if created is None:
-        logger.error("Skipping location %r because the API rejected it", name)
+        logger.error(
+            "Skipping location %r because the API rejected it", metadata["name"]
+        )
         return None
     _location_cache[key] = created["id"]
     return created["id"]
+
+
+def rebuild_location_workbook(input_path=None, output_path=None, data_root=None, taxonomy_path=None, **kwargs):
+    """Rebuild the shared location workbook for the chronotopi import.
+
+    The source-merging and geospatial containment implementation lives in
+    ``rebuild_locations`` so it remains independently testable. This public
+    wrapper makes that implementation part of the normal locations API and
+    gives the chronotopi notebook one authoritative import entry point.
+    """
+    from pathlib import Path
+    from rebuild_locations import rebuild_workbook
+
+    arguments = dict(kwargs)
+    if input_path is not None:
+        arguments["input_path"] = Path(input_path)
+    if output_path is not None:
+        arguments["output_path"] = Path(output_path)
+    if data_root is not None:
+        arguments["data_root"] = Path(data_root)
+    if taxonomy_path is not None:
+        arguments["taxonomy_path"] = Path(taxonomy_path)
+    return rebuild_workbook(**arguments)
+
+
+def sync_location_concepts(resolve_location, *, api_get=None, api_patch=None):
+    """Attach every resolvable imported location point to its GO concept.
+
+    This runs after taxonomy creation so metadata points created earlier and
+    chronotopi points created later share the same canonical concept IDs.
+    Existing concepts are preserved; reviewed exclusions are left untouched.
+    """
+    if api_get is None or api_patch is None:
+        from api_client import api_get as default_get, api_patch as default_patch
+
+        api_get = api_get or default_get
+        api_patch = api_patch or default_patch
+
+    matched = []
+    unmapped = []
+    locations = api_get("locations")
+    concept_owners = {
+        location["concept"]: location["id"]
+        for location in locations
+        if location.get("concept")
+    }
+    for location in locations:
+        if location.get("concept"):
+            continue
+        try:
+            concept_id = resolve_location(
+                location.get("current_name", ""),
+                allow_aliases=False,
+                allow_embedded=False,
+            )
+        except TypeError:
+            concept_id = resolve_location(location.get("current_name", ""))
+        if concept_id is None:
+            unmapped.append(location.get("current_name", ""))
+            continue
+        if concept_id in concept_owners:
+            unmapped.append(location.get("current_name", ""))
+            continue
+        api_patch("locations", location["id"], {"concept": concept_id})
+        concept_owners[concept_id] = location["id"]
+        matched.append((location["id"], concept_id))
+    return {"matched": matched, "unmapped": unmapped}
+
+
+def seed_location_entities(locations_db, resolve_location=None):
+    """Ensure every rebuilt workbook row has one imported API entity.
+
+    Metadata points are created before chronotopi runs, so this step reuses
+    exact metadata names, creates missing canonical workbook entities, and
+    attaches the shared GO concept whenever the taxonomy resolves the name.
+    """
+    from api_client import api_get, api_patch
+
+    created_or_reused = []
+    concept_owners = {
+        location["concept"]: location["id"]
+        for location in api_get("locations")
+        if location.get("concept")
+    }
+    for key, entry in sorted(locations_db.items()):
+        name = entry.get("name")
+        if not name:
+            continue
+        if resolve_location:
+            try:
+                concept_id = resolve_location(
+                    name,
+                    allow_aliases=False,
+                    allow_embedded=False,
+                )
+            except TypeError:
+                concept_id = resolve_location(name)
+        else:
+            concept_id = None
+        location_id = get_or_create_location(
+            name,
+            wikidata_qid=entry.get("wikidata_id"),
+            geonames_id=entry.get("geonames_id"),
+            locations_db=locations_db,
+            concept_id=concept_id,
+        )
+        if location_id is not None:
+            if concept_id:
+                owner_id = concept_owners.get(concept_id)
+                if owner_id and owner_id != location_id:
+                    api_patch("locations", owner_id, {"concept": None})
+                api_patch("locations", location_id, {"concept": concept_id})
+                concept_owners[concept_id] = location_id
+                refreshed = api_get(f"locations/{location_id}")
+                if refreshed.get("concept") != concept_id:
+                    raise RuntimeError(
+                        f"Location {name!r} did not retain concept {concept_id}"
+                    )
+            created_or_reused.append((name, location_id, concept_id))
+    return created_or_reused
 
 
 def link_locations_to_regions(locations_db):

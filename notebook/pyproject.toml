@@ -28,4 +28,5 @@ dependencies = [
     "papermill>=2.7.0",
     "psycopg2-binary>=2.9.9",
     "docpie>=0.4.4",
+    "Unidecode>=1.3.8",
 ]

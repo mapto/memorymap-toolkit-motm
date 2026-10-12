@@ -193,11 +193,19 @@
 						{% endif %}
 					</ul>
 					<form class="form-inline my-2 my-lg-0" style="position:relative;">
-						<input class="form-control mr-sm-2" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}" id="map_search">
+						<input class="form-control mr-sm-2 pr-5" placeholder="{% trans 'Search' %}" aria-label="{% trans 'Search' %}" id="map_search" autocomplete="off" data-search-url="{% url 'global_search' %}">
+						<span id="map-search-loading" class="text-muted" role="status" aria-live="polite" aria-label="{% trans 'Searching' %}" aria-hidden="true"
+							style="display:none;position:absolute;right:1rem;top:50%;transform:translateY(-50%);pointer-events:none;">
+							<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+						</span>
 						<div id="person-search-results" class="list-group"
 							style="position:absolute;top:100%;left:0;right:0;
 								z-index:1050;max-height:300px;
-								overflow-y:auto;display:none;"></div>
+								overflow-y:auto;display:none;"
+							data-label-people='{% trans "People" %}'
+							data-label-places='{% trans "Places" %}'
+							data-label-events='{% trans "Events" %}'
+							data-label-concepts='{% trans "Concepts" %}'></div>
 					</form>
 					<div class="form-inline my-2 my-lg-0 mr-2">
 						{% get_current_language as CURRENT_LANGUAGE %}
@@ -257,103 +265,13 @@
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 		<script src="{% static 'underscore/underscore-min.js' %}"></script>
+		<script src="{% static 'js/mapSelection.js' %}"></script>
+		<script src="{% static 'js/globalSearch.js' %}"></script>
 		{% block scripts %}
 		{% endblock %}
 
 		<script>
 		$(function () { $('[data-toggle="tooltip"]').tooltip(); });
-		</script>
-
-		<script>
-		(function() {
-			var searchInput = document.getElementById('map_search');
-			var resultsBox = document.getElementById('person-search-results');
-			var debounceTimer;
-			if (!searchInput || !resultsBox) return;
-
-			searchInput.addEventListener('input', function() {
-				clearTimeout(debounceTimer);
-				var q = this.value.trim();
-				if (q.length < 2) { resultsBox.style.display = 'none'; return; }
-				debounceTimer = setTimeout(function() {
-					Promise.all([
-						fetch('{% url "person_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
-						fetch('{% url "extraction_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
-						fetch('{% url "concept_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); }),
-						fetch('{% url "event_search" %}?q=' + encodeURIComponent(q)).then(function(r) { return r.json(); })
-					]).then(function(results) {
-						var persons = results[0];
-						var extractions = results[1];
-						var concepts = results[2];
-						var events = results[3];
-						resultsBox.innerHTML = '';
-						if (persons.length === 0 && extractions.length === 0 && concepts.length === 0 && events.length === 0) {
-							resultsBox.style.display = 'none';
-							return;
-						}
-						if (persons.length > 0) {
-							var h = document.createElement('div');
-							h.className = 'list-group-item list-group-item-secondary small';
-							h.textContent = '{% trans "People" %}';
-							resultsBox.appendChild(h);
-							persons.forEach(function(p) {
-								var a = document.createElement('a');
-								a.className = 'list-group-item list-group-item-action';
-								a.href = '{% url "person_list" %}' + p.id + '/';
-								a.textContent = p.name;
-								resultsBox.appendChild(a);
-							});
-						}
-						if (extractions.length > 0) {
-							var h2 = document.createElement('div');
-							h2.className = 'list-group-item list-group-item-secondary small';
-							h2.textContent = '{% trans "Quotes" %}';
-							resultsBox.appendChild(h2);
-							extractions.forEach(function(e) {
-								var a = document.createElement('a');
-								a.className = 'list-group-item list-group-item-action';
-								a.href = '{% url "extraction_list" %}' + e.id + '/';
-								a.innerHTML = '<strong>' + e.label + '</strong> ' + (e.quote || '');
-								resultsBox.appendChild(a);
-							});
-						}
-						if (concepts.length > 0) {
-							var h3 = document.createElement('div');
-							h3.className = 'list-group-item list-group-item-secondary small';
-							h3.textContent = '{% trans "Concepts" %}';
-							resultsBox.appendChild(h3);
-							concepts.forEach(function(c) {
-								var a = document.createElement('a');
-								a.className = 'list-group-item list-group-item-action';
-								a.href = '{% url "concept_list" %}' + c.id + '/';
-								a.textContent = c.label;
-								resultsBox.appendChild(a);
-							});
-						}
-						if (events.length > 0) {
-							var h4 = document.createElement('div');
-							h4.className = 'list-group-item list-group-item-secondary small';
-							h4.textContent = '{% trans "Events" %}';
-							resultsBox.appendChild(h4);
-							events.forEach(function(ev) {
-								var a = document.createElement('a');
-								a.className = 'list-group-item list-group-item-action';
-								a.href = '{% url "event_list" %}' + ev.id + '/';
-								a.textContent = ev.label;
-								resultsBox.appendChild(a);
-							});
-						}
-						resultsBox.style.display = 'block';
-					});
-				}, 250);
-			});
-
-			document.addEventListener('click', function(e) {
-				if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-					resultsBox.style.display = 'none';
-				}
-			});
-		})();
 		</script>
 
 		{% analytical_body_bottom %}

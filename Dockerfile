@@ -33,5 +33,8 @@ RUN mkdir -p static media logs backups
 # Copy secret settings
 RUN cp memorymap_toolkit/settings/secret_settings_template.py memorymap_toolkit/settings/secret_settings.py
 
+# Compile gettext catalogs, including the data-specific concept and event domains.
+RUN find locale -type f -name '*.po' -exec sh -c 'msgfmt -o "${1%.po}.mo" "$1"' _ {} \;
+
 # Start command
 CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]

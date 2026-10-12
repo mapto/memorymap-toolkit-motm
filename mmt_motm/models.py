@@ -4,6 +4,12 @@ from django.utils.translation import gettext_lazy as _
 from parler.models import TranslatableModel, TranslatedFields
 
 from .language_names import language_name
+from memorymap_toolkit.catalogs import (
+    localized_concept_label,
+    localized_event_description,
+    localized_person_description,
+    localized_person_field,
+)
 
 
 class Timespan(models.Model):
@@ -230,6 +236,10 @@ class Event(TranslatableModel):
         cfg = self.LIFECYCLE_CONFIG.get(self.lifecycle, self.LIFECYCLE_CONFIG[self.LIFECYCLE_DEFAULT])
         return cfg["color"]
 
+    @property
+    def localized_description(self):
+        return localized_event_description(self)
+
     def __str__(self):
         if self.timespan:
             return f"Event {self.timespan}"
@@ -256,6 +266,11 @@ class Person(TranslatableModel):
     )
 
     gender = models.CharField(max_length=50, blank=True)
+
+    education = models.TextField(blank=True, default="")
+    occupation_at_emigration = models.TextField(blank=True, default="")
+    occupation_at_source = models.TextField(blank=True, default="")
+    residence_at_source = models.TextField(blank=True, default="")
 
     # Description or biography
     translations = TranslatedFields(
@@ -289,6 +304,22 @@ class Person(TranslatableModel):
 
     def __str__(self):
         return f"{self.given_name} {self.family_name}"
+
+    @property
+    def localized_description(self):
+        return localized_person_description(self)
+
+    @property
+    def localized_education(self):
+        return localized_person_field(self, "education")
+
+    @property
+    def localized_occupation_at_emigration(self):
+        return localized_person_field(self, "occupation_at_emigration")
+
+    @property
+    def localized_occupation_at_source(self):
+        return localized_person_field(self, "occupation_at_source")
 
 # This class contains all RelationshipType
 class RelationshipType(TranslatableModel):
@@ -468,6 +499,10 @@ class Concept(TranslatableModel):
 
     def __str__(self):
         return f"Concept {self.label}"
+
+    @property
+    def localized_label(self):
+        return localized_concept_label(self)
 
     def get_root(self):
         """Walk up the parent chain to find the root category."""

@@ -562,4 +562,51 @@ article img {
     background: #ccc;
     border-radius: 2px;
 }
+
+/* Main-map search selections */
+.map-selection-legend {
+	position: absolute;
+	top: 4.5rem;
+	left: 10px;
+	z-index: 10;
+	max-width: 18rem;
+	padding: 8px 12px;
+	background: rgba(255, 255, 255, 0.92);
+	border-radius: 4px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+	font-size: 12px;
+}
+
+.map-selection-legend-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: 4px;
+}
+
+.map-selection-remove {
+	padding: 0 2px;
+	border: 0;
+	background: transparent;
+	color: #555;
+	cursor: pointer;
+}
+
+.map-selection-remove:hover,
+.map-selection-remove:focus {
+	color: #111;
+}
+
+.search-suggestion {
+	gap: 4px;
+}
+
+.search-suggestion-toggle {
+	flex: 0 0 auto;
+}
+
+.search-suggestion a {
+	color: inherit;
+	text-decoration: none;
 }

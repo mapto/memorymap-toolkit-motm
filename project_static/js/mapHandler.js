@@ -36,7 +36,6 @@ let map = new mapboxgl.Map({
     container: 'map',
     center: MmtMap.settings.mapCenter,
     zoom: MmtMap.settings.zoom,
-    minZoom: MmtMap.settings.minZoom,
     maxZoom: MmtMap.settings.maxZoom,
     attributionControl: true,
     logoPosition: 'top-left',
@@ -46,6 +45,26 @@ let map = new mapboxgl.Map({
     bearing: MmtMap.settings.bearing,
     antialias: true
 });
+
+window.MmtMapState = {
+    map: map,
+    yearFilter: null,
+    selectionFilter: null,
+    applyEventFilter: function() {
+        try {
+            if (!map.getLayer('event_lines')) return;
+        } catch (error) {
+            return;
+        }
+        let filters = [];
+        if (this.yearFilter) filters.push(this.yearFilter);
+        if (this.selectionFilter) filters.push(this.selectionFilter);
+        let filter = null;
+        if (filters.length === 1) filter = filters[0];
+        if (filters.length > 1) filter = ['all'].concat(filters);
+        map.setFilter('event_lines', filter);
+    }
+};
 
 if (MmtMap.settings.maxBounds) {
     map.setMaxBounds(MmtMap.settings.maxBounds);
@@ -374,6 +393,8 @@ map.on('load', function() {
         }
     });
 
+    if (window.MmtMapSelection) window.MmtMapSelection.refresh();
+
     // Year range slider logic
     var minSlider = document.getElementById('year-range-min');
     var maxSlider = document.getElementById('year-range-max');
@@ -386,11 +407,12 @@ map.on('load', function() {
         if (lo > hi) { var tmp = lo; lo = hi; hi = tmp; }
         minLabel.textContent = lo;
         maxLabel.textContent = hi;
-        map.setFilter('event_lines', [
+        window.MmtMapState.yearFilter = [
             'all',
             ['>=', ['get', 'year'], lo],
             ['<=', ['get', 'year'], hi]
-        ]);
+        ];
+        window.MmtMapState.applyEventFilter();
     }
 
     if (minSlider && maxSlider) {
@@ -527,7 +549,7 @@ map.on('mousemove', 'event_lines', function(e) {
     map.getCanvas().style.cursor = 'pointer';
     var props = e.features[0].properties;
     
-    var description = props.description || '';
+    var description = (MmtMap.settings.eventDescriptions && MmtMap.settings.eventDescriptions[props.id]) || props.description || '';
     var personName = props.person_name || '';
     var year = props.year;
     var icon = props.icon || '';

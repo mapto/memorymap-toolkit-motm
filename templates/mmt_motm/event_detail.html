@@ -1,12 +1,12 @@
 {% extends "mmt_map/base.html" %}
-{% load i18n %}
+{% load i18n l10n %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-0">
     <div class="row no-gutters">
     <div class="col-md-6 px-3" style="max-height: calc(100vh - 56px); overflow-y: auto;">
     <p><a href="javascript:history.back()">&larr; {% trans "Back" %}</a></p>
-    <h1>{{ event.description|truncatewords:10 }}</h1>
+    <h1>{{ event.localized_description|truncatewords:10 }}</h1>
 
     {% if event.persons.exists %}
     <h2>{% trans "People:" %}
@@ -112,20 +112,20 @@
 (function() {
 
     {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location %}
-    var startCoord = [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}];
-    var endCoord = [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}];
+    var startCoord = [{{ event.start_location.location.x|unlocalize }}, {{ event.start_location.location.y|unlocalize }}];
+    var endCoord = [{{ event.end_location.location.x|unlocalize }}, {{ event.end_location.location.y|unlocalize }}];
     var startName = "{{ event.start_location.current_name|escapejs }}";
     var endName = "{{ event.end_location.current_name|escapejs }}";
     var startUrl = "{% url 'location_detail' event.start_location.pk %}";
     var endUrl = "{% url 'location_detail' event.end_location.pk %}";
     var hasLine = true;
     {% elif event.end_location and event.end_location.location %}
-    var endCoord = [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}];
+    var endCoord = [{{ event.end_location.location.x|unlocalize }}, {{ event.end_location.location.y|unlocalize }}];
     var endName = "{{ event.end_location.current_name|escapejs }}";
     var endUrl = "{% url 'location_detail' event.end_location.pk %}";
     var hasLine = false;
     {% elif event.start_location and event.start_location.location %}
-    var endCoord = [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}];
+    var endCoord = [{{ event.start_location.location.x|unlocalize }}, {{ event.start_location.location.y|unlocalize }}];
     var endName = "{{ event.start_location.current_name|escapejs }}";
     var endUrl = "{% url 'location_detail' event.start_location.pk %}";
     var hasLine = false;

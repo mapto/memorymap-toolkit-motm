@@ -22,6 +22,10 @@ from api_client import (
     upsert_interviews,
 )
 from utils import is_empty
+from locations import (
+    get_or_create_location as get_or_create_location_point,
+    load_locations_db,
+)
 from timespan import parse_date, parse_date_range
 
 
@@ -69,6 +73,14 @@ _timespan_cache: dict = {}
 _person_cache: dict = {}
 _relationship_type_cache: dict = {}
 _relationship_cache: dict = {}
+_location_workbook_cache = None
+
+PERSON_METADATA_FIELDS = (
+    "education",
+    "occupation_at_emigration",
+    "occupation_at_source",
+    "residence_at_source",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +103,11 @@ def clean_value(value):
     if is_empty(value):
         return None
     return value
+
+
+def clean_metadata_value(value):
+    value = clean_value(value)
+    return " ".join(value.split()) if value else None
 
 
 def parse_coordinates(text):
@@ -176,21 +193,30 @@ def _parse_identifier(field, value_str):
 
 
 def _update_birth_place(birth_place, value_str, extra_str):
-    birth_place["name"] = value_str
-    if not extra_str:
-        return
+    metadata = " | ".join(value for value in (value_str, extra_str) if value)
+    name_match = re.search(
+        r"(?:^|\||\n)\s*Ortsname\s*:\s*([^|\r\n]+)",
+        metadata,
+        flags=re.IGNORECASE,
+    )
+    birth_place["name"] = (
+        name_match.group(1).strip()
+        if name_match
+        else value_str.splitlines()[0].strip()
+    )
 
-    for part in (p.strip() for p in extra_str.split("|") if p.strip()):
-        if part.startswith("Land:"):
-            birth_place["regions"].append(part.split(":", 1)[1].strip())
-        elif part.startswith("Region:"):
-            birth_place["regions"].append(part.split(":", 1)[1].strip())
-        elif part.startswith("Kreis:"):
-            birth_place["regions"].append(part.split(":", 1)[1].strip())
-        elif part.startswith("Koordinaten:"):
-            birth_place["coordinates"] = parse_coordinates(part)
-        elif part.startswith("Wikidata:"):
-            birth_place["wikidata_id"] = part.split(":", 1)[1].strip()
+    for part in (p.strip() for p in re.split(r"\||\r?\n", metadata) if p.strip()):
+        key, separator, detail = part.partition(":")
+        if not separator:
+            continue
+        normalized_key = key.strip().casefold()
+        detail = detail.strip()
+        if normalized_key in {"land", "region", "kreis"}:
+            birth_place["regions"].append(detail)
+        elif "koordinat" in normalized_key:
+            birth_place["coordinates"] = parse_coordinates(detail)
+        elif normalized_key in {"wikidata", "wikidata id"}:
+            birth_place["wikidata_id"] = detail
 
 
 def _parse_person_field(person, birth_place, field, value_str, extra_str):
@@ -208,6 +234,14 @@ def _parse_person_field(person, birth_place, field, value_str, extra_str):
         person["birth_date"] = parse_date(value_str) if value_str else None
     elif field in {"Verfolgtengruppe NS", "Verfolgtengruppe(n) NS"}:
         person["attributes"]["ns_persecution_group"] = value_str
+    elif field == "Schulbildung / Abschluss":
+        person["education"] = clean_metadata_value(value_str)
+    elif field == "Beruf (zum Zeitpunkt der Emigration)":
+        person["occupation_at_emigration"] = clean_metadata_value(value_str)
+    elif field == "Beruf (zum Zeitpunkt der Quelle)":
+        person["occupation_at_source"] = clean_metadata_value(value_str)
+    elif field == "Wohnort zum Zeitpunkt der Quelle":
+        person["residence_at_source"] = clean_metadata_value(value_str)
     elif field == "Geburtsort":
         _update_birth_place(birth_place, value_str, extra_str)
 
@@ -260,6 +294,10 @@ def _parse_person_sheet(rows):
         "previous_family_name": None,
         "gender": None,
         "birth_date": None,
+        "education": None,
+        "occupation_at_emigration": None,
+        "occupation_at_source": None,
+        "residence_at_source": None,
         "attributes": {},
     }
     birth_place = {
@@ -397,34 +435,20 @@ def get_or_create_location(bp):
     """Create or retrieve a LocationPoint from a birth_place dict."""
     if is_empty(bp.get("name")):
         return None
-
-    existing = api_get("locations", params={"search": bp["name"]})
-    match = next((loc for loc in existing if loc["current_name"] == bp["name"]), None)
-
-    if match:
-        loc_id = match["id"]
-        if not match.get("region"):
-            region_id = get_or_create_region_hierarchy(bp.get("regions"))
-            if region_id:
-                SESSION.patch(
-                    f"{BASE_URL}/locations/{loc_id}/",
-                    json={"region": region_id},
-                )
-        return loc_id
-
-    payload = {"current_name": bp["name"]}
-    if bp.get("wikidata_id"):
-        payload["wikidata_id"] = bp["wikidata_id"]
-    if bp.get("coordinates"):
-        payload["latitude"] = bp["coordinates"]["lat"]
-        payload["longitude"] = bp["coordinates"]["lon"]
-
+    global _location_workbook_cache
+    if _location_workbook_cache is None:
+        _location_workbook_cache = load_locations_db(enrich_coordinates=False)
+    loc_id = get_or_create_location_point(
+        bp["name"],
+        wikidata_qid=bp.get("wikidata_id"),
+        locations_db=_location_workbook_cache,
+    )
+    if loc_id is None:
+        return None
     region_id = get_or_create_region_hierarchy(bp.get("regions"))
     if region_id:
-        payload["region"] = region_id
-
-    created = api_post("locations", payload)
-    return created["id"]
+        api_patch("locations", loc_id, {"region": region_id})
+    return loc_id
 
 
 # ---------------------------------------------------------------------------
@@ -475,30 +499,57 @@ def get_or_create_person(data, identifier=None):
     if is_empty(given_name) and is_empty(family_name):
         return None
 
+    def metadata_payload():
+        payload = {
+            field: data[field]
+            for field in PERSON_METADATA_FIELDS
+            if not is_empty(data.get(field))
+        }
+        prosecuted_group = data.get("attributes", {}).get("ns_persecution_group")
+        if not is_empty(prosecuted_group):
+            payload["description"] = prosecuted_group
+        return payload
+
+    def update_existing(existing):
+        patch = metadata_payload()
+        if existing:
+            if data.get("previous_given_name") and not existing.get("previous_given_name"):
+                patch["previous_given_name"] = data["previous_given_name"]
+            if data.get("previous_family_name") and not existing.get("previous_family_name"):
+                patch["previous_family_name"] = data["previous_family_name"]
+        if patch:
+            api_patch("persons", existing["id"], patch)
+
     # Match on identifier
     if identifier:
         existing = api_get("persons", params={"search": identifier})
         match = next((p for p in existing if p.get("identifier") == identifier), None)
+        if not match and not is_empty(given_name) and not is_empty(family_name):
+            existing = api_get("persons", params={"search": family_name})
+            match = next(
+                (
+                    p
+                    for p in existing
+                    if not p.get("identifier")
+                    and p.get("given_name", "").casefold() == given_name.casefold()
+                    and p.get("family_name", "").casefold() == family_name.casefold()
+                ),
+                None,
+            )
+            if match:
+                api_patch("persons", match["id"], {"identifier": identifier})
         if match:
             key = (match["given_name"].lower(), match["family_name"].lower())
             _person_cache[key] = match["id"]
             _maybe_update_lifespan(match["id"], data)
-            # Update previous names if available and not already set
-            patch = {}
-            if data.get("previous_given_name") and not match.get("previous_given_name"):
-                patch["previous_given_name"] = data["previous_given_name"]
-            if data.get("previous_family_name") and not match.get(
-                "previous_family_name"
-            ):
-                patch["previous_family_name"] = data["previous_family_name"]
-            if patch:
-                api_patch("persons", match["id"], patch)
+            update_existing(match)
             return match["id"]
         payload = {
             "identifier": identifier,
             "given_name": given_name or "",
             "family_name": family_name or "",
         }
+        payload.update(metadata_payload())
         lifespan_id = get_or_create_timespan(
             start=data.get("birth_date"),
             end=data.get("death_date"),
@@ -523,6 +574,7 @@ def get_or_create_person(data, identifier=None):
     if not is_empty(given_name) and not is_empty(family_name):
         if key in _person_cache:
             _maybe_update_lifespan(_person_cache[key], data)
+            api_patch("persons", _person_cache[key], metadata_payload())
             return _person_cache[key]
 
     # Match on name (case-insensitive) via API
@@ -535,12 +587,14 @@ def get_or_create_person(data, identifier=None):
             ):
                 _person_cache[key] = p["id"]
                 _maybe_update_lifespan(p["id"], data)
+                update_existing(p)
                 return p["id"]
 
     payload = {
         "given_name": given_name or "",
         "family_name": family_name or "",
     }
+    payload.update(metadata_payload())
     lifespan_id = get_or_create_timespan(
         start=data.get("birth_date"),
         end=data.get("death_date"),
@@ -590,7 +644,7 @@ def create_interview(person_id, data):
 
     interview_ids, errors = upsert_interviews([payload])
     for error in errors:
-        print(f"\u274c {error}")
+        raise RuntimeError(error)
     return interview_ids.get(payload["archive_id"])
 
 

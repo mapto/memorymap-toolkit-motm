@@ -718,3 +718,19 @@ msgstr ""
 msgid "See all"
 msgstr ""
 
+#: templates/mmt_map/index.html
+msgid "Selected map items"
+msgstr "Selected map items"
+
+msgid "Education / qualification:"
+msgstr "Education / qualification:"
+
+msgid "Occupation at emigration:"
+msgstr "Occupation at emigration:"
+
+msgid "Occupation at source:"
+msgstr "Occupation at source:"
+
+msgid "Residence at source:"
+msgstr "Residence at source:"
+

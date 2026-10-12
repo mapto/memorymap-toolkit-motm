@@ -18,6 +18,7 @@ from constance import config
 # Memory Map Toolkit
 from .models import Theme, TagList, MapLayer
 from mmt_motm.models import Event
+from memorymap_toolkit.catalogs import localized_event_description
 from .vector_tile_helpers import tileIsValid, tileToEnvelope
 
 
@@ -55,6 +56,10 @@ def index(request):
 		'min_zoom': json.dumps(float(config.MIN_ZOOM)),
 		'pitch': json.dumps(float(config.PITCH)),
 		'bearing': json.dumps(float(config.BEARING)),
+		'event_descriptions': json.dumps({
+			event.pk: localized_event_description(event)
+			for event in Event.objects.all()
+		}, ensure_ascii=False),
 	}
 	
 	return render(request, 'mmt_map/index.html', context)

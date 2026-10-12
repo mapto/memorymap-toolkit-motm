@@ -718,3 +718,19 @@ msgstr "Vista mappa"
 msgid "See all"
 msgstr "Vedi tutte"
 
+#: templates/mmt_map/index.html
+msgid "Selected map items"
+msgstr "Elementi selezionati sulla mappa"
+
+msgid "Education / qualification:"
+msgstr "Istruzione / titolo:"
+
+msgid "Occupation at emigration:"
+msgstr "Professione al momento dell'emigrazione:"
+
+msgid "Occupation at source:"
+msgstr "Professione al momento della fonte:"
+
+msgid "Residence at source:"
+msgstr "Luogo di residenza al momento della fonte:"
+

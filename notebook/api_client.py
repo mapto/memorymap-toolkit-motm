@@ -172,55 +172,54 @@ def api_bulk_create(endpoint, items):
 _concept_cache = {}
 
 
-def get_or_create_concept(label):
+def get_or_create_concept(label, parent_id=None, icon=None, identity=None):
     """Get or create a concept.  If *label* contains ' > ' it is treated as a
     hierarchy, e.g. "Gegenstand > Grammophon" creates parent "Gegenstand" and
-    child "Grammophon" with the parent relationship set."""
+    child "Grammophon" with the parent relationship set.
+
+    ``parent_id`` and ``identity`` let taxonomy imports distinguish equal
+    labels in different top-level categories while reusing one ID for a
+    repeated label within its category.
+    """
     label = label.strip()
     if not label or label in ("nan", "None"):
         return None
 
     # Handle hierarchical labels like "Parent > Child"
-    if " > " in label:
+    if " > " in label and parent_id is None:
         parts = [p.strip() for p in label.split(" > ", 1)]
         parent_id = get_or_create_concept(parts[0])
-        child_label = parts[1]
-        child_key = child_label.lower()
-        if child_key in _concept_cache:
-            return _concept_cache[child_key]
-        existing = api_get("concepts", params={"search": child_label})
-        match = next((c for c in existing if c["label"].lower() == child_key), None)
-        if match:
-            _concept_cache[child_key] = match["id"]
-            if parent_id and match.get("parent") != parent_id:
-                api_patch("concepts", match["id"], {"parent": parent_id})
-            return match["id"]
-        payload = {"label": child_label}
-        if parent_id:
-            payload["parent"] = parent_id
-        created = api_post("concepts", payload)
-        
-        # Handle both single dict and list responses (from BulkMixin)
-        if isinstance(created, list):
-            created = created[0] if created else {}
-        
-        child_id = created.get("id")
-        if not child_id:
-            print(f"ERROR: No 'id' in child concept creation response: {created}")
-            return None
-        
-        _concept_cache[child_key] = child_id
-        return child_id
+        return get_or_create_concept(
+            parts[1], parent_id=parent_id, icon=icon, identity=identity
+        )
 
-    key = label.lower()
+    key = (identity or label.casefold(), parent_id)
     if key in _concept_cache:
         return _concept_cache[key]
     existing = api_get("concepts", params={"search": label})
-    match = next((c for c in existing if c["label"].lower() == key), None)
+    match = next(
+        (
+            c
+            for c in existing
+            if c["label"].casefold() == label.casefold()
+            and c.get("parent") == parent_id
+        ),
+        None,
+    )
     if match:
+        updates = {}
+        if icon and not match.get("icon"):
+            updates["icon"] = icon
+        if updates:
+            api_patch("concepts", match["id"], updates)
         _concept_cache[key] = match["id"]
         return match["id"]
-    created = api_post("concepts", {"label": label})
+    payload = {"label": label}
+    if parent_id is not None:
+        payload["parent"] = parent_id
+    if icon:
+        payload["icon"] = icon
+    created = api_post("concepts", payload)
     
     # Handle both single dict and list responses (from BulkMixin)
     if isinstance(created, list):
@@ -246,11 +245,15 @@ def get_or_create_concept(label):
 _person_cache = {}
 
 
-def _normalize_person_name(value):
-    """Normalize a workbook name for comparison with split Person fields."""
+def _clean_person_name(value):
     value = clean_str(value)
     value = re.sub(r"\([^)]*\)", "", value)
-    return " ".join(value.split()).strip(" ,\u2013-").casefold()
+    return " ".join(value.split()).strip(" ,\u2013-")
+
+
+def _normalize_person_name(value):
+    """Normalize a workbook name for comparison with split Person fields."""
+    return _clean_person_name(value).casefold()
 
 
 def _name_tokens(value):
@@ -314,11 +317,11 @@ def get_person_id(protagonist_col, name_col):
     key = _normalize_person_name(raw_name)
     if key in _person_cache:
         return _person_cache[key]
-    normalized_name = _normalize_person_name(raw_name)
-    parts = normalized_name.split()
-    given = " ".join(parts[:-1]) if len(parts) > 1 else normalized_name
-    family = parts[-1] if len(parts) > 1 else normalized_name
-    search_terms = [raw_name, *parts]
+    display_name = _clean_person_name(raw_name)
+    parts = display_name.split()
+    given = " ".join(parts[:-1]) if len(parts) > 1 else display_name
+    family = parts[-1] if len(parts) > 1 else display_name
+    search_terms = [raw_name, *_normalize_person_name(raw_name).split()]
     existing_by_id = {}
     for search_term in dict.fromkeys(search_terms):
         for person in api_get("persons", params={"search": search_term}):

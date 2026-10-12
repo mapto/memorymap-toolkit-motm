@@ -171,6 +171,59 @@ def test_read_person_record_extracts_source_url(tmp_path):
     ]
 
 
+def test_read_person_record_extracts_place_metadata(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Scheda individuale"
+    sheet.append([
+        "Geburtsort",
+        "Frankfurt an der Oder\nLand: Deutsches Reich | "
+        "Geokoordinaten (Breite/Länge): [52.35 / 14.55] | "
+        "Ortsname: Frankfurt an der Oder",
+    ])
+
+    workbook_path = tmp_path / "metadati_place.xlsx"
+    workbook.save(workbook_path)
+
+    record = metadati.read_person_record(workbook_path)
+
+    assert record["birth_place"] == {
+        "name": "Frankfurt an der Oder",
+        "coordinates": {"lat": 52.35, "lon": 14.55},
+        "wikidata_id": None,
+        "regions": ["Deutsches Reich"],
+    }
+
+
+def test_read_person_record_extracts_person_metadata(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Scheda individuale"
+    sheet.append(["Schulbildung / Abschluss", "Gymnasium\nmit Abschluss"])
+    sheet.append(["Beruf (zum Zeitpunkt der Emigration)", "Schüler"])
+    sheet.append(["Beruf (zum Zeitpunkt der Quelle)", "Bibliothekar; Historiker"])
+    sheet.append(["Wohnort zum Zeitpunkt der Quelle", "Haifa"])
+
+    workbook_path = tmp_path / "metadati_metadata.xlsx"
+    workbook.save(workbook_path)
+
+    record = metadati.read_person_record(workbook_path)
+
+    assert record["person"] == {
+        "given_name": None,
+        "previous_given_name": None,
+        "family_name": None,
+        "previous_family_name": None,
+        "gender": None,
+        "birth_date": None,
+        "education": "Gymnasium mit Abschluss",
+        "occupation_at_emigration": "Schüler",
+        "occupation_at_source": "Bibliothekar; Historiker",
+        "residence_at_source": "Haifa",
+        "attributes": {},
+    }
+
+
 def test_create_interview_skips_missing_archive_id(monkeypatch):
     monkeypatch.setattr(
         metadati,

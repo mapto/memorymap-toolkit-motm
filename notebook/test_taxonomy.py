@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 from datetime import date
-from taxonomy import load_taxonomy
+from taxonomy import ROOT_KEY, Taxonomy, TaxonomyError, load_taxonomy
 from timespan import Timespan
 
 
@@ -177,3 +177,51 @@ class TestDefaultTaxonomy:
             assert 'icon' in info
             assert 'label' in info
             assert info['icon'] != ""
+
+
+class TestImportedGeography:
+    def test_koblenz_is_a_germany_location(self, maxqda_taxonomy):
+        assert "Koblenz" in maxqda_taxonomy.hierarchy["Deutschland"]
+
+
+class TestConceptNodes:
+    def test_repeated_label_within_top_level_category_is_rejected(self):
+        taxonomy = Taxonomy(
+            hierarchy={
+                ROOT_KEY: ["Root"],
+                "Root": ["Branch", "Shared"],
+                "Branch": ["Shared"],
+                "Shared": [],
+            }
+        )
+
+        with pytest.raises(TaxonomyError, match="Shared"):
+            taxonomy.concept_nodes()
+
+    def test_same_label_in_different_top_level_categories_keeps_two_nodes(self):
+        taxonomy = Taxonomy(
+            hierarchy={
+                ROOT_KEY: ["Places", "Periods"],
+                "Places": ["Shared"],
+                "Periods": ["Shared"],
+                "Shared": [],
+            }
+        )
+
+        nodes = [node for node in taxonomy.concept_nodes() if node.label == "Shared"]
+
+        assert len(nodes) == 2
+        assert nodes[0].key != nodes[1].key
+        assert {node.top_level for node in nodes} == {"Places", "Periods"}
+
+    def test_import_aliases_normalize_dashes_and_underscores(self):
+        taxonomy = Taxonomy(
+            hierarchy={
+                ROOT_KEY: ["alte-heimat"],
+                "alte-heimat": [],
+            }
+        )
+
+        aliases = taxonomy.import_aliases()
+
+        assert aliases["alte heimat"] == ("alte heimat", "alte heimat")

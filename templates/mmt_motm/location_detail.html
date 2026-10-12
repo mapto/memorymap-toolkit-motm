@@ -1,5 +1,5 @@
 {% extends "mmt_map/base.html" %}
-{% load i18n %}
+{% load i18n l10n %}
 
 {% block content %}
 <div class="container-fluid mt-4 px-0">
@@ -88,7 +88,7 @@
                     <a href="{% url 'location_detail' event.start_location.pk %}">{{ event.start_location }}</a>
                 {% endif %}
             </td>
-            <td><a href="{% url 'event_detail' event.pk %}">{{ event.description|truncatewords:8 }}</a></td>
+            <td><a href="{% url 'event_detail' event.pk %}">{{ event.localized_description|truncatewords:8 }}</a></td>
         </tr>
         {% endfor %}
         </tbody>
@@ -109,7 +109,7 @@
 (function() {
 
     {% if location.location %}
-    var coord = [{{ location.location.x }}, {{ location.location.y }}];
+    var coord = [{{ location.location.x|unlocalize }}, {{ location.location.y|unlocalize }}];
     {% else %}
     document.getElementById('location-map').innerHTML = '<p class="text-muted p-3">{% trans "No coordinates available." %}</p>';
     return;
@@ -128,8 +128,8 @@
         {% if event.start_location and event.start_location.location and event.end_location and event.end_location.location and event.start_location.pk != event.end_location.pk %}
         lines.push({
             coords: [
-                [{{ event.start_location.location.x }}, {{ event.start_location.location.y }}],
-                [{{ event.end_location.location.x }}, {{ event.end_location.location.y }}]
+                [{{ event.start_location.location.x|unlocalize }}, {{ event.start_location.location.y|unlocalize }}],
+                [{{ event.end_location.location.x|unlocalize }}, {{ event.end_location.location.y|unlocalize }}]
             ],
             name: "{{ event.start_location.current_name|escapejs }}"
                 + " \u2192 {{ event.end_location.current_name|escapejs }}",

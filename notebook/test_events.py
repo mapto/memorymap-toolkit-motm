@@ -1,7 +1,7 @@
 """Unit tests for events.create_event_from_row().
 
 Replicates the dataframe-preparation logic from the "Put all data together"
-cell of chronotopi-v4.ipynb against a real sample workbook, then exercises
+cell of chronotopi.ipynb against a real sample workbook, then exercises
 create_event_from_row() with every network-touching dependency mocked out
 (no live server / DB access needed). See test_events_integration.py for
 end-to-end tests against a running Memory Map Toolkit instance.
@@ -22,7 +22,7 @@ SHEET_NAME = "Josef Stern"
 
 
 def build_person_dataframe(path=DATA_FILE, sheet=SHEET_NAME):
-    """Replicate the chronotopi-v4.ipynb dataframe-prep cell for one sheet.
+    """Replicate the chronotopi.ipynb dataframe-prep cell for one sheet.
 
     Mirrors: reading past the vocabulary header rows (skiprows=2), casting
     every column to str, and deriving start_location/end_location by
@@ -101,6 +101,81 @@ def api_stub(monkeypatch):
     monkeypatch.setattr(events, "get_or_create_url", fake_url)
     monkeypatch.setattr(events, "api_post", fake_api_post)
     return calls
+
+
+class TestEventHelpers:
+    def test_prepare_event_data_normalizes_location_and_rejects_missing_fields(self):
+        assert events.prepare_event_data({"event_label": "", "place_name": "Place"}) is None
+        assert events.prepare_event_data({"event_label": "Event", "place_name": ""}) is None
+
+        assert events.prepare_event_data(
+            {"event_label": "Event", "place_name": "Place", "place_detail": "Room"}
+        ) == {
+            "event_label": "Event",
+            "place_name": "Place",
+            "location_name": "Place (Room)",
+        }
+
+    def test_resolve_event_concepts_includes_time_and_person(self):
+        row = {
+            "event_type": "birth",
+            "transport_mode": "train",
+            "place_category": "alte_heimat",
+            "date_label": "1933",
+        }
+        def resolve(label):
+            return f"concept:{label}"
+
+        assert events.resolve_event_concepts(
+            row,
+            protagonist="Ada",
+            concept_resolver=resolve,
+            time_concept_resolver=lambda label: f"time:{label}",
+            person_concept_resolver=lambda label: f"person:{label}",
+        ) == [
+            "concept:birth",
+            "concept:train",
+            "concept:alte_heimat",
+            "time:1933",
+            "person:Ada",
+        ]
+
+    def test_create_event_timespan_preserves_certainty(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            events,
+            "get_or_create_timespan",
+            lambda start, end, certainty=None: calls.append((start, end, certainty)) or 7,
+        )
+
+        timespan_id, certainty = events.create_event_timespan(
+            {"date_start": "1933", "date_end": "", "date_certainty": "probable"}
+        )
+
+        assert timespan_id == 7
+        assert certainty == "probable"
+        assert calls == [("1933-01-01", None, "probable")]
+
+    def test_build_event_payload_omits_empty_relationships(self):
+        payload = events.build_event_payload(
+            {"event_label": "Event"},
+            "altro",
+            "certain",
+            None,
+            "location:1",
+            None,
+            None,
+            ["concept:1"],
+            [],
+        )
+
+        assert payload == {
+            "description": "Event",
+            "lifecycle": "altro",
+            "is_confirmed": True,
+            "end_location": "location:1",
+            "concepts": ["concept:1"],
+        }
 
 
 class TestCreateEventFromRowPayload:

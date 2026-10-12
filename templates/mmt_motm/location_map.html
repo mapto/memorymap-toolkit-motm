@@ -1,5 +1,5 @@
 {% extends "mmt_map/base.html" %}
-{% load i18n %}
+{% load i18n l10n %}
 
 {% block content %}
 <div class="container-fluid mt-0 px-0">
@@ -19,8 +19,8 @@
         {
             id: {{ loc.pk }},
             name: "{{ loc.current_name|escapejs }}",
-            lng: {{ loc.location.x }},
-            lat: {{ loc.location.y }},
+            lng: {{ loc.location.x|unlocalize }},
+            lat: {{ loc.location.y|unlocalize }},
             icon: "{{ loc.dominant_icon|default:'' }}",
             events: {{ loc.event_count }}
         },
