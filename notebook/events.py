@@ -125,7 +125,7 @@ def create_event_locations(
         "locations_db": locations_db,
     }
     if location_concept_resolver:
-        concept_id = location_concept_resolver(event_data["place_name"])
+        concept_id = location_concept_resolver(event_data["location_name"])
         if concept_id:
             location_kwargs["concept_id"] = concept_id
     location_id = get_or_create_location(

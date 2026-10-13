@@ -156,6 +156,32 @@ class TestEventHelpers:
         assert certainty == "probable"
         assert calls == [("1933-01-01", None, "probable")]
 
+    def test_detailed_location_resolver_receives_the_full_location_label(
+        self, monkeypatch
+    ):
+        locations = []
+        resolver_calls = []
+
+        def fake_location(name, concept_id=None, **kwargs):
+            locations.append((name, concept_id))
+            return 7
+
+        monkeypatch.setattr(events, "get_or_create_location", fake_location)
+        row = {"place_name": "Gießen", "place_detail": "Marktplatz 11"}
+        event_data = events.prepare_event_data(
+            {"event_label": "Event", **row}
+        )
+
+        result = events.create_event_locations(
+            row,
+            event_data,
+            location_concept_resolver=lambda name: resolver_calls.append(name) or 82,
+        )
+
+        assert result == (7, None)
+        assert resolver_calls == ["Gießen (Marktplatz 11)"]
+        assert locations == [("Gießen (Marktplatz 11)", 82)]
+
     def test_build_event_payload_omits_empty_relationships(self):
         payload = events.build_event_payload(
             {"event_label": "Event"},

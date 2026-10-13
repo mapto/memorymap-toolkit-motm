@@ -2,80 +2,15 @@
 {% load i18n %}
 
 {% block content %}
-<style>
-    .file-tree {
-        font-family: monospace;
-        font-size: 0.95rem;
-        line-height: 1.6;
-    }
-    .file-tree ul.tree-list {
-        list-style: none;
-        padding-left: 0;
-        margin: 0;
-    }
-    .file-tree ul.tree-list ul.tree-list {
-        padding-left: 1.5em;
-    }
-    .file-tree .tree-item {
-        position: relative;
-    }
-    /* Vertical connector line */
-    .file-tree ul.tree-list ul.tree-list > .tree-item::before {
-        content: "";
-        position: absolute;
-        left: -1em;
-        top: 0;
-        bottom: 0;
-        border-left: 1px solid #aaa;
-    }
-    .file-tree ul.tree-list ul.tree-list > .tree-item:last-child::before {
-        bottom: 50%;
-    }
-    /* Horizontal branch */
-    .file-tree ul.tree-list ul.tree-list > .tree-item::after {
-        content: "";
-        position: absolute;
-        left: -1em;
-        top: 0.8em;
-        width: 0.8em;
-        border-bottom: 1px solid #aaa;
-    }
-    .file-tree .tree-label {
-        padding-left: 0.2em;
-    }
-    .file-tree .tree-label a {
-        text-decoration: none;
-    }
-    .file-tree .tree-label a:hover {
-        text-decoration: underline;
-    }
-</style>
+{% include "mmt_motm/_taxonomy_tree_styles.html" %}
 
 <div class="container mt-4">
     <h1>{% trans "Places Taxonomy" %}</h1>
     <div class="file-tree">
         <ul class="tree-list">
         {% for root in roots %}
-            {% include "mmt_motm/_location_concept_node.html" with node=root %}
+            {% include "mmt_motm/_taxonomy_node.html" with node=root %}
         {% endfor %}
-<!--
-        {% if unassigned %}
-        <li class="tree-item">
-            <span class="tree-label">
-                <i class="fas fa-map-pin"></i> {% trans "Other Places" %}
-            </span>
-            <ul class="tree-list">
-                {% for loc in unassigned %}
-                <li class="tree-item">
-                    <span class="tree-label">
-                        <a href="{% url 'location_detail' loc.pk %}">{{ loc.current_name }}</a>
-                    </span>
-                </li>
-                {% endfor %}
-            </ul>
-        </li>
-        {% endif %}
--->
         </ul>
     </div>
 </div>

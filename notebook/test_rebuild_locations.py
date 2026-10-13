@@ -75,6 +75,10 @@ def test_resolve_coordinates_uses_own_geocoder_before_nominatim():
 
 def test_wider_region_uses_taxonomy_path_and_context():
     geo_paths = {
+        "deutschland": (
+            "GO – geographischer Ort",
+            "Deutschland",
+        ),
         "berlin": (
             "GO – geographischer Ort",
             "Deutschland",
@@ -97,6 +101,9 @@ def test_wider_region_uses_taxonomy_path_and_context():
         geo_paths,
         {},
     ) == "GO – geographischer Ort > Deutschland > Gießen"
+    assert rebuild_locations.wider_region_for(
+        "Sennfeld (Adelsheim)", {}, None, geo_paths, {}
+    ) == "GO – geographischer Ort > Deutschland"
 
 
 def test_latinize_text_transliterates_non_latin_region_labels():

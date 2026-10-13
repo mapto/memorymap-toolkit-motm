@@ -70,7 +70,8 @@ def test_import_taxonomy_creates_parent_first_and_keeps_cross_category_labels():
 
 def test_import_taxonomy_returns_none_for_unknown_source_labels():
     taxonomy = Taxonomy(hierarchy={ROOT_KEY: ["Root"], "Root": []})
-    imported = import_taxonomy(taxonomy, lambda label, **kwargs: 1)
+    next_id = iter(range(1, 20))
+    imported = import_taxonomy(taxonomy, lambda label, **kwargs: next(next_id))
 
     assert imported.resolve_concept("not in taxonomy") is None
 
@@ -105,3 +106,137 @@ def test_resolve_location_matches_synonyms_embedded_labels_and_exclusions():
         allow_aliases=False,
         allow_embedded=False,
     ) is None
+
+
+def test_location_aliases_normalize_case_dashes_and_underscores():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["GO – geographischer Ort"],
+            "GO – geographischer Ort": ["Deutschland"],
+            "Deutschland": ["Frankfurt am Main", "Kehl"],
+            "Frankfurt am Main": [],
+            "Kehl": [],
+        }
+    )
+    next_id = iter(range(1, 20))
+    imported = import_taxonomy(taxonomy, lambda label, **kwargs: next(next_id))
+    frankfurt_id = imported.resolve_location_exact("Frankfurt am Main")
+    kehl_id = imported.resolve_location_exact("Kehl")
+
+    assert imported.resolve_location_exact("Frankfurt_Main") == frankfurt_id
+    assert imported.resolve_location_exact("FRANKFURT-MAIN") == frankfurt_id
+    assert imported.resolve_location_exact("Kehl am Rhein") == kehl_id
+    assert imported.ensure_location_concept("Koblenz") is None
+
+
+def test_detailed_address_alias_resolves_to_address_not_city():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["GO – geographischer Ort"],
+            "GO – geographischer Ort": ["Deutschland"],
+            "Deutschland": ["Gießen"],
+            "Gießen": ["Marktplatz 11"],
+            "Marktplatz 11": [],
+        }
+    )
+    next_id = iter(range(1, 20))
+    imported = import_taxonomy(taxonomy, lambda label, **kwargs: next(next_id))
+
+    assert imported.resolve_location_exact("Gießen (Marktplatz 11)") == (
+        imported.resolve_location_exact("Marktplatz 11")
+    )
+    assert imported.resolve_location_exact("Gießen (Marktplatz 11)") != (
+        imported.resolve_location_exact("Gießen")
+    )
+
+
+def test_missing_supplemental_parent_is_created_before_its_child():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["GO – geographischer Ort"],
+            "GO – geographischer Ort": ["Deutschland"],
+            "Deutschland": [],
+        }
+    )
+    calls = []
+    imported = import_taxonomy(
+        taxonomy,
+        lambda label, parent_id=None, **kwargs: calls.append(
+            (label, parent_id)
+        ) or len(calls),
+    )
+
+    genoa_id = imported.ensure_location_concept("Genua")
+    italy_id = imported.resolve_location_exact("Italien")
+    trieste_id = imported.ensure_location_concept("Triest")
+    go_id = imported.resolve_location_exact("GO – geographischer Ort")
+
+    assert genoa_id is not None and trieste_id is not None
+    assert italy_id is not None
+    assert calls[-3:] == [
+        ("Italien", go_id),
+        ("Genua", italy_id),
+        ("Triest", italy_id),
+    ]
+    assert imported.nodes_by_key[("go", "supplemental", "genua")].parent_key == (
+        "go",
+        "supplemental",
+        "italien",
+    )
+
+
+def test_disambiguated_sennfeld_gets_a_supplemental_concept_under_germany():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["GO – geographischer Ort"],
+            "GO – geographischer Ort": ["Deutschland"],
+            "Deutschland": ["Gießen"],
+            "Gießen": ["Sennfeld"],
+            "Sennfeld": [],
+        }
+    )
+    # Give the mocked creator unique IDs so the parent relationship can be checked.
+    next_id = iter(range(1, 20))
+    imported = import_taxonomy(taxonomy, lambda label, **kwargs: next(next_id))
+    giessen_sennfeld_id = imported.resolve_location_exact("Sennfeld")
+    adelsheim_sennfeld_id = imported.ensure_location_concept("Sennfeld (Adelsheim)")
+    germany_id = imported.resolve_location_exact("Deutschland")
+
+    assert adelsheim_sennfeld_id != giessen_sennfeld_id
+    node = next(
+        node
+        for node in imported.nodes_by_key.values()
+        if node.label == "Sennfeld (Adelsheim)"
+    )
+    germany_node = next(
+        node
+        for node in imported.nodes_by_key.values()
+        if node.label == "Deutschland"
+    )
+    assert node.parent_key == germany_node.key
+    assert germany_id is not None
+
+
+def test_unknown_supplemental_location_requires_a_reviewed_parent_hint():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["GO – geographischer Ort"],
+            "GO – geographischer Ort": [],
+        }
+    )
+    imported = import_taxonomy(taxonomy, lambda label, **kwargs: 1)
+
+    try:
+        imported.ensure_location_concept("Unknown Canonical Place")
+    except ValueError as exc:
+        assert "No canonical parent hint" in str(exc)
+    else:
+        raise AssertionError("unreviewed locations must not be placed under the GO root")
+
+
+def test_reviewed_non_locations_remain_unmapped():
+    from locations import taxonomy_match_excluded
+
+    assert taxonomy_match_excluded("?")
+    assert taxonomy_match_excluded("Digitales Archiv vom Else-Lasker-Schüler-Gesellschaft")
+    assert not taxonomy_match_excluded("")

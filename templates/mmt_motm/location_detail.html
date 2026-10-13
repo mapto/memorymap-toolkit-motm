@@ -67,7 +67,7 @@
     {% if events %}
     <h3>{% trans "Events" %}</h3>
     <table class="table table-sm table-striped">
-        <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Place" %}</th><th>{% trans "Description" %}</th></tr></thead>
+        <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Person" %}</th><th>{% trans "Place" %}</th><th>{% trans "Description" %}</th></tr></thead>
         <tbody>
         {% for event in events %}
         <tr>
@@ -77,6 +77,11 @@
                         {% include "mmt_motm/_timespan.html" %}
                     {% endwith %}
                 {% endif %}
+            </td>
+            <td>
+                {% for person in event.persons.all %}
+                    <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
             </td>
             <td>
                 {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}

@@ -28,6 +28,7 @@ from locations import (
     normalize_location,
     query_geocoder,
     taxonomy_alias,
+    taxonomy_location_parent,
     taxonomy_match_excluded,
     tokenize_location,
 )
@@ -441,6 +442,11 @@ def _taxonomy_parent_chain(name: str, geo_paths: dict[str, tuple[str, ...]]):
     if taxonomy_match_excluded(name):
         return []
     canonical = taxonomy_alias(name)
+    parent_label = taxonomy_location_parent(canonical) or taxonomy_location_parent(name)
+    if parent_label:
+        parent_path = _geo_path_for(taxonomy_alias(parent_label), geo_paths)
+        if parent_path:
+            return list(parent_path)
     path = _geo_path_for(canonical, geo_paths)
     if not path:
         return []

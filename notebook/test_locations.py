@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
+import pytest
 
 import locations
 
@@ -16,7 +17,7 @@ HEADERS = [
     "label",
     "www.geonames.org",
     "www.wikidata.org",
-    "www.giessen.de",
+    "www.example.org",
 ]
 
 
@@ -50,6 +51,22 @@ def test_canonical_location_name_maps_variants_to_workbook_entity():
         "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
         workbook,
     ) is None
+
+
+def test_canonical_location_name_matches_aliases_to_workbook_rows():
+    workbook = {
+        locations.normalize_location("Frankfurt am Main"): {
+            "name": "Frankfurt am Main"
+        },
+        locations.normalize_location("Marktplatz 11"): {"name": "Marktplatz 11"},
+    }
+
+    assert locations.canonical_location_name("Frankfurt_Main", workbook) == "Frankfurt am Main"
+    assert locations.canonical_location_name(
+        "Gießen (Marktplatz 11)", workbook
+    ) == "Marktplatz 11"
+    assert locations.taxonomy_label_key("Frankfurt_Main") == "frankfurt main"
+    assert locations.taxonomy_label_key("FRANKFURT-MAIN") == "frankfurt main"
 
 
 def test_existing_location_updates_include_only_missing_values():
@@ -155,6 +172,75 @@ def test_load_locations_reads_coordinate_fields_by_header_order(tmp_path, monkey
     assert entry["long"] == 13.4
     assert entry["wikidata_id"] == "Q64"
     assert entry["wider_region"] == "GO > Deutschland > Berlin"
+
+
+def test_load_locations_collects_every_populated_column_after_geonames(tmp_path):
+    path = tmp_path / "locations-extra-urls.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append([
+        "location",
+        "lat",
+        "long",
+        "www.geonames.org",
+        "www.wikidata.org",
+        "www.example.org",
+        "archive.example",
+    ])
+    sheet.append([
+        "Berlin",
+        52.5,
+        13.4,
+        "https://www.geonames.org/2950159/berlin.html",
+        "https://www.wikidata.org/wiki/Q64",
+        "https://www.example.org/berlin",
+        "https://archive.example/item/42",
+    ])
+    workbook.save(path)
+
+    locations._locations_db.clear()
+    database = locations.load_locations_db(path, enrich_coordinates=False)
+    entry = database[locations.normalize_location("Berlin")]
+
+    assert entry["wikidata_id"] == "Q64"
+    assert entry["extra_url"] == {
+        "www.wikidata.org": "https://www.wikidata.org/wiki/Q64",
+        "www.example.org": "https://www.example.org/berlin",
+        "archive.example": "https://archive.example/item/42",
+    }
+
+
+def test_save_locations_preserves_all_extra_url_columns_by_header(tmp_path):
+    path = tmp_path / "locations-save-extra-urls.xlsx"
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append([
+        "location",
+        "lat",
+        "long",
+        "www.geonames.org",
+        "www.wikidata.org",
+        "www.example.org",
+    ])
+    sheet.append(["Berlin", 52.5, 13.4, "", "", ""])
+    workbook.save(path)
+
+    locations._locations_db.clear()
+    database = locations.load_locations_db(path, enrich_coordinates=False)
+    entry = database[locations.normalize_location("Berlin")]
+    entry["extra_url"] = {
+        "www.wikidata.org": "https://www.wikidata.org/wiki/Q64",
+        "www.example.org": "https://www.example.org/berlin",
+        "archive.example": "https://archive.example/item/42",
+    }
+    locations.save_locations_db(path)
+
+    saved = load_workbook(path, read_only=True, data_only=True).active
+    headers = [cell.value for cell in saved[1]]
+    row = {header: saved.cell(2, index + 1).value for index, header in enumerate(headers)}
+    assert row["www.wikidata.org"] == "https://www.wikidata.org/wiki/Q64"
+    assert row["www.example.org"] == "https://www.example.org/berlin"
+    assert row["archive.example"] == "https://archive.example/item/42"
 
 
 def test_extract_geonames_id_uses_numeric_url_segment():
@@ -545,6 +631,33 @@ def test_sync_location_concepts_patches_unlinked_resolvable_points():
     assert patches == [("locations", 1, {"concept": 42})]
 
 
+def test_sync_location_concepts_enables_aliases_without_embedded_matching():
+    locations = [{"id": 1, "current_name": "Frankfurt/M", "concept": None}]
+    calls = []
+    patches = []
+
+    def resolve_location(name, **kwargs):
+        calls.append((name, kwargs))
+        return 42
+
+    result = __import__("locations").sync_location_concepts(
+        resolve_location,
+        api_get=lambda endpoint: locations,
+        api_patch=lambda endpoint, object_id, payload: patches.append(
+            (endpoint, object_id, payload)
+        ),
+    )
+
+    assert result == {"matched": [(1, 42)], "unmapped": []}
+    assert calls == [
+        (
+            "Frankfurt/M",
+            {"allow_aliases": True, "allow_embedded": False},
+        )
+    ]
+    assert patches == [("locations", 1, {"concept": 42})]
+
+
 def test_sync_location_concepts_does_not_steal_an_existing_unique_concept():
     locations = [
         {"id": 1, "current_name": "Gießen", "concept": None},
@@ -566,6 +679,7 @@ def test_sync_location_concepts_does_not_steal_an_existing_unique_concept():
 
 def test_seed_location_entities_reuses_workbook_rows_and_resolves_concepts(monkeypatch):
     calls = []
+    resolver_calls = []
     monkeypatch.setattr(
         "api_client.api_get",
         lambda endpoint: {"concept": 449} if endpoint == "locations/1" else [],
@@ -584,12 +698,22 @@ def test_seed_location_entities_reuses_workbook_rows_and_resolves_concepts(monke
         }
     }
 
+    def resolve_location(name, **kwargs):
+        resolver_calls.append((name, kwargs))
+        return 449
+
     result = locations.seed_location_entities(
         workbook,
-        resolve_location=lambda name, **kwargs: 449,
+        resolve_location=resolve_location,
     )
 
     assert result == [("Berlin", 1, 449)]
+    assert resolver_calls == [
+        (
+            "Berlin",
+            {"allow_aliases": True, "allow_embedded": False},
+        )
+    ]
     assert calls == [
         (
             "Berlin",
@@ -601,3 +725,18 @@ def test_seed_location_entities_reuses_workbook_rows_and_resolves_concepts(monke
             },
         )
     ]
+
+
+def test_seed_location_entities_fails_before_patching_unmapped_canonical_rows(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "api_client.api_get",
+        lambda endpoint: (_ for _ in ()).throw(
+            AssertionError("unmapped rows should fail before API writes")
+        ),
+    )
+    workbook = {"unknown": {"name": "Unknown Canonical Place"}}
+
+    with pytest.raises(RuntimeError, match="has no GO concept mapping"):
+        locations.seed_location_entities(workbook, resolve_location=lambda name: None)

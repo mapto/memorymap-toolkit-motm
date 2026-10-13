@@ -35,7 +35,8 @@ NON_LOCATION_NAMES = {
 
 def taxonomy_label_key(value):
     """Normalize a location label for taxonomy synonym matching."""
-    return " ".join(re.sub(r"[^\w\s]", " ", str(value or "").casefold()).split())
+    value = re.sub(r"[-_]+", " ", str(value or "").casefold())
+    return " ".join(re.sub(r"[^\w\s]", " ", value).split())
 
 
 @lru_cache(maxsize=1)
@@ -65,7 +66,19 @@ def taxonomy_alias(value):
 def taxonomy_match_excluded(value):
     """Return whether a reviewed location is intentionally left unmapped."""
     key = taxonomy_label_key(value)
-    return any(term in key for term in location_taxonomy_synonyms()["excluded_contains"])
+    raw_value = str(value or "").strip().casefold()
+    data = location_taxonomy_synonyms()
+    reviewed_unmapped = {
+        taxonomy_label_key(label) for label in data.get("reviewed_unmapped", [])
+    }
+    reviewed_unmapped_raw = {
+        str(label).strip().casefold() for label in data.get("reviewed_unmapped", [])
+    }
+    return (
+        raw_value in reviewed_unmapped_raw
+        or (key and key in reviewed_unmapped)
+        or any(term in key for term in data["excluded_contains"])
+    )
 
 
 def taxonomy_location_parent(value):
@@ -82,13 +95,32 @@ def canonical_location_name(value, locations_db=None):
     if locations_db is None:
         return cleaned
 
-    candidates = [cleaned, taxonomy_alias(cleaned)]
-    while re.search(r"\([^()]*\)", candidates[-1]):
-        candidates.append(re.sub(r"\s*\([^()]*\)", "", candidates[-1]).strip())
+    candidates = []
+    for seed in (taxonomy_alias(cleaned), cleaned):
+        candidate = seed
+        while candidate:
+            if candidate not in candidates:
+                candidates.append(candidate)
+            if not re.search(r"\([^()]*\)", candidate):
+                break
+            candidate = re.sub(r"\s*\([^()]*\)", "", candidate).strip()
+
     for candidate in candidates:
         key = normalize_location(candidate)
         if key in locations_db:
             return locations_db[key].get("name", candidate)
+
+    candidate_keys = {normalize_location(candidate) for candidate in candidates}
+    for record in locations_db.values():
+        name = str(record.get("name", "")).strip()
+        if not name:
+            continue
+        record_keys = {
+            normalize_location(name),
+            normalize_location(taxonomy_alias(name)),
+        }
+        if candidate_keys & record_keys:
+            return name
 
     source_tokens = set(normalize_location(cleaned).split())
     matching = []
@@ -444,7 +476,8 @@ _locations_db = {}  # normalize_location(name) -> {name, lat, long, ...}
 
 def normalize_location(name):
     """Normalize a location name for matching: lowercase, no punctuation, sorted words."""
-    name = str(name).strip().lower()
+    name = str(name).strip().casefold()
+    name = re.sub(r"[-_]+", " ", name)
     name = re.sub(r"[^\w\s]", "", name)
     return " ".join(sorted(name.split()))
 
@@ -477,6 +510,19 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
         column = headers.get(field)
         return ws.cell(row, column).value if column else default
 
+    def extra_urls_after_geonames(row):
+        """Collect every populated workbook column after the GeoNames column."""
+        geonames_column = headers.get("www.geonames.org")
+        if geonames_column is None:
+            return {}
+        extra_urls = {}
+        for column in range(geonames_column + 1, ws.max_column + 1):
+            header = str(ws.cell(1, column).value or "").strip()
+            value = str(ws.cell(row, column).value or "").strip()
+            if header and value and value.lower() not in {"nan", "none"}:
+                extra_urls[header] = value
+        return extra_urls
+
     for r in range(2, ws.max_row + 1):
         name = cell(r, "location")
         if not name:
@@ -484,7 +530,6 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
         key = normalize_location(name)
         wikidata_url = str(cell(r, "www.wikidata.org") or "").strip()
         geonames_url = str(cell(r, "www.geonames.org") or "").strip()
-        extra_url = str(cell(r, "www.giessen.de") or "").strip()
         _locations_db[key] = {
             "name": str(name).strip(),
             "lat": cell(r, "lat"),
@@ -500,7 +545,7 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
             "geonames_url": geonames_url
             if geonames_url and geonames_url != "nan"
             else "",
-            "extra_url": extra_url if extra_url and extra_url != "nan" else "",
+            "extra_url": extra_urls_after_geonames(r),
         }
     if enrich_coordinates:
         changed = False
@@ -515,6 +560,26 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
             save_locations_db(xlsx_path)
     print(f"  Loaded {len(_locations_db)} locations from locations.xlsx")
     return _locations_db
+
+
+def _extra_url_mapping(value):
+    """Normalize extra_url to a mapping of workbook headers to URL values."""
+    if isinstance(value, dict):
+        return {
+            str(header).strip(): str(url).strip()
+            for header, url in value.items()
+            if str(header).strip() and not is_empty(url)
+        }
+    if isinstance(value, (list, tuple)):
+        return {
+            f"extra_url_{index + 1}": str(url).strip()
+            for index, url in enumerate(value)
+            if not is_empty(url)
+        }
+    if not is_empty(value):
+        # Preserve legacy scalar callers without coupling it to a particular host.
+        return {"extra_url": str(value).strip()}
+    return {}
 
 
 def save_locations_db(xlsx_path=None):
@@ -535,7 +600,6 @@ def save_locations_db(xlsx_path=None):
         "label",
         "www.geonames.org",
         "www.wikidata.org",
-        "www.giessen.de",
     ]
     if os.path.exists(xlsx_path):
         wb = openpyxl.load_workbook(xlsx_path)
@@ -554,7 +618,6 @@ def save_locations_db(xlsx_path=None):
             "coordinate_source": "coordinate_source",
             "www.geonames.org": "geonames_url",
             "www.wikidata.org": "wikidata_url",
-            "www.giessen.de": "extra_url",
         }
         existing_rows = {}
         for r in range(2, ws.max_row + 1):
@@ -575,19 +638,47 @@ def save_locations_db(xlsx_path=None):
                         new_val = loc.get(field)
                         if not is_empty(new_val):
                             ws.cell(row_num, column).value = new_val
+                extra_urls = _extra_url_mapping(loc.get("extra_url"))
+                for header, url in extra_urls.items():
+                    column = headers.get(header)
+                    if column is None:
+                        column = ws.max_column + 1
+                        ws.cell(1, column).value = header
+                        headers[header] = column
+                    if is_empty(ws.cell(row_num, column).value) and not is_empty(url):
+                        ws.cell(row_num, column).value = url
             else:
                 values = [""] * ws.max_column
                 for header, field in fields.items():
                     column = headers.get(header)
                     if column is not None:
                         values[column - 1] = loc.get(field, "") or ""
+                for header, url in _extra_url_mapping(loc.get("extra_url")).items():
+                    column = headers.get(header)
+                    if column is None:
+                        column = ws.max_column + 1
+                        ws.cell(1, column).value = header
+                        headers[header] = column
+                        values.append("")
+                    while len(values) < column:
+                        values.append("")
+                    values[column - 1] = url
                 ws.append(values)
                 added += 1
     else:
         wb = openpyxl.Workbook()
         ws = wb.active
         assert ws is not None
-        ws.append(HEADERS)
+        extra_headers = sorted(
+            {
+                header
+                for location in _locations_db.values()
+                for header in _extra_url_mapping(location.get("extra_url"))
+                if header not in HEADERS
+            }
+        )
+        output_headers = HEADERS + extra_headers
+        ws.append(output_headers)
         added = 0
         for key in sorted(_locations_db.keys()):
             loc = _locations_db[key]
@@ -600,9 +691,9 @@ def save_locations_db(xlsx_path=None):
                 "coordinate_source": loc.get("coordinate_source", ""),
                 "www.geonames.org": loc.get("geonames_url", ""),
                 "www.wikidata.org": loc.get("wikidata_url", ""),
-                "www.giessen.de": loc.get("extra_url", ""),
             }
-            ws.append([values.get(header, "") for header in HEADERS])
+            values.update(_extra_url_mapping(loc.get("extra_url")))
+            ws.append([values.get(header, "") for header in output_headers])
             added += 1
     wb.save(xlsx_path)
     print(
@@ -653,7 +744,7 @@ def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
         "geonames_url": f"https://www.geonames.org/{geonames_id}"
         if geonames_id and geonames_id not in ("", "nan")
         else "",
-        "extra_url": "",
+        "extra_url": {},
     }
 
 
@@ -916,14 +1007,9 @@ def sync_location_concepts(resolve_location, *, api_get=None, api_patch=None):
     for location in locations:
         if location.get("concept"):
             continue
-        try:
-            concept_id = resolve_location(
-                location.get("current_name", ""),
-                allow_aliases=False,
-                allow_embedded=False,
-            )
-        except TypeError:
-            concept_id = resolve_location(location.get("current_name", ""))
+        concept_id = _resolve_exact_location(
+            resolve_location, location.get("current_name", "")
+        )
         if concept_id is None:
             unmapped.append(location.get("current_name", ""))
             continue
@@ -945,27 +1031,33 @@ def seed_location_entities(locations_db, resolve_location=None):
     """
     from api_client import api_get, api_patch
 
+    resolved_entries = []
+    for _, entry in sorted(locations_db.items()):
+        name = entry.get("name")
+        if not name:
+            continue
+        concept_id = (
+            _resolve_exact_location(resolve_location, name)
+            if resolve_location
+            else None
+        )
+        if (
+            resolve_location
+            and concept_id is None
+            and not taxonomy_match_excluded(name)
+        ):
+            raise RuntimeError(
+                f"Canonical location {name!r} has no GO concept mapping"
+            )
+        resolved_entries.append((name, entry, concept_id))
+
     created_or_reused = []
     concept_owners = {
         location["concept"]: location["id"]
         for location in api_get("locations")
         if location.get("concept")
     }
-    for key, entry in sorted(locations_db.items()):
-        name = entry.get("name")
-        if not name:
-            continue
-        if resolve_location:
-            try:
-                concept_id = resolve_location(
-                    name,
-                    allow_aliases=False,
-                    allow_embedded=False,
-                )
-            except TypeError:
-                concept_id = resolve_location(name)
-        else:
-            concept_id = None
+    for name, entry, concept_id in resolved_entries:
         location_id = get_or_create_location(
             name,
             wikidata_qid=entry.get("wikidata_id"),
@@ -987,6 +1079,20 @@ def seed_location_entities(locations_db, resolve_location=None):
                     )
             created_or_reused.append((name, location_id, concept_id))
     return created_or_reused
+
+
+def _resolve_exact_location(resolve_location, name):
+    """Resolve a canonical label with aliases enabled but embedded matching off."""
+    try:
+        return resolve_location(
+            name,
+            allow_aliases=True,
+            allow_embedded=False,
+        )
+    except TypeError:
+        # Supplemental-concept resolvers expose a one-argument interface and
+        # apply the same exact-or-alias rule internally.
+        return resolve_location(name)
 
 
 def link_locations_to_regions(locations_db):

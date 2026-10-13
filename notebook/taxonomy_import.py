@@ -137,7 +137,13 @@ class TaxonomyImport:
         )
 
     def ensure_location_concept(self, label: str) -> int | None:
-        """Resolve or create one canonical supplemental GO location concept."""
+        """Resolve or create a supplemental GO node with its configured parent chain."""
+        return self._ensure_location_concept(label, resolving=set())
+
+    def _ensure_location_concept(
+        self, label: str, *, resolving: set[str]
+    ) -> int | None:
+        """Create a missing location and any missing configured ancestors."""
         if taxonomy_match_excluded(label):
             return None
         resolved = self.resolve_location_exact(label)
@@ -146,17 +152,31 @@ class TaxonomyImport:
 
         canonical = taxonomy_alias(label)
         key = _label_key(canonical)
+        if key in resolving:
+            raise TaxonomyError(
+                f"Cyclic canonical parent hints while importing {canonical!r}"
+            )
+        identity = ("go", "supplemental", key)
+        existing = self.ids_by_key.get(identity)
+        if existing is not None:
+            return existing
+
+        next_resolving = {*resolving, key}
         parent_label = taxonomy_location_parent(canonical)
-        parent_id = self.resolve_concept(parent_label, "GO") if parent_label else None
-        if parent_id is None:
-            parent_id = self.resolve_concept("GO – geographischer Ort", "GO")
+        if parent_label:
+            parent_id = self.resolve_location_exact(parent_label)
+            if parent_id is None:
+                parent_id = self._ensure_location_concept(
+                    parent_label,
+                    resolving=next_resolving,
+                )
+        else:
+            raise TaxonomyError(
+                f"No canonical parent hint for supplemental location {canonical!r}"
+            )
         if parent_id is None:
             raise TaxonomyError(f"No GO parent available for location {canonical!r}")
 
-        identity = ("go", "supplemental", key)
-        for node in self.nodes_by_key.values():
-            if node.key == identity:
-                return self.ids_by_key[node.key]
         concept_id = self.create_concept(
             canonical,
             parent_id=parent_id,
@@ -164,10 +184,22 @@ class TaxonomyImport:
         )
         if concept_id is None:
             raise TaxonomyError(f"Could not create supplemental location {canonical!r}")
+        parent_key = next(
+            (
+                candidate_key
+                for candidate_key, candidate_id in self.ids_by_key.items()
+                if candidate_id == parent_id
+            ),
+            None,
+        )
+        if parent_key is None:
+            raise TaxonomyError(
+                f"Could not identify imported GO parent for {canonical!r}"
+            )
         node = TaxonomyNode(
             key=identity,
             label=canonical,
-            parent_key=("go", _label_key(parent_label or "GO – geographischer Ort")),
+            parent_key=parent_key,
             top_level="GO – geographischer Ort",
         )
         self.nodes_by_key[identity] = node

@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.utils.translation import override
 from django.contrib.gis.geos import Point
+from django.urls import reverse
 
 from .models import Concept, Event, Extraction, Interview, LocationPoint, Person
 from .serializers import ExtractionSerializer, LocationPointSerializer, TimespanSerializer
@@ -182,7 +183,86 @@ class LocationTaxonomyViewTests(TestCase):
 			roots = list(LocationTaxonomyView().get_queryset())
 
 		assert [root.pk for root in roots] == [country.pk]
-		assert roots[0].children.get(pk=city.pk).location_point.pk == location.pk
+		city_node = roots[0].taxonomy_children[0]
+		assert city_node.pk == city.pk
+		assert city_node.location_points == [location]
+		assert city_node.location_link is None
+
+	def test_concept_and_locations_taxonomies_share_go_tree(self):
+		go = Concept.objects.create()
+		go.set_current_language("en")
+		go.label = "GO – geographischer Ort"
+		go.save()
+		country = Concept.objects.create(parent=go)
+		country.set_current_language("en")
+		country.label = "Deutschland"
+		country.save()
+		city = Concept.objects.create(parent=country)
+		city.set_current_language("en")
+		city.label = "Berlin"
+		city.save()
+		location = LocationPoint.objects.create(
+			current_name="Berlin",
+			concept=city,
+		)
+
+		with override("de"):
+			concept_roots = list(ConceptTaxonomyView().get_queryset())
+			location_roots = list(LocationTaxonomyView().get_queryset())
+
+		concept_go = next(root for root in concept_roots if root.pk == go.pk)
+		concept_country = concept_go.taxonomy_children[0]
+		concept_city = concept_country.taxonomy_children[0]
+		location_city = location_roots[0].taxonomy_children[0]
+		assert location_roots[0].pk == concept_country.pk
+		assert location_city.pk == concept_city.pk
+		assert location_city.location_points == concept_city.location_points == [location]
+		assert location_city.location_link == concept_city.location_link == location
+
+		concept_response = self.client.get(reverse("concept_taxonomy"))
+		location_response = self.client.get(reverse("location_taxonomy"))
+		assert concept_response.status_code == 200
+		assert location_response.status_code == 200
+		assert b"<details class=\"taxonomy-branch\">" in concept_response.content
+		assert b"<details class=\"taxonomy-branch\">" in location_response.content
+		country_url = reverse("concept_detail", args=[country.pk])
+		assert f'href="{country_url}"'.encode() in concept_response.content
+		assert b"Deutschland" in concept_response.content
+		assert b"taxonomy-node-actions" not in concept_response.content
+		assert b"taxonomy-node-actions" not in location_response.content
+		assert b"Open concept" not in concept_response.content
+		assert b"Open location" not in location_response.content
+
+	def test_location_concept_url_redirects_to_location_detail(self):
+		concept = Concept.objects.create()
+		concept.set_current_language("en")
+		concept.label = "Berlin"
+		concept.save()
+		location = LocationPoint.objects.create(
+			current_name="Berlin",
+			concept=concept,
+		)
+
+		response = self.client.get(reverse("concept_detail", args=[concept.pk]))
+
+		assert response.status_code == 302
+		assert response.url == reverse("location_detail", args=[location.pk])
+
+	def test_unassigned_go_location_concept_url_redirects_to_location_detail(self):
+		go = Concept.objects.create()
+		go.set_current_language("en")
+		go.label = "GO – geographischer Ort"
+		go.save()
+		city = Concept.objects.create(parent=go)
+		city.set_current_language("en")
+		city.label = "Berlin"
+		city.save()
+		location = LocationPoint.objects.create(current_name="Berlin")
+
+		response = self.client.get(reverse("concept_detail", args=[city.pk]))
+
+		assert response.status_code == 302
+		assert response.url == reverse("location_detail", args=[location.pk])
 
 	def test_locations_taxonomy_exposes_unassigned_points_only(self):
 		go = Concept.objects.create()
@@ -278,6 +358,26 @@ class LocationTaxonomyViewTests(TestCase):
 			context = view.get_context_data()
 
 		assert point in context["unassigned"]
+
+
+class LocationDetailViewTests(TestCase):
+	def test_events_table_lists_person_between_date_and_place(self):
+		location = LocationPoint.objects.create(current_name="Event location")
+		person = Person.objects.create(given_name="Ada", family_name="Lovelace")
+		event = Event.objects.create(start_location=location)
+		event.persons.add(person)
+
+		with override("en"):
+			response = self.client.get(
+				reverse("location_detail", args=[location.pk])
+			)
+			person_url = reverse("person_detail", args=[person.pk])
+
+		assert response.status_code == 200
+		content = response.content.decode()
+		assert content.index("<th>Date</th>") < content.index("<th>Person</th>")
+		assert content.index("<th>Person</th>") < content.index("<th>Place</th>")
+		assert f'href="{person_url}">Ada Lovelace</a>' in content
 
 
 class LocationPointSerializerTests(TestCase):
