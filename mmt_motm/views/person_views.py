@@ -1,7 +1,10 @@
 from django.db.models import Count, Q
+from django.http import HttpResponsePermanentRedirect
+from django.urls import reverse
 from django.views.generic import DetailView, ListView
 
 from ..models import Concept, Extraction, Person
+from ..person_identity import deduplicate_people, get_person_representative
 
 
 class PersonListView(ListView):
@@ -10,9 +13,12 @@ class PersonListView(ListView):
     context_object_name = "persons"
 
     def get_queryset(self):
-        return Person.objects.annotate(
-            interview_count=Count("interviews_received", distinct=True)
-        ).order_by("family_name", "given_name")
+        people = (
+            Person.objects.select_related("birth_place", "death_place")
+            .annotate(interview_count=Count("interviews_received", distinct=True))
+            .order_by("family_name", "given_name", "pk")
+        )
+        return deduplicate_people(people)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -34,6 +40,16 @@ class PersonDetailView(DetailView):
     model = Person
     template_name = "mmt_motm/person_detail.html"
     context_object_name = "person"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        representative = get_person_representative(self.object)
+        if representative.pk != self.object.pk:
+            return HttpResponsePermanentRedirect(
+                reverse("person_detail", kwargs={"pk": representative.pk})
+            )
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

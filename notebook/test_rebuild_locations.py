@@ -95,9 +95,9 @@ def test_wider_region_uses_taxonomy_path_and_context():
         "Berlin", {}, None, geo_paths, {}
     ) == "GO – geographischer Ort > Deutschland"
     assert rebuild_locations.wider_region_for(
-        "Steinstraße 19,",
+        "Steinstraße 19",
         {},
-        rebuild_locations.SourceLocation(name="Steinstraße 19,", details={"Gießen"}),
+        rebuild_locations.SourceLocation(name="Steinstraße 19", details={"Gießen"}),
         geo_paths,
         {},
     ) == "GO – geographischer Ort > Deutschland > Gießen"

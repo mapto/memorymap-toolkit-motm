@@ -121,3 +121,8 @@ data/
 
 .github/
 docs/
+
+# Keep the reviewed person-name mapping with the importer while ignoring source data.
+!data/
+data/*
+!data/person_taxonomy_synonyms.json

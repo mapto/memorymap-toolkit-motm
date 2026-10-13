@@ -79,7 +79,7 @@
                 {% endif %}
             </td>
             <td>
-                {% for person in event.persons.all %}
+                {% for person in event.display_persons %}
                     <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </td>

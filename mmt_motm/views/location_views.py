@@ -4,6 +4,7 @@ from django.utils import translation
 from django.views.generic import DetailView, ListView
 
 from ..models import Concept, Event, LocationPoint
+from ..person_identity import deduplicate_people
 from .taxonomy import _build_concept_taxonomy_tree
 
 
@@ -63,9 +64,17 @@ class LocationDetailView(DetailView):
                 ).order_by("-cnt").values("icon")[:1]
             )
         ).order_by("timespan__start")
-        context["events"] = events
-        context["persons_born_here"] = loc.people_born_here.all()
-        context["persons_died_here"] = loc.people_died_here.all()
+        context["events"] = list(events)
+        for event in context["events"]:
+            event.display_persons = deduplicate_people(
+                event.persons.order_by("family_name", "given_name", "pk")
+            )
+        context["persons_born_here"] = deduplicate_people(
+            loc.people_born_here.order_by("family_name", "given_name", "pk")
+        )
+        context["persons_died_here"] = deduplicate_people(
+            loc.people_died_here.order_by("family_name", "given_name", "pk")
+        )
 
         # Dominant concept icon from departing events
         dominant = Concept.objects.filter(

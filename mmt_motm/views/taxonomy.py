@@ -4,18 +4,23 @@ from functools import lru_cache
 from pathlib import Path
 
 from django.conf import settings
-from django.db.models import Count
 
-from ..models import Concept, LocationPoint
+from ..models import Concept, LocationPoint, Person
+from ..person_identity import (
+    canonical_person_key,
+    deduplicate_people,
+    person_name_key,
+)
 
 
 def _build_concept_taxonomy_tree(language_code):
-    """Build one shared concept/location tree for both taxonomy pages.
+    """Build the shared concept tree and project linked entities into it.
 
     Every concept has ``taxonomy_children``; GO concepts additionally have
     their attached or safely matched LocationPoints. Using one builder keeps
     the GO branch on the concept taxonomy page identical to the locations
-    taxonomy page.
+    taxonomy page. The Personae root retains its concept hierarchy and also
+    projects the complete Person list for links to person detail pages.
     """
     concepts = list(
         Concept.objects.active_translations(language_code)
@@ -27,10 +32,58 @@ def _build_concept_taxonomy_tree(language_code):
         concept.taxonomy_children = []
         concept.location_points = []
         concept.location_link = None
+        concept.taxonomy_people = []
+        concept.taxonomy_personae_root = False
     for concept in concepts:
         concept.taxonomy_children = concepts_by_parent.get(concept.pk, [])
 
     roots = concepts_by_parent.get(None, [])
+    personae_root_ids = set(
+        Concept.objects.filter(
+            parent__isnull=True,
+            translations__label__iexact="Personae",
+        ).values_list("pk", flat=True)
+    )
+    personae_root = next(
+        (
+            concept
+            for concept in roots
+            if concept.pk in personae_root_ids
+            or _location_taxonomy_key(concept.label)
+            == _location_taxonomy_key("Personae")
+        ),
+        None,
+    )
+    if personae_root is not None:
+        personae_root.taxonomy_personae_root = True
+        people = deduplicate_people(
+            Person.objects.select_related("lifespan", "birth_place", "death_place")
+            .order_by("family_name", "given_name", "pk")
+        )
+        personae_concepts = []
+        pending = [personae_root.pk]
+        while pending:
+            parent_id = pending.pop()
+            children = concepts_by_parent.get(parent_id, [])
+            personae_concepts.extend(children)
+            pending.extend(child.pk for child in children)
+
+        concepts_by_person_name = {}
+        for concept in personae_concepts:
+            if concepts_by_parent.get(concept.pk):
+                continue
+            key = person_name_key(concept.label)
+            if key:
+                concepts_by_person_name.setdefault(key, []).append(concept)
+
+        unmatched_people = []
+        for person in people:
+            matches = concepts_by_person_name.get(canonical_person_key(person), [])
+            if len(matches) == 1:
+                matches[0].taxonomy_people.append(person)
+            else:
+                unmatched_people.append(person)
+        personae_root.taxonomy_people = unmatched_people
     go_root = next(
         (
             concept
@@ -157,6 +210,36 @@ def _location_point_for_concept(concept):
         ),
         None,
     )
+
+
+def _person_for_concept(concept):
+    """Return the unique canonical Person represented by a Personae leaf."""
+    root = concept
+    while root.parent_id is not None:
+        root = root.parent
+    if not Concept.objects.filter(
+        pk=root.pk,
+        translations__label__iexact="Personae",
+    ).exists():
+        return None
+    if concept.children.exists():
+        return None
+
+    label_key = person_name_key(concept.label)
+    if not label_key:
+        return None
+    people = deduplicate_people(
+        Person.objects.only(
+            "pk",
+            "given_name",
+            "previous_given_name",
+            "family_name",
+            "previous_family_name",
+            "identifier",
+        ).order_by("family_name", "given_name", "pk")
+    )
+    matches = [person for person in people if canonical_person_key(person) == label_key]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _match_location_to_go_concept(point, candidates):

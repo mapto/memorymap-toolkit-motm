@@ -286,6 +286,19 @@ def parse_timespan(raw: Any) -> Timespan:
 
     s = str(raw).strip().strip('"').strip()
 
+    # Excel may expose integer years as floats, and some chronotopi sheets use
+    # a year-first dotted date format alongside the usual German day-first one.
+    if re.fullmatch(r"\d{4}\.0", s):
+        s = s[:-2]
+    year_first_dotted = re.fullmatch(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", s)
+    if year_first_dotted:
+        year, month, day = year_first_dotted.groups()
+        s = f"{year}-{int(month):02d}-{int(day):02d}"
+
+    # A few source labels omit the space after the day dot (for example,
+    # ``03.Juli 1880``); normalize that spelling before parsing German dates.
+    s = re.sub(r"(?<=\d)\.(?=[A-Za-zÄÖÜäöü])", ". ", s)
+
     if not s or s in ("-", "?"):
         return Timespan()
 

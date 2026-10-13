@@ -40,6 +40,7 @@ DEFAULT_INPUT = Path(__file__).resolve().parent / "locations.xlsx"
 DEFAULT_OUTPUT = DEFAULT_INPUT
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
 DEFAULT_TAXONOMY = DEFAULT_DATA_ROOT / "maxqda" / "MAXQDA_Code_System.mmd"
+DEFAULT_WORKBOOKS_ROOT = DEFAULT_DATA_ROOT / "nuove schede"
 
 BASE_COLUMNS = (
     "location",
@@ -64,7 +65,7 @@ NON_LOCATION_NAMES = {
 QUERY_OVERRIDES = {
     "Kibbuz": "Ben Shemen, Israel",
     "Esther-Stern-Platz Gießen": "Gießen, Germany",
-    "Steinstraße 19,": "Steinstraße 19, Gießen, Germany",
+    "Steinstraße 19": "Steinstraße 19, Gießen, Germany",
     "Marktplatz 11": "Marktplatz 11, Gießen, Germany",
     "Löberstraße 20": "Löberstraße 20, Gießen, Germany",
     "Walltorstraße 48": "Walltorstraße 48, Gießen, Germany",
@@ -529,7 +530,7 @@ def wider_region_for(
 def rebuild_workbook(
     input_path: Path = DEFAULT_INPUT,
     output_path: Path = DEFAULT_OUTPUT,
-    data_root: Path = DEFAULT_DATA_ROOT,
+    data_root: Path = DEFAULT_WORKBOOKS_ROOT,
     taxonomy_path: Path = DEFAULT_TAXONOMY,
     *,
     own_geocoder: Callable = query_geocoder,

@@ -12,7 +12,7 @@ to mock in importer tests.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Mapping
 import re
 
 from locations import (
@@ -22,6 +22,7 @@ from locations import (
     taxonomy_match_excluded,
 )
 from taxonomy import Taxonomy, TaxonomyError, TaxonomyNode, _extract_key, _label_key
+from person_taxonomy import person_taxonomy_key
 
 
 ConceptCreator = Callable[..., int | None]
@@ -40,6 +41,7 @@ class TaxonomyImport:
     ids_by_key: dict[tuple[str, ...], int]
     nodes_by_key: dict[tuple[str, ...], TaxonomyNode]
     aliases: dict[str, tuple[str, ...]]
+    person_aliases: dict[str, str]
     create_concept: ConceptCreator
 
     def resolve_concept(self, label: str, top_level: str | None = None) -> int | None:
@@ -207,11 +209,20 @@ class TaxonomyImport:
         return concept_id
 
     def resolve_person(self, label: str) -> int | None:
-        """Resolve a person taxonomy label under the Personae category."""
-        return self.resolve_concept(label, "Personae")
+        """Resolve a source spelling to a person concept under Personae."""
+        key = person_taxonomy_key(label)
+        if not key:
+            return None
+        canonical = self.person_aliases.get(key, label)
+        return self.resolve_concept(canonical, "Personae")
 
 
-def import_taxonomy(taxonomy: Taxonomy, create_concept: ConceptCreator) -> TaxonomyImport:
+def import_taxonomy(
+    taxonomy: Taxonomy,
+    create_concept: ConceptCreator,
+    *,
+    person_aliases: Mapping[str, str] | None = None,
+) -> TaxonomyImport:
     """Persist taxonomy nodes parent-first and return their resolved IDs.
 
     ``taxonomy`` supplies validated structure only. ``create_concept`` is the
@@ -222,6 +233,42 @@ def import_taxonomy(taxonomy: Taxonomy, create_concept: ConceptCreator) -> Taxon
     nodes = taxonomy.concept_nodes()
     ids_by_key: dict[tuple[str, ...], int] = {}
     nodes_by_key = {node.key: node for node in nodes}
+    normalized_person_aliases: dict[str, str] = {}
+    personae_nodes = [
+        node
+        for node in nodes
+        if _label_key(_extract_key(node.top_level)) == _label_key("Personae")
+    ]
+    personae_labels = {_label_key(node.label) for node in personae_nodes}
+    personae_parent_keys = {
+        node.parent_key for node in personae_nodes if node.parent_key is not None
+    }
+    personae_leaf_labels = {
+        _label_key(node.label)
+        for node in personae_nodes
+        if node.parent_key is not None and node.key not in personae_parent_keys
+    }
+    for source, target in (person_aliases or {}).items():
+        source_key = person_taxonomy_key(source)
+        target_label = target.strip()
+        if not source_key or not target_label:
+            continue
+        previous = normalized_person_aliases.get(source_key)
+        if previous and _label_key(previous) != _label_key(target_label):
+            raise TaxonomyError(
+                f"Conflicting person aliases for {source!r}: "
+                f"{previous!r} and {target_label!r}"
+            )
+        if _label_key(target_label) not in personae_labels:
+            raise TaxonomyError(
+                f"Person alias target {target_label!r} is not in the Personae "
+                "taxonomy"
+            )
+        if _label_key(target_label) not in personae_leaf_labels:
+            raise TaxonomyError(
+                f"Person alias target {target_label!r} is not a Personae leaf"
+            )
+        normalized_person_aliases[source_key] = target_label
 
     for node in nodes:
         parent_id = ids_by_key.get(node.parent_key) if node.parent_key else None
@@ -240,5 +287,6 @@ def import_taxonomy(taxonomy: Taxonomy, create_concept: ConceptCreator) -> Taxon
         ids_by_key=ids_by_key,
         nodes_by_key=nodes_by_key,
         aliases=taxonomy.import_aliases(),
+        person_aliases=normalized_person_aliases,
         create_concept=create_concept,
     )

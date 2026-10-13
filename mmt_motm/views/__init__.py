@@ -44,6 +44,7 @@ from .search_views import (
 from .taxonomy import (
     _build_concept_taxonomy_tree,
     _location_point_for_concept,
+    _person_for_concept,
     _location_taxonomy_alias,
     _location_taxonomy_key,
     _location_taxonomy_match_excluded,
@@ -89,6 +90,7 @@ __all__ = [
     "person_search",
     "_build_concept_taxonomy_tree",
     "_location_point_for_concept",
+    "_person_for_concept",
     "_location_taxonomy_alias",
     "_location_taxonomy_key",
     "_location_taxonomy_match_excluded",

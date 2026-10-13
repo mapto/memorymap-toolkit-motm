@@ -46,7 +46,7 @@
                     {% else %}–{% endif %}
                 </td>
                 <td class="col-group-birth-end col-right-separator">
-                    {% if person.birth_place %}{{ person.birth_place }}{% else %}–{% endif %}
+                    {% if person.birth_place %}<a href="{% url 'location_detail' person.birth_place.pk %}">{{ person.birth_place }}</a>{% else %}–{% endif %}
                 </td>
                 <td class="col-group-death"
                     data-sort="{% if person.lifespan and person.lifespan.end %}{{ person.lifespan.end|date:'Y-m-d' }}{% endif %}">
@@ -60,7 +60,7 @@
                     {% else %}–{% endif %}
                 </td>
                 <td class="col-group-death-end col-right-separator">
-                    {% if person.death_place %}{{ person.death_place }}{% else %}–{% endif %}
+                    {% if person.death_place %}<a href="{% url 'location_detail' person.death_place.pk %}">{{ person.death_place }}</a>{% else %}–{% endif %}
                 </td>
                 <td data-sort="{{ person.interview_count }}">
                     {% if person.interview_count %}

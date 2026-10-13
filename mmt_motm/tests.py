@@ -1,12 +1,27 @@
+import json
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils.translation import override
 from django.contrib.gis.geos import Point
 from django.urls import reverse
 
-from .models import Concept, Event, Extraction, Interview, LocationPoint, Person
+from .models import (
+	Concept,
+	Event,
+	Extraction,
+	Interview,
+	LocationPoint,
+	Person,
+	Relationship,
+	RelationshipType,
+	Timespan,
+	URL,
+)
 from .serializers import ExtractionSerializer, LocationPointSerializer, TimespanSerializer
 from .views import ConceptTaxonomyView, LocationTaxonomyView, SourceCategoryHeatmapView
 from memorymap_toolkit.catalogs import localized_concept_label
+from .person_merge import PersonMergeError, merge_person_records
 
 
 class SourceCategoryHeatmapViewTests(TestCase):
@@ -158,6 +173,415 @@ class ConceptTaxonomyViewTests(TestCase):
 
 		assert [root.pk for root in roots] == [concept.pk]
 		assert roots[0].label == "English-only taxonomy root"
+
+
+class PersonaeTaxonomyViewTests(TestCase):
+	def test_personae_branch_matches_people_list_one_to_one(self):
+		personae = Concept.objects.create()
+		for language, label in (("en", "Personae"), ("it", "Persone")):
+			personae.set_current_language(language)
+			personae.label = label
+			personae.save()
+
+		legacy_code = Concept.objects.create(parent=personae)
+		legacy_code.set_current_language("en")
+		legacy_code.label = "Legacy collective code"
+		legacy_code.save()
+
+		family = Concept.objects.create(parent=personae)
+		family.set_current_language("en")
+		family.label = "Stern"
+		family.save()
+
+		person_concept = Concept.objects.create(parent=family)
+		person_concept.set_current_language("en")
+		person_concept.label = "Stern, Josef"
+		person_concept.save()
+
+		johanna_concept = Concept.objects.create(parent=family)
+		johanna_concept.set_current_language("en")
+		johanna_concept.label = "Kaminka, Johanna"
+		johanna_concept.save()
+
+		people = [
+			Person.objects.create(
+				identifier="PERSONAE-000",
+				given_name="Johanna",
+				family_name="Kaminka",
+			),
+			Person.objects.create(
+				identifier="PERSONAE-001",
+				given_name="Johanna",
+				family_name="Stern",
+			),
+			Person.objects.create(
+				identifier="PERSONAE-002",
+				given_name="Ada",
+				family_name="Lovelace",
+			),
+			Person.objects.create(
+				identifier="PERSONAE-003",
+				given_name="Ada",
+				family_name="Lovelace",
+			),
+		]
+
+		with override("it"):
+			person_list_url = reverse("person_list")
+			family_url = reverse("concept_detail", args=[family.pk])
+			person_urls = [
+				reverse("person_detail", args=[person.pk]) for person in people
+			]
+			concept_response = self.client.get(reverse("concept_taxonomy"))
+			people_response = self.client.get(person_list_url)
+
+		assert person_list_url == "/it/motm/persons/"
+		assert concept_response.status_code == 200
+		assert people_response.status_code == 200
+		tree_content = concept_response.content.decode()
+		assert tree_content.count('class="tree-item taxonomy-person"') == len(people) - 2
+		detail_link_count = tree_content.count('class="taxonomy-person-detail-link"')
+		assert detail_link_count == 0, (
+			f"detail links={detail_link_count}; "
+			f"Stern rendered={'Stern, Josef' in tree_content}"
+		)
+		assert "Legacy collective code" in tree_content
+		assert "Stern" in tree_content
+		assert "Stern, Josef" in tree_content
+		assert "Kaminka, Johanna" in tree_content
+		assert f'href="{family_url}"' in tree_content
+		assert f'href="{person_list_url}"' in tree_content
+		assert tree_content.count(f'href="{person_urls[0]}"') == 1
+		assert tree_content.count(f'href="{person_urls[1]}"') == 0
+		for person_url in person_urls[2:]:
+			assert tree_content.count(f'href="{person_url}"') == 1
+
+		list_content = people_response.content.decode()
+		assert list_content.count('class="person-row"') == len(people) - 1
+
+
+class PersonListLocationLinkTests(TestCase):
+	def test_present_places_link_to_location_detail(self):
+		birth_place = LocationPoint.objects.create(current_name="Frankfurt am Main")
+		death_place = LocationPoint.objects.create(current_name="Theresienstadt")
+		Person.objects.create(
+			given_name="Johanna",
+			family_name="Kaminka",
+			birth_place=birth_place,
+			death_place=death_place,
+		)
+
+		with override("en"):
+			response = self.client.get(reverse("person_list"))
+			birth_url = reverse("location_detail", args=[birth_place.pk])
+			death_url = reverse("location_detail", args=[death_place.pk])
+
+		assert response.status_code == 200
+		content = response.content.decode()
+		assert f'<a href="{birth_url}">Frankfurt am Main</a>' in content
+		assert f'<a href="{death_url}">Theresienstadt</a>' in content
+
+	def test_absent_death_place_is_not_linked(self):
+		birth_place = LocationPoint.objects.create(current_name="Frankfurt am Main")
+		Person.objects.create(
+			given_name="Ada",
+			family_name="Lovelace",
+			birth_place=birth_place,
+		)
+
+		with override("en"):
+			response = self.client.get(reverse("person_list"))
+			birth_url = reverse("location_detail", args=[birth_place.pk])
+			location_list_url = reverse("location_list")
+
+		assert response.status_code == 200
+		row = response.content.decode().split('class="person-row"', 1)[1].split("</tr>", 1)[0]
+		assert row.count(f'href="{birth_url}"') == 1
+		assert row.count(f'href="{location_list_url}') == 1
+
+
+class PersonDetailAliasRedirectTests(TestCase):
+	def test_alias_detail_url_redirects_to_the_canonical_person(self):
+		canonical = Person.objects.create(
+			given_name="Johanna",
+			family_name="Kaminka",
+		)
+		alias = Person.objects.create(
+			given_name="Johanna",
+			family_name="Stern",
+		)
+
+		with override("it"):
+			response = self.client.get(reverse("person_detail", args=[alias.pk]))
+			canonical_url = reverse("person_detail", args=[canonical.pk])
+
+		assert response.status_code == 301
+		assert response["Location"] == canonical_url
+
+
+class PersonAliasVisualizationTests(TestCase):
+	def setUp(self):
+		self.canonical = Person.objects.create(
+			given_name="Johanna",
+			family_name="Kaminka",
+			previous_family_name="Stern",
+		)
+		self.alias = Person.objects.create(
+			given_name="Johanna",
+			family_name="Stern",
+		)
+
+	def test_person_search_returns_one_reviewed_identity(self):
+		response = self.client.get(reverse("person_search"), {"q": "Johanna"})
+
+		assert response.status_code == 200
+		assert response.json() == [
+			{"id": self.canonical.pk, "name": "Kaminka, Johanna"},
+		]
+
+	def test_previous_surname_search_returns_the_canonical_person(self):
+		response = self.client.get(reverse("person_search"), {"q": "Stern"})
+
+		assert response.status_code == 200
+		assert response.json() == [
+			{"id": self.canonical.pk, "name": "Kaminka, Johanna"},
+		]
+
+	def test_global_search_returns_one_reviewed_identity(self):
+		response = self.client.get(reverse("global_search"), {"q": "Johanna"})
+
+		assert response.status_code == 200
+		assert [person["id"] for person in response.json()["people"]] == [
+			self.canonical.pk,
+		]
+
+	def test_event_detail_renders_an_alias_identity_once(self):
+		event = Event.objects.create()
+		event.persons.add(self.canonical, self.alias)
+
+		response = self.client.get(reverse("event_detail", args=[event.pk]))
+
+		assert response.status_code == 200
+		content = response.content.decode()
+		canonical_url = reverse("person_detail", args=[self.canonical.pk])
+		alias_url = reverse("person_detail", args=[self.alias.pk])
+		assert content.count(f'href="{canonical_url}"') == 1
+		assert f'href="{alias_url}"' not in content
+
+	def test_location_detail_deduplicates_people_and_event_participants(self):
+		location = LocationPoint.objects.create(current_name="Alias test location")
+		self.canonical.birth_place = location
+		self.canonical.save()
+		self.alias.birth_place = location
+		self.alias.save()
+		event = Event.objects.create(start_location=location)
+		event.persons.add(self.canonical, self.alias)
+
+		response = self.client.get(reverse("location_detail", args=[location.pk]))
+
+		assert response.status_code == 200
+		content = response.content.decode()
+		canonical_url = reverse("person_detail", args=[self.canonical.pk])
+		alias_url = reverse("person_detail", args=[self.alias.pk])
+		assert content.count(f'href="{canonical_url}"') == 2
+		assert f'href="{alias_url}"' not in content
+
+	def test_concept_detail_people_collection_deduplicates_aliases(self):
+		concept = Concept.objects.create()
+		concept.set_current_language("en")
+		concept.label = "Alias mention concept"
+		concept.save()
+		for person, identifier in (
+			(self.canonical, "ALIAS-MENTION-CANONICAL"),
+			(self.alias, "ALIAS-MENTION-VARIANT"),
+		):
+			extraction = Extraction.objects.create(
+				identifier=identifier,
+				people_mentioned=person,
+			)
+			extraction.concepts.add(concept)
+
+		response = self.client.get(reverse("concept_detail", args=[concept.pk]))
+
+		assert response.status_code == 200
+		assert [person.pk for person in response.context["persons"]] == [
+			self.canonical.pk,
+		]
+
+	def test_personae_taxonomy_and_concept_detail_open_canonical_person(self):
+		personae = Concept.objects.create()
+		for language, label in (("en", "Personae"), ("it", "Persone")):
+			personae.set_current_language(language)
+			personae.label = label
+			personae.save()
+		family = Concept.objects.create(parent=personae)
+		family.set_current_language("en")
+		family.label = "Stern"
+		family.save()
+		person_concept = Concept.objects.create(parent=family)
+		person_concept.set_current_language("en")
+		person_concept.label = "Kaminka, Johanna"
+		person_concept.save()
+		other_root = Concept.objects.create()
+		other_root.set_current_language("en")
+		other_root.label = "Kultureme"
+		other_root.save()
+		other_concept = Concept.objects.create(parent=other_root)
+		other_concept.set_current_language("en")
+		other_concept.label = "Kaminka, Johanna"
+		other_concept.save()
+
+		with override("it"):
+			taxonomy_response = self.client.get(reverse("concept_taxonomy"))
+			person_concept_response = self.client.get(
+				reverse("concept_detail", args=[person_concept.pk])
+			)
+			other_concept_response = self.client.get(
+				reverse("concept_detail", args=[other_concept.pk])
+			)
+			person_url = reverse("person_detail", args=[self.canonical.pk])
+
+		assert taxonomy_response.status_code == 200
+		tree_content = taxonomy_response.content.decode()
+		assert tree_content.count(f'href="{person_url}"') == 1
+		assert f'href="{reverse("concept_detail", args=[person_concept.pk])}"' not in tree_content
+		assert person_concept_response.status_code == 302
+		assert person_concept_response["Location"] == person_url
+		assert other_concept_response.status_code == 200
+
+
+class PersonMergeTests(TestCase):
+	def test_api_merge_action_returns_merged_ids(self):
+		canonical = Person.objects.create(
+			given_name="Johanna",
+			family_name="Kaminka",
+		)
+		duplicate = Person.objects.create(
+			given_name="Johanna",
+			family_name="Stern",
+		)
+		user = get_user_model().objects.create_user(username="person-merger")
+		self.client.force_login(user)
+
+		response = self.client.post(
+			reverse("api-person-merge", args=[canonical.pk]),
+			data=json.dumps({"duplicate_ids": [duplicate.pk]}),
+			content_type="application/json",
+		)
+
+		assert response.status_code == 200, response.content.decode()
+		assert response.json() == {
+			"canonical_id": canonical.pk,
+			"merged_ids": [duplicate.pk],
+		}
+		assert not Person.objects.filter(pk=duplicate.pk).exists()
+
+	def test_merge_preserves_all_person_relationships(self):
+		canonical = Person.objects.create(
+			identifier="MERGE-CANONICAL",
+			given_name="Johanna",
+			family_name="Kaminka",
+		)
+		duplicate = Person.objects.create(
+			given_name="Johanna",
+			family_name="Stern",
+		)
+		relative = Person.objects.create(
+			given_name="Josef",
+			family_name="Stern",
+		)
+		lifespan = Timespan.objects.create()
+		birth_place = LocationPoint.objects.create(current_name="Birthplace")
+		death_place = LocationPoint.objects.create(current_name="Deathplace")
+		duplicate.gender = "female"
+		duplicate.education = "Secondary school"
+		duplicate.occupation_at_source = "Teacher"
+		duplicate.lifespan = lifespan
+		duplicate.birth_place = birth_place
+		duplicate.death_place = death_place
+		duplicate.save()
+		duplicate.set_current_language("en")
+		duplicate.description = "Merged biography"
+		duplicate.save()
+		url = URL.objects.create(url="https://example.test/person-merge")
+		canonical.urls.add(url)
+		duplicate.urls.add(url)
+
+		event = Event.objects.create()
+		event.persons.add(canonical, duplicate)
+		interview = Interview.objects.create(
+			archive_id="MERGE-INTERVIEW",
+			interviewee=duplicate,
+			interviewer=duplicate,
+		)
+		extraction = Extraction.objects.create(
+			identifier="MERGE-EXTRACTION",
+			people_mentioned=duplicate,
+		)
+		relationship_type = RelationshipType.objects.create()
+		relationship_type.set_current_language("en")
+		relationship_type.name = "aunt"
+		relationship_type.save()
+		relationship = Relationship.objects.create(
+			relationship_type=relationship_type,
+			person_from=duplicate,
+			person_to=relative,
+		)
+		self_relationship = Relationship.objects.create(
+			relationship_type=relationship_type,
+			person_from=duplicate,
+			person_to=canonical,
+		)
+
+		merged_person, merged_ids = merge_person_records(
+			canonical.pk,
+			[duplicate.pk],
+		)
+
+		assert merged_person.pk == canonical.pk
+		assert merged_ids == [duplicate.pk]
+		assert not Person.objects.filter(pk=duplicate.pk).exists()
+		assert merged_person.previous_family_name == "Stern"
+		assert merged_person.gender == "female"
+		assert merged_person.education == "Secondary school"
+		assert merged_person.occupation_at_source == "Teacher"
+		assert merged_person.lifespan_id == lifespan.pk
+		assert merged_person.birth_place_id == birth_place.pk
+		assert merged_person.death_place_id == death_place.pk
+		merged_person.set_current_language("en")
+		assert merged_person.description == "Merged biography"
+		assert list(event.persons.values_list("pk", flat=True)) == [canonical.pk]
+		assert (
+			Extraction.objects.get(pk=extraction.pk).people_mentioned_id
+			== canonical.pk
+		)
+		interview.refresh_from_db()
+		assert interview.interviewee_id == canonical.pk
+		assert interview.interviewer_id == canonical.pk
+		relationship.refresh_from_db()
+		assert relationship.person_from_id == canonical.pk
+		assert relationship.person_to_id == relative.pk
+		assert not Relationship.objects.filter(pk=self_relationship.pk).exists()
+		assert list(merged_person.urls.values_list("pk", flat=True)) == [url.pk]
+
+	def test_merge_rejects_conflicting_external_identifiers(self):
+		canonical = Person.objects.create(
+			identifier="MERGE-IDENTIFIER-A",
+			given_name="Johanna",
+			family_name="Kaminka",
+		)
+		duplicate = Person.objects.create(
+			identifier="MERGE-IDENTIFIER-B",
+			given_name="Johanna",
+			family_name="Stern",
+		)
+
+		with self.assertRaises(PersonMergeError):
+			merge_person_records(canonical.pk, [duplicate.pk])
+
+		assert Person.objects.filter(pk=canonical.pk).exists()
+		assert Person.objects.filter(pk=duplicate.pk).exists()
+		assert Person.objects.get(pk=canonical.pk).previous_family_name == ""
 
 
 class LocationTaxonomyViewTests(TestCase):

@@ -8,9 +8,9 @@
     <p><a href="javascript:history.back()">&larr; {% trans "Back" %}</a></p>
     <h1>{{ event.localized_description|truncatewords:10 }}</h1>
 
-    {% if event.persons.exists %}
+    {% if persons %}
     <h2>{% trans "People:" %}
-        {% for person in event.persons.all %}
+        {% for person in persons %}
             <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
     </h2>

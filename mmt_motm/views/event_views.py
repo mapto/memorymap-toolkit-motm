@@ -3,6 +3,7 @@ import json
 from django.views.generic import DetailView, ListView
 
 from ..models import Event, Interview
+from ..person_identity import deduplicate_people
 
 
 class EventDetailView(DetailView):
@@ -13,6 +14,9 @@ class EventDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         event = self.object
+        context["persons"] = deduplicate_people(
+            event.persons.order_by("family_name", "given_name", "pk")
+        )
         context["extractions"] = event.relates_to_event.prefetch_related("concepts").all()
         context["dominant_icon"] = event.lifecycle_icon
         return context

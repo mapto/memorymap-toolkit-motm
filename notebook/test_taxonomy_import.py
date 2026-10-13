@@ -76,6 +76,71 @@ def test_import_taxonomy_returns_none_for_unknown_source_labels():
     assert imported.resolve_concept("not in taxonomy") is None
 
 
+def test_resolve_person_uses_reviewed_person_aliases():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["Personae"],
+            "Personae": ["Stern"],
+            "Stern": ["Stern, Josef"],
+            "Stern, Josef": [],
+        }
+    )
+    next_id = iter(range(1, 20))
+    imported = import_taxonomy(
+        taxonomy,
+        lambda label, **kwargs: next(next_id),
+        person_aliases={"Josef Stern": "Stern, Josef"},
+    )
+
+    assert imported.resolve_person("Josef Stern") == imported.resolve_person(
+        "Stern, Josef"
+    )
+    assert imported.resolve_person("unknown person") is None
+
+
+def test_person_alias_targets_must_exist_under_personae():
+    taxonomy = Taxonomy(hierarchy={ROOT_KEY: ["Personae"], "Personae": []})
+    calls = []
+
+    try:
+        import_taxonomy(
+            taxonomy,
+            lambda label, **kwargs: calls.append(label) or len(calls),
+            person_aliases={"Unknown Person": "Missing Person"},
+        )
+    except ValueError as exc:
+        assert "not in the Personae taxonomy" in str(exc)
+    else:
+        raise AssertionError("aliases with unknown canonical targets must be rejected")
+
+    assert calls == []
+
+
+def test_person_alias_targets_must_be_leaves():
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["Personae"],
+            "Personae": ["Stern"],
+            "Stern": ["Stern, Josef"],
+            "Stern, Josef": [],
+        }
+    )
+    calls = []
+
+    try:
+        import_taxonomy(
+            taxonomy,
+            lambda label, **kwargs: calls.append(label) or len(calls),
+            person_aliases={"Stern family": "Stern"},
+        )
+    except ValueError as exc:
+        assert "is not a Personae leaf" in str(exc)
+    else:
+        raise AssertionError("aliases must not resolve to a family branch")
+
+    assert calls == []
+
+
 def test_resolve_location_matches_synonyms_embedded_labels_and_exclusions():
     taxonomy = Taxonomy(
         hierarchy={

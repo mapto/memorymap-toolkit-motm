@@ -1,4 +1,6 @@
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from .bulk_actions import BulkMixin
 from ..models import (
@@ -27,14 +29,49 @@ from ..serializers import (
     TimespanSerializer,
     URLSerializer,
 )
+from ..person_merge import merge_person_records
 
 
 class PersonViewSet(BulkMixin, viewsets.ModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ["given_name", "family_name", "identifier"]
+    search_fields = [
+        "given_name",
+        "previous_given_name",
+        "family_name",
+        "previous_family_name",
+        "identifier",
+    ]
     bulk_lookup_field = "identifier"
+
+    @action(detail=True, methods=["post"], url_path="merge")
+    def merge(self, request, *args, **kwargs):
+        """Merge duplicate Person IDs into this canonical Person record."""
+        duplicate_ids = request.data.get("duplicate_ids")
+        if not isinstance(duplicate_ids, list):
+            return Response(
+                {"detail": "'duplicate_ids' must be a list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            canonical, merged_ids = merge_person_records(
+                self.get_object().pk,
+                duplicate_ids,
+            )
+        except Person.DoesNotExist:
+            return Response(
+                {"detail": "Canonical Person was not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except (ValueError, TypeError) as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(
+            {"canonical_id": canonical.pk, "merged_ids": merged_ids}
+        )
 
 
 class LocationPointViewSet(BulkMixin, viewsets.ModelViewSet):

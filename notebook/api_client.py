@@ -14,6 +14,10 @@ import time
 import requests
 from requests.exceptions import ConnectionError as ReqConnectionError
 
+from person_taxonomy import (
+    person_taxonomy_alias,
+    person_taxonomy_key,
+)
 from utils import clean_str, is_empty
 
 
@@ -265,6 +269,46 @@ def _is_subsequence(needles, haystack):
     return all(any(token == candidate for candidate in iterator) for token in needles)
 
 
+def _person_alias_target(value):
+    return person_taxonomy_alias(value)
+
+
+def _person_identity_key(person):
+    given_names = dict.fromkeys(
+        name
+        for name in (person.get("given_name"), person.get("previous_given_name"))
+        if name
+    )
+    family_names = dict.fromkeys(
+        name
+        for name in (person.get("family_name"), person.get("previous_family_name"))
+        if name
+    )
+    for given_name in given_names:
+        for family_name in family_names:
+            for variant in (
+                f"{given_name} {family_name}",
+                f"{family_name}, {given_name}",
+            ):
+                target = person_taxonomy_alias(variant)
+                if target:
+                    return person_taxonomy_key(target)
+    given_name = person.get("given_name", "")
+    family_name = person.get("family_name", "")
+    return person_taxonomy_key(f"{family_name}, {given_name}")
+
+
+def _canonical_person_parts(label):
+    if "," not in label:
+        return None
+    family_name, given_name = label.split(",", 1)
+    given_name = given_name.strip()
+    family_name = family_name.strip()
+    if not given_name or not family_name:
+        return None
+    return given_name, family_name
+
+
 def _find_person_by_name(persons, raw_name):
     """Find one existing Person represented by a combined source name.
 
@@ -307,31 +351,150 @@ def _find_person_by_name(persons, raw_name):
     return best_person
 
 
-def get_person_id(protagonist_col, name_col):
+def get_person_id(protagonist_col, name_col, identifier=None):
     """Get or create a Person from a combined source name."""
     raw_name = clean_str(name_col)
     if not raw_name:
         raw_name = clean_str(protagonist_col)
     if not raw_name:
         return None
-    key = _normalize_person_name(raw_name)
-    if key in _person_cache:
+    identifier = clean_str(identifier) or None
+    alias_target = _person_alias_target(raw_name)
+    canonical_parts = _canonical_person_parts(alias_target) if alias_target else None
+    if canonical_parts:
+        given, family = canonical_parts
+        canonical_search_name = f"{given} {family}"
+        canonical_label = f"{family}, {given}"
+        identity_key = person_taxonomy_key(canonical_label)
+    else:
+        display_name = _clean_person_name(raw_name)
+        parts = display_name.split()
+        given = " ".join(parts[:-1]) if len(parts) > 1 else display_name
+        family = parts[-1] if len(parts) > 1 else display_name
+        canonical_search_name = raw_name
+        canonical_label = f"{family}, {given}" if len(parts) > 1 else display_name
+        identity_key = person_taxonomy_key(canonical_label)
+
+    key = person_taxonomy_key(raw_name)
+    if identity_key in _person_cache and not identifier:
+        _person_cache[key] = _person_cache[identity_key]
+        return _person_cache[identity_key]
+    if not alias_target and key in _person_cache:
         return _person_cache[key]
-    display_name = _clean_person_name(raw_name)
-    parts = display_name.split()
-    given = " ".join(parts[:-1]) if len(parts) > 1 else display_name
-    family = parts[-1] if len(parts) > 1 else display_name
-    search_terms = [raw_name, *_normalize_person_name(raw_name).split()]
+
+    search_terms = [
+        raw_name,
+        canonical_search_name,
+        *_normalize_person_name(raw_name).split(),
+        *_normalize_person_name(canonical_search_name).split(),
+    ]
+    if identifier:
+        search_terms.append(identifier)
     existing_by_id = {}
     for search_term in dict.fromkeys(search_terms):
         for person in api_get("persons", params={"search": search_term}):
             existing_by_id[person["id"]] = person
-    match = _find_person_by_name(list(existing_by_id.values()), raw_name)
+    candidates = list(existing_by_id.values())
+    if alias_target:
+        identity_matches = [
+            person
+            for person in candidates
+            if _person_identity_key(person) == identity_key
+        ]
+        identifier_matches = [
+            person
+            for person in candidates
+            if identifier and person.get("identifier") == identifier
+        ]
+        if identifier_matches:
+            match = min(identifier_matches, key=lambda person: person["id"])
+        else:
+            identity_matches.sort(
+                key=lambda person: (
+                    person_taxonomy_key(
+                        f"{person.get('family_name', '')}, "
+                        f"{person.get('given_name', '')}"
+                    )
+                    != identity_key,
+                    not bool(person.get("identifier")),
+                    person["id"],
+                )
+            )
+            match = identity_matches[0] if identity_matches else None
+        if match:
+            duplicate_ids = [
+                person_id
+                for person_id in dict.fromkeys(
+                    person["id"]
+                    for person in [*identity_matches, *identifier_matches]
+                )
+                if person_id != match["id"]
+            ]
+            if duplicate_ids:
+                api_post(
+                    f"persons/{match['id']}/merge",
+                    {"duplicate_ids": duplicate_ids},
+                )
+                refreshed = api_get(f"persons/{match['id']}")
+                if isinstance(refreshed, dict):
+                    match = refreshed
+            if (
+                identifier
+                and match.get("identifier")
+                and match.get("identifier") != identifier
+            ):
+                raise ValueError(
+                    f"Reviewed Person alias {raw_name!r} resolves to Person "
+                    f"{match['id']} with identifier {match['identifier']!r}, "
+                    f"not requested identifier {identifier!r}."
+                )
+            if (
+                match.get("given_name") != given
+                or match.get("family_name") != family
+                or (identifier and match.get("identifier") != identifier)
+            ):
+                previous_names = {}
+                if (
+                    not match.get("previous_given_name")
+                    and match.get("given_name")
+                    and match.get("given_name") != given
+                ):
+                    previous_names["previous_given_name"] = match.get("given_name", "")
+                if (
+                    not match.get("previous_family_name")
+                    and match.get("family_name")
+                    and match.get("family_name") != family
+                ):
+                    previous_names["previous_family_name"] = match.get("family_name", "")
+                api_patch(
+                    "persons",
+                    match["id"],
+                    {
+                        "given_name": given,
+                        "family_name": family,
+                        **(
+                            {"identifier": identifier}
+                            if identifier and not match.get("identifier")
+                            else {}
+                        ),
+                        **previous_names,
+                    },
+                )
+            _person_cache[key] = match["id"]
+            _person_cache[identity_key] = match["id"]
+            return match["id"]
+    else:
+        match = _find_person_by_name(candidates, raw_name)
     if match:
         _person_cache[key] = match["id"]
+        _person_cache[identity_key] = match["id"]
         return match["id"]
-    created = api_post("persons", {"given_name": given, "family_name": family})
+    payload = {"given_name": given, "family_name": family}
+    if identifier:
+        payload["identifier"] = identifier
+    created = api_post("persons", payload)
     _person_cache[key] = created["id"]
+    _person_cache[identity_key] = created["id"]
     return created["id"]
 
 

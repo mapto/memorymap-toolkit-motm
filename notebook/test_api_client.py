@@ -1,6 +1,7 @@
 """Unit tests for shared API-client behavior used by notebook imports."""
 
 import api_client
+import pytest
 
 
 class FakeResponse:
@@ -141,7 +142,13 @@ def test_get_person_id_matches_first_name_and_family_with_middle_name(monkeypatc
     api_client._person_cache.clear()
 
     assert api_client.get_person_id("Paul Alsberg", "Paul Alsberg") == 1
-    assert searches == ["Paul Alsberg", "paul", "alsberg"]
+    assert searches == [
+        "Paul Alsberg",
+        "Paul Avraham Alsberg",
+        "paul",
+        "alsberg",
+        "avraham",
+    ]
     assert posts == []
 
 
@@ -163,6 +170,208 @@ def test_get_person_id_matches_simple_combined_name(monkeypatch):
 
     assert api_client.get_person_id("Helena Weinberg", "Helena Weinberg") == 3
     assert posts == []
+
+
+def test_get_person_id_merges_reviewed_alias_duplicate_into_canonical_person(
+    monkeypatch,
+):
+    persons = [
+        {
+            "id": 20,
+            "given_name": "Johanna",
+            "family_name": "Kaminka",
+            "identifier": None,
+        },
+        {
+            "id": 31,
+            "given_name": "Johanna",
+            "family_name": "Stern",
+            "identifier": None,
+        },
+    ]
+    posts = []
+
+    monkeypatch.setattr(
+        api_client,
+        "api_get",
+        lambda endpoint, params=None: (
+            persons
+            if endpoint == "persons"
+            else {**persons[0], "previous_family_name": "Stern"}
+            if endpoint == "persons/20"
+            else []
+        ),
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_post",
+        lambda endpoint, payload: posts.append((endpoint, payload))
+        or {"canonical_id": 20, "merged_ids": [31]},
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_patch",
+        lambda *args, **kwargs: pytest.fail(
+            "the existing canonical person already has the canonical name"
+        ),
+    )
+    api_client._person_cache.clear()
+
+    assert api_client.get_person_id("Johanna Stern", "Johanna Stern") == 20
+    assert posts == [
+        ("persons/20/merge", {"duplicate_ids": [31]}),
+    ]
+
+
+def test_get_person_id_merges_alias_when_import_uses_canonical_spelling(monkeypatch):
+    persons = [
+        {
+            "id": 20,
+            "given_name": "Johanna",
+            "family_name": "Kaminka",
+            "identifier": None,
+        },
+        {
+            "id": 31,
+            "given_name": "Johanna",
+            "family_name": "Stern",
+            "identifier": None,
+        },
+    ]
+    posts = []
+
+    monkeypatch.setattr(
+        api_client,
+        "api_get",
+        lambda endpoint, params=None: (
+            persons
+            if endpoint == "persons"
+            else next(
+                (person for person in persons if endpoint == f"persons/{person['id']}"),
+                [],
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_post",
+        lambda endpoint, payload: posts.append((endpoint, payload))
+        or {"canonical_id": 20, "merged_ids": [31]},
+    )
+    api_client._person_cache.clear()
+
+    assert api_client.get_person_id("Johanna Kaminka", "Johanna Kaminka") == 20
+    assert posts == [
+        ("persons/20/merge", {"duplicate_ids": [31]}),
+    ]
+
+
+def test_person_identity_key_matches_reviewed_previous_names():
+    person = {
+        "given_name": "Joan",
+        "previous_given_name": "Johanna",
+        "family_name": "Kaminka",
+        "previous_family_name": "Stern",
+    }
+
+    assert api_client._person_identity_key(person) == api_client.person_taxonomy_key(
+        "Kaminka, Johanna"
+    )
+
+
+def test_get_person_id_creates_reviewed_alias_with_canonical_fields(monkeypatch):
+    posts = []
+
+    monkeypatch.setattr(api_client, "api_get", lambda endpoint, params=None: [])
+    monkeypatch.setattr(
+        api_client,
+        "api_post",
+        lambda endpoint, payload: posts.append((endpoint, payload))
+        or {"id": 70, **payload},
+    )
+    api_client._person_cache.clear()
+
+    assert api_client.get_person_id("Johanna Stern", "Johanna Stern") == 70
+    assert posts == [
+        (
+            "persons",
+            {"given_name": "Johanna", "family_name": "Kaminka"},
+        )
+    ]
+
+
+def test_get_person_id_prefers_metadata_identifier_and_merges_alias_matches(
+    monkeypatch,
+):
+    persons = [
+        {
+            "id": 20,
+            "given_name": "Johanna",
+            "family_name": "Kaminka",
+            "identifier": None,
+        },
+        {
+            "id": 31,
+            "given_name": "Johanna",
+            "family_name": "Stern",
+            "identifier": None,
+        },
+        {
+            "id": 40,
+            "given_name": "",
+            "family_name": "",
+            "identifier": "META-020",
+        },
+    ]
+    posts = []
+    patches = []
+
+    monkeypatch.setattr(
+        api_client,
+        "api_get",
+        lambda endpoint, params=None: (
+            persons
+            if endpoint == "persons"
+            else next(
+                (person for person in persons if endpoint == f"persons/{person['id']}"),
+                [],
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_post",
+        lambda endpoint, payload: posts.append((endpoint, payload))
+        or {"canonical_id": 40, "merged_ids": [20, 31]},
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_patch",
+        lambda *args: patches.append(args),
+    )
+    api_client._person_cache.clear()
+
+    assert (
+        api_client.get_person_id(
+            "Johanna Stern",
+            "Johanna Stern",
+            identifier="META-020",
+        )
+        == 40
+    )
+    assert posts == [
+        ("persons/40/merge", {"duplicate_ids": [20, 31]}),
+    ]
+    assert patches == [
+        (
+            "persons",
+            40,
+            {
+                "given_name": "Johanna",
+                "family_name": "Kaminka",
+            },
+        ),
+    ]
 
 
 def test_find_person_by_name_prefers_exact_family_field():

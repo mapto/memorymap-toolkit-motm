@@ -5,7 +5,12 @@ from django.utils import translation
 from django.views.generic import DetailView, ListView
 
 from ..models import Concept, Person
-from .taxonomy import _build_concept_taxonomy_tree, _location_point_for_concept
+from ..person_identity import deduplicate_people
+from .taxonomy import (
+    _build_concept_taxonomy_tree,
+    _location_point_for_concept,
+    _person_for_concept,
+)
 
 
 class ConceptListView(ListView):
@@ -26,6 +31,9 @@ class ConceptDetailView(DetailView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        person = _person_for_concept(self.object)
+        if person:
+            return redirect("person_detail", pk=person.pk)
         location = _location_point_for_concept(self.object)
         if location:
             return redirect("location_detail", pk=location.pk)
@@ -37,9 +45,9 @@ class ConceptDetailView(DetailView):
         concept = self.object
         quotes = concept.relates_to_concept.exclude(quote="")
         context["quotes"] = quotes.prefetch_related("concepts")
-        context["persons"] = Person.objects.filter(
+        context["persons"] = deduplicate_people(Person.objects.filter(
             relates_to_person__concepts=concept
-        ).distinct()
+        ).distinct().order_by("family_name", "given_name", "pk"))
         # Build ancestor breadcrumb (excluding self)
         breadcrumb_items = []
         node = concept.parent

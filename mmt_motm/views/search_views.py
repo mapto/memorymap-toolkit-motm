@@ -6,6 +6,7 @@ from django.utils import translation
 from memorymap_toolkit.catalogs import localized_concept_label, localized_event_description
 
 from ..models import Concept, Event, Extraction, Interview, LocationPoint, Person
+from ..person_identity import deduplicate_people
 
 
 def person_search(request):
@@ -13,9 +14,12 @@ def person_search(request):
     query = request.GET.get("q", "").strip()
     if len(query) < 2:
         return JsonResponse([], safe=False)
-    persons = Person.objects.filter(
-        Q(given_name__icontains=query) | Q(family_name__icontains=query)
-    ).order_by("family_name", "given_name")[:10]
+    persons = deduplicate_people(Person.objects.filter(
+        Q(given_name__icontains=query)
+        | Q(previous_given_name__icontains=query)
+        | Q(family_name__icontains=query)
+        | Q(previous_family_name__icontains=query)
+    ).order_by("family_name", "given_name", "pk"))[:10]
     results = [
         {"id": person.pk, "name": f"{person.family_name}, {person.given_name}"}
         for person in persons
@@ -129,9 +133,12 @@ def global_search(request):
         for place in places
     ]
 
-    people = Person.objects.filter(
-        Q(given_name__icontains=query) | Q(family_name__icontains=query)
-    ).order_by("family_name", "given_name")[:10]
+    people = deduplicate_people(Person.objects.filter(
+        Q(given_name__icontains=query)
+        | Q(previous_given_name__icontains=query)
+        | Q(family_name__icontains=query)
+        | Q(previous_family_name__icontains=query)
+    ).order_by("family_name", "given_name", "pk"))[:10]
     person_results = []
     for person in people:
         event_data = list(

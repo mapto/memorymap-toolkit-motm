@@ -26,7 +26,13 @@ from locations import (
     get_or_create_location as get_or_create_location_point,
     load_locations_db,
 )
-from timespan import parse_date, parse_date_range
+from timespan import parse_date, parse_date_range, parse_timespan
+from person_taxonomy import (
+    canonical_person_name,
+    is_placeholder_name,
+    metadata_relative_name,
+    person_taxonomy_alias,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +114,39 @@ def clean_value(value):
 def clean_metadata_value(value):
     value = clean_value(value)
     return " ".join(value.split()) if value else None
+
+
+def _date_interval(raw):
+    """Preserve the precision interval represented by one metadata date."""
+    parsed = parse_timespan(raw)
+    if parsed.start is None:
+        return None
+    end = parsed.end or parsed.start
+    return parsed.start.isoformat(), end.isoformat()
+
+
+def _split_biographical_date_range(raw):
+    """Return separate birth/death intervals from a metadata family date cell."""
+    value = clean_value(raw)
+    if not value:
+        return None, None
+
+    separators = [r"\s*[–—]\s*", r"\s+-\s+", r"-(?=[A-Za-zÄÖÜäöü])"]
+    if re.fullmatch(r"\d{4}-\d{2,4}\??", value):
+        separators.append(r"-")
+    if not re.fullmatch(r"\d{1,2}/\d{1,2}/\d{4}\*?", value):
+        separators.append(r"\s*/\s*")
+
+    for separator in separators:
+        match = re.search(separator, value)
+        if not match:
+            continue
+        birth_interval = _date_interval(value[: match.start()])
+        death_interval = _date_interval(value[match.end() :])
+        if birth_interval and death_interval:
+            return birth_interval, death_interval
+
+    return _date_interval(value), None
 
 
 def parse_coordinates(text):
@@ -232,6 +271,7 @@ def _parse_person_field(person, birth_place, field, value_str, extra_str):
         person["gender"] = value_str
     elif field == "Geburtsdatum":
         person["birth_date"] = parse_date(value_str) if value_str else None
+        person["birth_date_interval"] = _date_interval(value_str)
     elif field in {"Verfolgtengruppe NS", "Verfolgtengruppe(n) NS"}:
         person["attributes"]["ns_persecution_group"] = value_str
     elif field == "Schulbildung / Abschluss":
@@ -294,6 +334,7 @@ def _parse_person_sheet(rows):
         "previous_family_name": None,
         "gender": None,
         "birth_date": None,
+        "birth_date_interval": None,
         "education": None,
         "occupation_at_emigration": None,
         "occupation_at_source": None,
@@ -359,6 +400,9 @@ def _parse_family_sheet(sheet):
             birth_place,
             notes,
         ) = row
+        birth_date_interval, death_date_interval = _split_biographical_date_range(
+            birth_date_raw
+        )
         birth_date, death_date = (
             parse_date_range(str(birth_date_raw)) if birth_date_raw else (None, None)
         )
@@ -368,7 +412,9 @@ def _parse_family_sheet(sheet):
                 "given_name": clean_value(given_name),
                 "family_name": clean_value(family_name),
                 "birth_date": birth_date,
+                "birth_date_interval": birth_date_interval,
                 "death_date": death_date,
+                "death_date_interval": death_date_interval,
                 "birth_place": clean_value(birth_place),
                 "notes": clean_value(notes),
             }
@@ -456,8 +502,51 @@ def get_or_create_location(bp):
 # ---------------------------------------------------------------------------
 
 
+def _data_date_interval(data, field_name, value):
+    interval = data.get(f"{field_name}_date_interval")
+    if isinstance(interval, (tuple, list)) and len(interval) == 2:
+        start = parse_timespan(interval[0])
+        end = parse_timespan(interval[1])
+        if start.start and end.start:
+            return start.start, end.end or end.start
+    parsed = parse_timespan(value)
+    if parsed.start is None:
+        return None
+    return parsed.start, parsed.end or parsed.start
+
+
+def _compatible_date_or_existing(current, incoming, interval, field_name, person_id):
+    if not incoming:
+        return current
+    if not current:
+        return incoming
+    if current == incoming:
+        return current
+
+    existing = parse_timespan(current)
+    existing_start = existing.start
+    existing_end = existing.end or existing.start
+    incoming_start, incoming_end = interval or (None, None)
+    if (
+        existing_start
+        and existing_end
+        and incoming_start
+        and incoming_end
+        and existing_start <= incoming_end
+        and incoming_start <= existing_end
+    ):
+        # Keep an existing, more specific value when an imported partial date
+        # merely confirms that it falls within the same precision interval.
+        return current
+
+    raise ValueError(
+        f"Refusing to overwrite Person {person_id} {field_name} date "
+        f"{current!r} with conflicting metadata value {incoming!r}"
+    )
+
+
 def _maybe_update_lifespan(person_id, data):
-    """Update a person's lifespan if new date data is available."""
+    """Fill a person's lifespan without overwriting conflicting existing dates."""
     birth = data.get("birth_date")
     death = data.get("death_date")
     if not birth and not death:
@@ -470,8 +559,20 @@ def _maybe_update_lifespan(person_id, data):
         ts = SESSION.get(f"{BASE_URL}/timespans/{existing_ts_id}/").json()
         cur_start = ts.get("start")
         cur_end = ts.get("end")
-        new_start = birth or cur_start
-        new_end = death or cur_end
+        new_start = _compatible_date_or_existing(
+            cur_start,
+            birth,
+            _data_date_interval(data, "birth", birth),
+            "birth",
+            person_id,
+        )
+        new_end = _compatible_date_or_existing(
+            cur_end,
+            death,
+            _data_date_interval(data, "death", death),
+            "death",
+            person_id,
+        )
         if new_start == cur_start and new_end == cur_end:
             return  # no change
     else:
@@ -493,8 +594,33 @@ def _maybe_update_lifespan(person_id, data):
 
 def get_or_create_person(data, identifier=None):
     """Create or match a Person via the API. Returns person id or None."""
-    given_name = data.get("given_name")
-    family_name = data.get("family_name")
+    source_given_name = data.get("given_name")
+    source_family_name = data.get("family_name")
+    canonical = canonical_person_name(source_given_name, source_family_name)
+    if canonical is not None:
+        given_name, family_name = canonical.given_name, canonical.family_name
+    else:
+        given_name, family_name = source_given_name, source_family_name
+    if (given_name, family_name) != (source_given_name, source_family_name):
+        data = dict(data)
+        if (
+            not data.get("previous_given_name")
+            and source_given_name
+            and source_given_name != given_name
+        ):
+            data["previous_given_name"] = source_given_name
+        if (
+            not data.get("previous_family_name")
+            and source_family_name
+            and source_family_name != family_name
+        ):
+            data["previous_family_name"] = source_family_name
+        data["given_name"] = given_name
+        data["family_name"] = family_name
+    source_name = " ".join(
+        part for part in (source_given_name, source_family_name) if part
+    )
+    alias_target = person_taxonomy_alias(source_name)
 
     if is_empty(given_name) and is_empty(family_name):
         return None
@@ -513,12 +639,32 @@ def get_or_create_person(data, identifier=None):
     def update_existing(existing):
         patch = metadata_payload()
         if existing:
+            if data.get("gender") and not existing.get("gender"):
+                patch["gender"] = data["gender"]
+            if identifier and not existing.get("identifier"):
+                patch["identifier"] = identifier
+            if existing.get("given_name") != given_name:
+                patch["given_name"] = given_name or ""
+            if existing.get("family_name") != family_name:
+                patch["family_name"] = family_name or ""
             if data.get("previous_given_name") and not existing.get("previous_given_name"):
                 patch["previous_given_name"] = data["previous_given_name"]
             if data.get("previous_family_name") and not existing.get("previous_family_name"):
                 patch["previous_family_name"] = data["previous_family_name"]
         if patch:
             api_patch("persons", existing["id"], patch)
+
+    if alias_target:
+        from api_client import get_person_id
+
+        person_id = get_person_id(source_name, source_name, identifier=identifier)
+        if not person_id:
+            return None
+        existing = api_get(f"persons/{person_id}")
+        _maybe_update_lifespan(person_id, data)
+        update_existing(existing)
+        _person_cache[(given_name or "").lower(), (family_name or "").lower()] = person_id
+        return person_id
 
     # Match on identifier
     if identifier:
@@ -595,6 +741,8 @@ def get_or_create_person(data, identifier=None):
         "family_name": family_name or "",
     }
     payload.update(metadata_payload())
+    if data.get("gender"):
+        payload["gender"] = data["gender"]
     lifespan_id = get_or_create_timespan(
         start=data.get("birth_date"),
         end=data.get("death_date"),
@@ -681,8 +829,59 @@ def get_or_create_relationship_type(label):
     return created["id"]
 
 
-def create_relationship(main_person_id, data, fallback_family_name):
-    """Create a Relationship via the API."""
+def _is_unnamed_relative(person, family_name):
+    """True for a placeholder record that stands for the same relative."""
+    if not is_placeholder_name(person.get("given_name")):
+        return False
+    stored_family = person.get("family_name")
+    return is_placeholder_name(stored_family) or (
+        str(stored_family).strip().casefold() == family_name.casefold()
+    )
+
+
+def _merge_unnamed_relatives(
+    main_person_id, rel_type_id, canonical_id, given_name, family_name
+):
+    """Merge placeholder duplicates of a linked relative into the canonical person.
+
+    Each duplicate is renamed before the merge, so the backend merge does not
+    copy the placeholder into the canonical person's previous-name fields.
+    Records with an identifier are never merged automatically.
+    """
+    duplicate_ids = []
+    for relationship in api_get("relationships"):
+        if (
+            relationship["person_from"] != main_person_id
+            or relationship["relationship_type"] != rel_type_id
+            or relationship["person_to"] in (canonical_id, *duplicate_ids)
+        ):
+            continue
+        candidate = api_get(f"persons/{relationship['person_to']}")
+        if candidate.get("identifier") or not _is_unnamed_relative(
+            candidate, family_name
+        ):
+            continue
+        duplicate_ids.append(candidate["id"])
+    if not duplicate_ids:
+        return
+    for duplicate_id in duplicate_ids:
+        api_patch(
+            "persons",
+            duplicate_id,
+            {"given_name": given_name, "family_name": family_name},
+        )
+    api_post(f"persons/{canonical_id}/merge", {"duplicate_ids": duplicate_ids})
+
+
+def create_relationship(
+    main_person_id, data, fallback_family_name, source_workbook=None
+):
+    """Create a Relationship via the API.
+
+    An unnamed relative with a reviewed link for the source workbook is attached
+    to that Personae person, and placeholder duplicates of the same relation
+    are merged into it.
+    """
     if is_empty(data.get("relation")):
         return None
 
@@ -690,6 +889,13 @@ def create_relationship(main_person_id, data, fallback_family_name):
     family_name = data.get("family_name")
     if is_empty(family_name):
         family_name = fallback_family_name
+
+    linked_name = None
+    if is_placeholder_name(given_name):
+        linked_name = metadata_relative_name(source_workbook, data.get("relation"))
+    if linked_name is not None:
+        given_name = linked_name.given_name
+        family_name = linked_name.family_name
 
     related_id = get_or_create_person(
         {
@@ -705,6 +911,11 @@ def create_relationship(main_person_id, data, fallback_family_name):
     rel_type_id = get_or_create_relationship_type(data.get("relation"))
     if not rel_type_id:
         return None
+
+    if linked_name:
+        _merge_unnamed_relatives(
+            main_person_id, rel_type_id, related_id, given_name, family_name
+        )
 
     # Check local cache first
     cache_key = (main_person_id, related_id, rel_type_id)
@@ -740,8 +951,34 @@ def create_relationship(main_person_id, data, fallback_family_name):
 # ---------------------------------------------------------------------------
 
 
-def import_record(record):
-    """Import a full person record (parsed JSON) via API calls."""
+def _maybe_update_person_place(person_id, field_name, location_id, source_name):
+    person = api_get(f"persons/{person_id}")
+    existing_id = person.get(field_name) if isinstance(person, dict) else None
+    if existing_id:
+        if str(existing_id) == str(location_id):
+            return
+        existing_location = api_get(f"locations/{existing_id}")
+        existing_name = (
+            existing_location.get("current_name") or existing_location.get("name")
+            if isinstance(existing_location, dict)
+            else None
+        )
+        from person_biography import place_names_equivalent
+
+        if existing_name and place_names_equivalent(source_name, existing_name):
+            return
+        raise ValueError(
+            f"Refusing to overwrite Person {person_id} {field_name} "
+            f"{existing_name!r} with conflicting metadata value {source_name!r}"
+        )
+    api_patch("persons", person_id, {field_name: location_id})
+
+
+def import_record(record, source_workbook=None):
+    """Import a full person record (parsed JSON) via API calls.
+
+    source_workbook is the metadata file name; it scopes the reviewed relative links.
+    """
     person_id = get_or_create_person(
         record["person"],
         identifier=record.get("identifier"),
@@ -751,11 +988,14 @@ def import_record(record):
         return None
 
     # Birth place
-    location_id = get_or_create_location(record.get("birth_place", {}))
+    birth_place = record.get("birth_place", {})
+    location_id = get_or_create_location(birth_place)
     if location_id:
-        SESSION.patch(
-            f"{BASE_URL}/persons/{person_id}/",
-            json={"birth_place": location_id},
+        _maybe_update_person_place(
+            person_id,
+            "birth_place",
+            location_id,
+            birth_place.get("name"),
         )
 
     # Interviews
@@ -766,7 +1006,7 @@ def import_record(record):
     person_data = SESSION.get(f"{BASE_URL}/persons/{person_id}/").json()
     main_family_name = person_data.get("family_name", "")
     for family_data in record.get("family", []):
-        create_relationship(person_id, family_data, main_family_name)
+        create_relationship(person_id, family_data, main_family_name, source_workbook)
 
     return person_id
 
@@ -774,7 +1014,7 @@ def import_record(record):
 def import_from_xlsx(xlsx_path):
     """Parse an xlsx file and import the person record via the API."""
     record = read_person_record(xlsx_path)
-    person_id = import_record(record)
+    person_id = import_record(record, source_workbook=Path(xlsx_path).name)
     if person_id:
         print(f"\u2705 Imported: {xlsx_path}")
     else:

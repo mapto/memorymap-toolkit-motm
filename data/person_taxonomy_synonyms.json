@@ -1,0 +1,32 @@
+{
+  "metadata_by_chronotopi": {
+    "chronotopoi_alsberg_reviewed.xlsx": "metadati_Alsberg.xlsx",
+    "chronotopoi_brodsky_reviewed.xlsx": "metadati_brodsky.xlsx",
+    "chronotopoi_GILEAD.xlsx": "metadati_gilead.xlsx",
+    "chronotopoi_josef_stern_familie_v4a.xlsx": "metadati_josef_stern_v4.xlsx"
+  },
+  "metadata_relatives": {
+    "metadati_brodsky.xlsx": {
+      "Tante 1 (Schwester der Mutter)": "Brodsky, Tante 1",
+      "Tante 2 (Schwester der Mutter)": "Nelken, Frau Doktor"
+    }
+  },
+  "aliases": {
+    "Paul Alsberg": "Alsberg, Paul Avraham",
+    "Paul Avraham Alsberg": "Alsberg, Paul Avraham",
+    "Paul Alfred Alsberg": "Alsberg, Paul Avraham",
+    "Shimon Alsberg": "Alsberg, Shimon",
+    "Ada Brodsky": "Brodsky, Ada",
+    "Ada Betty Brodsky": "Brodsky, Ada",
+    "Ada Neumark": "Brodsky, Ada",
+    "Ada Betty Neumark": "Brodsky, Ada",
+    "Tante 1 Brodsky": "Brodsky, Tante 1",
+    "Frau Doktor Nelken (Tante 2)": "Nelken, Frau Doktor",
+    "Josef Stern": "Stern, Josef",
+    "Helmut Stern": "Stern, Josef",
+    "Johanna Stern": "Kaminka, Johanna",
+    "Claire Stern": "Thalheimer, Claire",
+    "Auguste Stern": "Rossmann, Auguste",
+    "Betty Kaminka": "Maier, Betty"
+  }
+}
