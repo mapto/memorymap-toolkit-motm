@@ -22,6 +22,7 @@ import requests
 from unidecode import unidecode
 
 from locations import (
+    LOCATIONS_WORKBOOK_PATH,
     extract_geonames_coordinates,
     extract_geonames_id,
     extract_wikidata_coordinates,
@@ -30,13 +31,15 @@ from locations import (
     taxonomy_alias,
     taxonomy_location_parent,
     taxonomy_match_excluded,
+    taxonomy_query_override,
+    taxonomy_reviewed_unmapped,
     tokenize_location,
 )
 from taxonomy import Taxonomy, _extract_key, _label_key, load_taxonomy
 from utils import extract_id_from_url, extract_url_map
 
 
-DEFAULT_INPUT = Path(__file__).resolve().parent / "locations.xlsx"
+DEFAULT_INPUT = LOCATIONS_WORKBOOK_PATH
 DEFAULT_OUTPUT = DEFAULT_INPUT
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
 DEFAULT_TAXONOMY = DEFAULT_DATA_ROOT / "maxqda" / "MAXQDA_Code_System.mmd"
@@ -54,25 +57,6 @@ BASE_COLUMNS = (
 )
 
 DERIVED_COLUMNS = ("wider_region", "coordinate_source")
-
-NON_LOCATION_NAMES = {
-    "?",
-    "aus Gießen nach Palästina",
-    "Association of Israelis of Central European Origin (AICEO)",
-    "Digitales Archiv vom Else-Lasker-Schüler-Gesellschaft",
-}
-
-QUERY_OVERRIDES = {
-    "Kibbuz": "Ben Shemen, Israel",
-    "Esther-Stern-Platz Gießen": "Gießen, Germany",
-    "Steinstraße 19": "Steinstraße 19, Gießen, Germany",
-    "Marktplatz 11": "Marktplatz 11, Gießen, Germany",
-    "Löberstraße 20": "Löberstraße 20, Gießen, Germany",
-    "Walltorstraße 48": "Walltorstraße 48, Gießen, Germany",
-    "Gießen Schillerschule (Volksschule)": "Schillerschule, Gießen, Germany",
-    "Haifa, Universität, Bibliothek": "Haifa, Israel",
-    "Kibbuz Rodges, besteht nicht mehr (in der Nähe von Petah Tikva)": "Petah Tikva, Israel",
-}
 
 
 @dataclass
@@ -128,7 +112,7 @@ def read_existing_workbook(path: Path) -> tuple[list[str], dict[str, dict]]:
     for values in sheet.iter_rows(min_row=2, values_only=True):
         record = {header: value for header, value in zip(headers, values)}
         name = clean_value(record.get("location"))
-        if not name or name.startswith("http") or name in NON_LOCATION_NAMES:
+        if not name or name.startswith("http") or taxonomy_reviewed_unmapped(name):
             continue
         records[location_key(name)] = record
     return headers, records
@@ -168,7 +152,7 @@ def read_chronotopi_sources(data_root: Path) -> dict[str, SourceLocation]:
                 continue
             for _, row in frame.iterrows():
                 name = clean_value(row.get("place_name"))
-                if not name or name in NON_LOCATION_NAMES:
+                if not name or taxonomy_reviewed_unmapped(name):
                     continue
                 key = location_key(name)
                 source = sources.setdefault(
@@ -210,7 +194,7 @@ def read_metadata_sources(data_root: Path) -> dict[str, SourceLocation]:
             continue
         birth_place = record.get("birth_place") or {}
         name = clean_value(birth_place.get("name"))
-        if not name or name in NON_LOCATION_NAMES:
+        if not name or taxonomy_reviewed_unmapped(name):
             continue
         key = location_key(name)
         source = sources.setdefault(key, SourceLocation(name=name))
@@ -331,8 +315,9 @@ def build_query(
     record: dict,
     geo_paths: dict[str, tuple[str, ...]] | None = None,
 ) -> str:
-    if name in QUERY_OVERRIDES:
-        return QUERY_OVERRIDES[name]
+    override = taxonomy_query_override(name)
+    if override is not None:
+        return override
     if geo_paths:
         normalized_name = _label_key(name)
         if normalized_name in geo_paths:
@@ -409,7 +394,7 @@ def resolve_coordinates(
         return direct, "chronotopi", {}
 
     query = build_query(name, source, record, geo_paths)
-    if name in QUERY_OVERRIDES:
+    if taxonomy_query_override(name) is not None:
         own = own_geocoder(query)
         if own:
             pair = coordinate_pair(own.get("lat"), own.get("long"))
@@ -569,7 +554,7 @@ def rebuild_workbook(
     ):
         record = merged[key]
         name = clean_value(record.get("location"))
-        if not name or name in NON_LOCATION_NAMES or name == "?":
+        if not name or taxonomy_reviewed_unmapped(name):
             dropped += 1
             continue
         source = sources.get(key)

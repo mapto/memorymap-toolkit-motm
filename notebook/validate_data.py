@@ -37,7 +37,7 @@ import pandas as pd
 
 from locations import (
     LOCATION_TAXONOMY_SYNONYMS_PATH,
-    NON_LOCATION_NAMES as LOCATIONS_NON_LOCATION_NAMES,
+    LOCATIONS_WORKBOOK_PATH,
     taxonomy_label_key,
     taxonomy_match_excluded,
 )
@@ -61,7 +61,6 @@ from person_taxonomy import (
     person_taxonomy_key,
 )
 from rebuild_locations import (
-    NON_LOCATION_NAMES as REBUILD_NON_LOCATION_NAMES,
     coordinate_pair,
     read_chronotopi_sources,
     read_existing_workbook,
@@ -88,7 +87,7 @@ TEMPLATE_DIR = DATA_DIR / "template"
 MAXQDA_DIR = DATA_DIR / "maxqda"
 MAXQDA_TAXONOMY = MAXQDA_DIR / "MAXQDA_Code_System.mmd"
 DOCS_TAXONOMY = REPO_ROOT / "docs" / "mqda_coding_taxonomy.mmd"
-LOCATION_WORKBOOK = NOTEBOOK_DIR / "locations.xlsx"
+LOCATION_WORKBOOK = LOCATIONS_WORKBOOK_PATH
 
 ERROR = "ERROR"
 WARNING = "WARNING"
@@ -128,7 +127,13 @@ CONCEPT_COLUMNS = ("event_type", "transport_mode", "place_category")
 TIME_COLUMN = "date_label"
 DATE_COLUMNS = ("date_start", "date_end")
 LOCATION_SECTIONS = frozenset(
-    {"aliases", "canonical_parents", "excluded_contains", "reviewed_unmapped"}
+    {
+        "aliases",
+        "canonical_parents",
+        "excluded_contains",
+        "query_overrides",
+        "reviewed_unmapped",
+    }
 )
 PERSON_SECTIONS = frozenset({"aliases", "metadata_by_chronotopi", "metadata_relatives"})
 WIKIDATA_ID = re.compile(r"(?:https?://www\.wikidata\.org/wiki/)?Q\d+")
@@ -678,19 +683,6 @@ def check_location_graph(
                 f"{name}: excluded_contains {term!r} matches {hits[:5]}; "
                 "those alias or parent entries are never used",
             )
-
-
-def check_non_location_drift(report: Report) -> None:
-    only_locations = LOCATIONS_NON_LOCATION_NAMES - REBUILD_NON_LOCATION_NAMES
-    only_rebuild = REBUILD_NON_LOCATION_NAMES - LOCATIONS_NON_LOCATION_NAMES
-    if only_locations or only_rebuild:
-        report.add(
-            WARNING,
-            PLACES,
-            "NON_LOCATION_NAMES differ between locations.py and rebuild_locations.py: "
-            f"only in locations.py {sorted(only_locations)}, "
-            f"only in rebuild_locations.py {sorted(only_rebuild)}",
-        )
 
 
 def check_places(
@@ -1345,7 +1337,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     }
     labels = {_label_key(node.label): node.label for node in concept_nodes}
 
-    check_non_location_drift(report)
     location = read_location_synonyms(report)
     person = read_person_synonyms(report)
     if location is not None:

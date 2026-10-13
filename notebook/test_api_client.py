@@ -381,6 +381,76 @@ def test_get_person_id_prefers_metadata_identifier_and_merges_alias_matches(
     ]
 
 
+def test_is_split_of_canonical_name_only_matches_resplit_tokens():
+    assert api_client._is_split_of_canonical_name(
+        {"given_name": "Tante", "family_name": "1"}, "Tante 1", "Brodsky"
+    )
+    assert api_client._is_split_of_canonical_name(
+        {"given_name": "Anna Maria", "family_name": "Rossi"}, "Anna", "Maria Rossi"
+    )
+    # A real previous surname is kept as a previous name, so it is not renamed.
+    assert not api_client._is_split_of_canonical_name(
+        {"given_name": "Johanna", "family_name": "Stern"}, "Johanna", "Kaminka"
+    )
+    # Identical names need no rename.
+    assert not api_client._is_split_of_canonical_name(
+        {"given_name": "Tante 1", "family_name": "Brodsky"}, "Tante 1", "Brodsky"
+    )
+
+
+def test_get_person_id_merges_name_fragment_without_copying_previous_names(
+    monkeypatch,
+):
+    persons = [
+        {
+            "id": 14,
+            "given_name": "Tante 1",
+            "family_name": "Brodsky",
+            "identifier": None,
+        },
+        {
+            "id": 44,
+            "given_name": "Tante",
+            "family_name": "1",
+            "identifier": None,
+        },
+    ]
+    calls = []
+
+    monkeypatch.setattr(
+        api_client,
+        "api_get",
+        lambda endpoint, params=None: (
+            persons
+            if endpoint == "persons"
+            else next(
+                (person for person in persons if endpoint == f"persons/{person['id']}"),
+                [],
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_post",
+        lambda endpoint, payload: (
+            calls.append(("post", endpoint, payload))
+            or {"canonical_id": 14, "merged_ids": [44]}
+        ),
+    )
+    monkeypatch.setattr(
+        api_client,
+        "api_patch",
+        lambda *args: calls.append(("patch", *args)),
+    )
+    api_client._person_cache.clear()
+
+    assert api_client.get_person_id("Tante 1", "Tante 1") == 14
+    assert calls == [
+        ("patch", "persons", 44, {"given_name": "Tante 1", "family_name": "Brodsky"}),
+        ("post", "persons/14/merge", {"duplicate_ids": [44]}),
+    ]
+
+
 def test_find_person_by_name_prefers_exact_family_field():
     persons = [
         {"id": 1, "given_name": "Paul Avraham", "family_name": "Alsberg"},

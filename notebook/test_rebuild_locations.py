@@ -1,10 +1,12 @@
 """Tests for rebuilding the location workbook from source evidence."""
 
+import json
 from pathlib import Path
 
 import openpyxl
 
 import rebuild_locations
+from locations import LOCATION_TAXONOMY_SYNONYMS_PATH
 
 
 def test_resolve_coordinates_prefers_chronotopi_direct_coordinates(monkeypatch):
@@ -54,6 +56,28 @@ def test_resolve_coordinates_falls_through_to_geonames_then_wikidata(monkeypatch
 
     assert coordinates == (52.5, 13.4)
     assert source_name == "geonames"
+
+
+def test_query_override_label_geocodes_with_reviewed_query():
+    queries = []
+
+    def own_geocoder(query):
+        queries.append(query)
+        return {"lat": 32.0, "long": 34.8}
+
+    coordinates, source_name, _ = rebuild_locations.resolve_coordinates(
+        "Kibbuz",
+        {},
+        None,
+        own_geocoder=own_geocoder,
+        nominatim=lambda query: (_ for _ in ()).throw(
+            AssertionError("Nominatim must not run")
+        ),
+    )
+
+    assert queries == ["Ben Shemen, Israel"]
+    assert coordinates == (32.0, 34.8)
+    assert source_name == "own-geocoder"
 
 
 def test_resolve_coordinates_uses_own_geocoder_before_nominatim():
@@ -125,6 +149,20 @@ def test_reviewed_taxonomy_synonyms_resolve_to_canonical_labels():
     assert rebuild_locations.taxonomy_alias("Frankfurt/M") == "Frankfurt am Main"
     assert rebuild_locations.taxonomy_alias("Israel") == "Palästina – Israel"
     assert rebuild_locations.taxonomy_match_excluded("Koblenz") is True
+
+
+def test_chronotopi_sources_skip_every_reviewed_non_location(tmp_path):
+    labels = json.loads(LOCATION_TAXONOMY_SYNONYMS_PATH.read_text(encoding="utf-8"))[
+        "reviewed_unmapped"
+    ]
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.append(["event_label", "place_name"])
+    for label in labels:
+        sheet.append(["event", label])
+    workbook.save(tmp_path / "chronotopi-test.xlsx")
+
+    assert rebuild_locations.read_chronotopi_sources(tmp_path) == {}
 
 
 def test_order_output_headers_places_derived_columns_after_super_region():

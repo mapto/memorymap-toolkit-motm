@@ -20,19 +20,12 @@ logger = logging.getLogger(__name__)
 LOCATION_TAXONOMY_SYNONYMS_PATH = (
     Path(__file__).resolve().parents[1] / "data" / "location_taxonomy_synonyms.json"
 )
+LOCATIONS_WORKBOOK_PATH = Path(__file__).resolve().parent / "locations.xlsx"
 
 
 GEONAMES_USERNAME = "mapto"
 
 domains = ["geonames.org", "wikidata.org"]
-
-NON_LOCATION_NAMES = {
-    "?",
-    "aus Gießen nach Palästina",
-    "Association of Israelis of Central European Origin (AICEO)",
-    "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
-    "Digitales Archiv vom Else-Lasker-Schüler-Gesellschaft",
-}
 
 
 def taxonomy_label_key(value):
@@ -45,6 +38,7 @@ def taxonomy_label_key(value):
 class LocationTaxonomySynonyms:
     """Reviewed location-to-GO synonyms, with keys normalized for matching.
 
+    Query overrides are the exception: they match exact source labels.
     The mappings are read-only; copy them before changing anything.
     """
 
@@ -53,6 +47,7 @@ class LocationTaxonomySynonyms:
     excluded_terms: frozenset[str]
     reviewed_unmapped_keys: frozenset[str]
     reviewed_unmapped_labels: frozenset[str]
+    query_overrides: Mapping[str, str]
 
     def alias_for(self, value) -> str:
         """Return the reviewed canonical GO label, or the value when unreviewed."""
@@ -62,13 +57,24 @@ class LocationTaxonomySynonyms:
         """Return the reviewed GO parent hint for a supplemental location."""
         return self.canonical_parents.get(taxonomy_label_key(value))
 
-    def is_excluded(self, value) -> bool:
-        """Return whether a reviewed location is intentionally left unmapped."""
+    def query_override_for(self, value) -> str | None:
+        """Return the reviewed geocoder query for an exact source label, if any."""
+        return self.query_overrides.get(value)
+
+    def is_reviewed_unmapped(self, value) -> bool:
+        """Return whether the reviewed table lists the label as not a location."""
         key = taxonomy_label_key(value)
         raw_value = str(value or "").strip().casefold()
         return bool(
             raw_value in self.reviewed_unmapped_labels
             or (key and key in self.reviewed_unmapped_keys)
+        )
+
+    def is_excluded(self, value) -> bool:
+        """Return whether a reviewed location is intentionally left unmapped."""
+        key = taxonomy_label_key(value)
+        return bool(
+            self.is_reviewed_unmapped(value)
             or any(term in key for term in self.excluded_terms)
         )
 
@@ -100,6 +106,7 @@ def location_taxonomy_synonyms() -> LocationTaxonomySynonyms:
         reviewed_unmapped_labels=frozenset(
             str(label).strip().casefold() for label in reviewed_unmapped
         ),
+        query_overrides=MappingProxyType(dict(data.get("query_overrides", {}))),
     )
 
 
@@ -113,15 +120,25 @@ def taxonomy_match_excluded(value):
     return location_taxonomy_synonyms().is_excluded(value)
 
 
+def taxonomy_reviewed_unmapped(value):
+    """Return whether the reviewed table lists a source label as not a location."""
+    return location_taxonomy_synonyms().is_reviewed_unmapped(value)
+
+
 def taxonomy_location_parent(value):
     """Return the reviewed GO parent hint for a supplemental location concept."""
     return location_taxonomy_synonyms().canonical_parent_for(value)
 
 
+def taxonomy_query_override(value):
+    """Return the reviewed geocoder query for an exact source label, if any."""
+    return location_taxonomy_synonyms().query_override_for(value)
+
+
 def canonical_location_name(value, locations_db=None):
     """Map a source location spelling to one workbook entity when possible."""
     cleaned = str(value or "").strip()
-    if not cleaned or cleaned in NON_LOCATION_NAMES or cleaned.startswith("http"):
+    if not cleaned or taxonomy_reviewed_unmapped(cleaned) or cleaned.startswith("http"):
         return None
     if locations_db is None:
         return cleaned
@@ -523,10 +540,7 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
     the same workbook when ``save_enriched`` is true.
     """
     if xlsx_path is None:
-        xlsx_path = os.path.join(
-            os.path.dirname(__file__) if "__file__" in dir() else ".",
-            "locations.xlsx",
-        )
+        xlsx_path = LOCATIONS_WORKBOOK_PATH
     if not os.path.exists(xlsx_path):
         logger.warning("locations.xlsx not found at %s, starting fresh", xlsx_path)
         return _locations_db
@@ -620,10 +634,7 @@ def _extra_url_mapping(value):
 def save_locations_db(xlsx_path=None):
     """Save _locations_db back to locations.xlsx, merging with existing data."""
     if xlsx_path is None:
-        xlsx_path = os.path.join(
-            os.path.dirname(__file__) if "__file__" in dir() else ".",
-            "locations.xlsx",
-        )
+        xlsx_path = LOCATIONS_WORKBOOK_PATH
     HEADERS = [
         "location",
         "bag_of_words",
@@ -1137,10 +1148,7 @@ def link_locations_to_regions(locations_db):
     """Create LocationRegions from super_region data and link LocationPoints."""
     from api_client import api_get, api_bulk_upsert, api_bulk_update
 
-    xlsx_path = os.path.join(
-        os.path.dirname(__file__) if "__file__" in dir() else ".",
-        "locations.xlsx",
-    )
+    xlsx_path = LOCATIONS_WORKBOOK_PATH
     if not os.path.exists(xlsx_path):
         print("  locations.xlsx not found, skipping region linking")
         return

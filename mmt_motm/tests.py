@@ -867,6 +867,45 @@ class EventListViewTests(TestCase):
 		]
 
 
+class ConceptListViewTests(TestCase):
+	def make_concept(self, label):
+		concept = Concept.objects.create()
+		concept.set_current_language("en")
+		concept.label = label
+		concept.save()
+		return concept
+
+	def test_word_cloud_shows_only_concepts_with_at_least_two_quotes(self):
+		self.make_concept("Unused concept")
+		single = self.make_concept("Single quote concept")
+		repeated = self.make_concept("Repeated quote concept")
+		Extraction.objects.create(identifier="E-single-001").concepts.add(single)
+		for number in ("001", "002"):
+			Extraction.objects.create(identifier=f"E-repeated-{number}").concepts.add(repeated)
+
+		with override("en"):
+			response = self.client.get(reverse("concept_list"))
+
+		assert response.status_code == 200
+		assert [concept.pk for concept in response.context["concepts"]] == [repeated.pk]
+
+
+class LocationListViewTests(TestCase):
+	def test_word_cloud_shows_only_places_with_at_least_two_events(self):
+		LocationPoint.objects.create(current_name="Unused place")
+		single = LocationPoint.objects.create(current_name="Single event place")
+		repeated = LocationPoint.objects.create(current_name="Repeated event place")
+		Event.objects.create(start_location=single)
+		Event.objects.create(start_location=repeated)
+		Event.objects.create(end_location=repeated)
+
+		with override("en"):
+			response = self.client.get(reverse("location_list"))
+
+		assert response.status_code == 200
+		assert [location.pk for location in response.context["locations"]] == [repeated.pk]
+
+
 class LocationPointSerializerTests(TestCase):
 	def test_update_coordinates_writes_point_field(self):
 		location = LocationPoint.objects.create(current_name="Test location")

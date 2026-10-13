@@ -20,10 +20,16 @@ class LocationListView(ListView):
             icon__gt="",
         ).values("icon").annotate(cnt=Count("id")).order_by("-cnt").values("icon")[:1]
 
-        return LocationPoint.objects.select_related("region").annotate(
-            event_count=Count("events_started", distinct=True) + Count("events_ended", distinct=True),
-            dominant_icon=Subquery(dominant_icon),
-        ).order_by("-event_count", "current_name")
+        # Word cloud: only places with at least two events
+        return (
+            LocationPoint.objects.select_related("region")
+            .annotate(
+                event_count=Count("events_started", distinct=True) + Count("events_ended", distinct=True),
+                dominant_icon=Subquery(dominant_icon),
+            )
+            .filter(event_count__gte=2)
+            .order_by("-event_count", "current_name")
+        )
 
 
 class LocationMapView(ListView):

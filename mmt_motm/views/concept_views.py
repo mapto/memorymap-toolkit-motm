@@ -19,9 +19,12 @@ class ConceptListView(ListView):
     context_object_name = "concepts"
 
     def get_queryset(self):
-        return Concept.objects.annotate(
-            quote_count=Count("relates_to_concept")
-        ).order_by("-quote_count")
+        # Word cloud: only concepts linked to at least two quotes
+        return (
+            Concept.objects.annotate(quote_count=Count("relates_to_concept"))
+            .filter(quote_count__gte=2)
+            .order_by("-quote_count")
+        )
 
 
 class ConceptDetailView(DetailView):

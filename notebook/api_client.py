@@ -350,6 +350,26 @@ def _find_person_by_name(persons, raw_name):
     return best_person
 
 
+def _is_split_of_canonical_name(person, given, family):
+    """Return True when a duplicate stores the canonical name split differently.
+
+    A source label without a surname, such as the sheet ``Tante 1``, was once
+    stored as given ``Tante`` and family ``1``. Names that re-split the same
+    tokens carry no previous-name information, so the caller renames them
+    before the merge instead of letting the merge copy the fragments into
+    ``previous_*`` fields.
+    """
+    if (person.get("given_name"), person.get("family_name")) == (given, family):
+        return False
+    stored_tokens = _name_tokens(person.get("given_name")) + _name_tokens(
+        person.get("family_name")
+    )
+    return bool(stored_tokens) and stored_tokens in (
+        _name_tokens(given),
+        _name_tokens(f"{given} {family}"),
+    )
+
+
 def get_person_id(protagonist_col, name_col, identifier=None):
     """Get or create a Person from a combined source name."""
     raw_name = clean_str(name_col)
@@ -421,17 +441,22 @@ def get_person_id(protagonist_col, name_col, identifier=None):
             )
             match = identity_matches[0] if identity_matches else None
         if match:
-            duplicate_ids = [
-                person_id
-                for person_id in dict.fromkeys(
-                    person["id"] for person in [*identity_matches, *identifier_matches]
-                )
-                if person_id != match["id"]
-            ]
-            if duplicate_ids:
+            duplicates = {
+                person["id"]: person
+                for person in [*identity_matches, *identifier_matches]
+                if person["id"] != match["id"]
+            }
+            if duplicates:
+                for duplicate in duplicates.values():
+                    if _is_split_of_canonical_name(duplicate, given, family):
+                        api_patch(
+                            "persons",
+                            duplicate["id"],
+                            {"given_name": given, "family_name": family},
+                        )
                 api_post(
                     f"persons/{match['id']}/merge",
-                    {"duplicate_ids": duplicate_ids},
+                    {"duplicate_ids": list(duplicates)},
                 )
                 refreshed = api_get(f"persons/{match['id']}")
                 if isinstance(refreshed, dict):
