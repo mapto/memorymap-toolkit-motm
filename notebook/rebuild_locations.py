@@ -74,6 +74,7 @@ QUERY_OVERRIDES = {
     "Kibbuz Rodges, besteht nicht mehr (in der Nähe von Petah Tikva)": "Petah Tikva, Israel",
 }
 
+
 @dataclass
 class SourceLocation:
     """Merged source evidence for one normalized location name."""
@@ -119,7 +120,10 @@ def read_existing_workbook(path: Path) -> tuple[list[str], dict[str, dict]]:
     """Read meaningful existing rows while retaining all workbook columns."""
     workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
     sheet = workbook.active
-    headers = [clean_value(sheet.cell(1, column).value) for column in range(1, sheet.max_column + 1)]
+    headers = [
+        clean_value(sheet.cell(1, column).value)
+        for column in range(1, sheet.max_column + 1)
+    ]
     records = {}
     for values in sheet.iter_rows(min_row=2, values_only=True):
         record = {header: value for header, value in zip(headers, values)}
@@ -167,7 +171,9 @@ def read_chronotopi_sources(data_root: Path) -> dict[str, SourceLocation]:
                 if not name or name in NON_LOCATION_NAMES:
                     continue
                 key = location_key(name)
-                source = sources.setdefault(key, SourceLocation(name=name.rstrip("?").strip()))
+                source = sources.setdefault(
+                    key, SourceLocation(name=name.rstrip("?").strip())
+                )
                 coordinates = coordinate_pair(
                     clean_value(row.get("place_lat")),
                     clean_value(row.get("place_lon")),
@@ -300,11 +306,15 @@ def build_geo_paths(taxonomy: Taxonomy) -> dict[str, tuple[str, ...]]:
 def choose_direct_coordinates(source: SourceLocation) -> tuple[float, float] | None:
     if not source.direct_coordinates:
         return None
-    rounded = Counter((round(lat, 6), round(lon, 6)) for lat, lon in source.direct_coordinates)
+    rounded = Counter(
+        (round(lat, 6), round(lon, 6)) for lat, lon in source.direct_coordinates
+    )
     return rounded.most_common(1)[0][0]
 
 
-def source_ids(record: dict, source: SourceLocation | None) -> tuple[str | None, str | None]:
+def source_ids(
+    record: dict, source: SourceLocation | None
+) -> tuple[str | None, str | None]:
     geonames_url = clean_value(record.get("www.geonames.org"))
     wikidata_url = clean_value(record.get("www.wikidata.org"))
     geonames_id = extract_geonames_id(geonames_url)
@@ -327,7 +337,9 @@ def build_query(
         normalized_name = _label_key(name)
         if normalized_name in geo_paths:
             return name
-    context = next(iter(sorted(source.details)), "") if source and source.details else ""
+    context = (
+        next(iter(sorted(source.details)), "") if source and source.details else ""
+    )
     if context and len(context) < 80 and not context.startswith("http"):
         return f"{name}, {context}, Germany"
     existing_parent = clean_value(record.get("super_region"))
@@ -336,7 +348,9 @@ def build_query(
     return name
 
 
-def geocode_nominatim(query: str, *, request_get: Callable = requests.get, delay: float = 1.1):
+def geocode_nominatim(
+    query: str, *, request_get: Callable = requests.get, delay: float = 1.1
+):
     """Geocode a final fallback query and return coordinates plus address metadata."""
     response = request_get(
         "https://nominatim.openstreetmap.org/search",
@@ -550,7 +564,9 @@ def rebuild_workbook(
     output_rows = []
     dropped = 0
     source_counts = Counter()
-    for key in sorted(merged, key=lambda item: clean_value(merged[item].get("location")).casefold()):
+    for key in sorted(
+        merged, key=lambda item: clean_value(merged[item].get("location")).casefold()
+    ):
         record = merged[key]
         name = clean_value(record.get("location"))
         if not name or name in NON_LOCATION_NAMES or name == "?":
@@ -581,8 +597,12 @@ def rebuild_workbook(
         output_rows.append(record)
         source_counts[coordinate_source] += 1
 
-    if not output_rows or any(not coordinate_pair(row.get("lat"), row.get("long")) for row in output_rows):
-        raise RuntimeError("Rebuilt workbook still contains rows without valid coordinates")
+    if not output_rows or any(
+        not coordinate_pair(row.get("lat"), row.get("long")) for row in output_rows
+    ):
+        raise RuntimeError(
+            "Rebuilt workbook still contains rows without valid coordinates"
+        )
 
     workbook = openpyxl.Workbook()
     sheet = workbook.active

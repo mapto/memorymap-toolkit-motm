@@ -239,9 +239,7 @@ def _update_birth_place(birth_place, value_str, extra_str):
         flags=re.IGNORECASE,
     )
     birth_place["name"] = (
-        name_match.group(1).strip()
-        if name_match
-        else value_str.splitlines()[0].strip()
+        name_match.group(1).strip() if name_match else value_str.splitlines()[0].strip()
     )
 
     for part in (p.strip() for p in re.split(r"\||\r?\n", metadata) if p.strip()):
@@ -647,9 +645,13 @@ def get_or_create_person(data, identifier=None):
                 patch["given_name"] = given_name or ""
             if existing.get("family_name") != family_name:
                 patch["family_name"] = family_name or ""
-            if data.get("previous_given_name") and not existing.get("previous_given_name"):
+            if data.get("previous_given_name") and not existing.get(
+                "previous_given_name"
+            ):
                 patch["previous_given_name"] = data["previous_given_name"]
-            if data.get("previous_family_name") and not existing.get("previous_family_name"):
+            if data.get("previous_family_name") and not existing.get(
+                "previous_family_name"
+            ):
                 patch["previous_family_name"] = data["previous_family_name"]
         if patch:
             api_patch("persons", existing["id"], patch)
@@ -663,7 +665,9 @@ def get_or_create_person(data, identifier=None):
         existing = api_get(f"persons/{person_id}")
         _maybe_update_lifespan(person_id, data)
         update_existing(existing)
-        _person_cache[(given_name or "").lower(), (family_name or "").lower()] = person_id
+        _person_cache[(given_name or "").lower(), (family_name or "").lower()] = (
+            person_id
+        )
         return person_id
 
     # Match on identifier

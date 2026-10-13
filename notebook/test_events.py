@@ -16,7 +16,9 @@ import events
 
 DATA_FILE = (
     Path(__file__).parent.parent
-    / "data" / "nuove schede" / "chronotopoi_josef_stern_familie_v4a.xlsx"
+    / "data"
+    / "nuove schede"
+    / "chronotopoi_josef_stern_familie_v4a.xlsx"
 )
 SHEET_NAME = "Josef Stern"
 
@@ -63,14 +65,20 @@ def row_by_label(df, label, occurrence=0):
 def api_stub(monkeypatch):
     """Stub out every network-touching dependency of create_event_from_row."""
     calls = {
-        "locations": [], "location_kwargs": {}, "timespans": [], "concepts": [],
-        "persons": [], "urls": [], "posted": [],
+        "locations": [],
+        "location_kwargs": {},
+        "timespans": [],
+        "concepts": [],
+        "persons": [],
+        "urls": [],
+        "posted": [],
     }
 
     def fake_location(name, wikidata_qid=None, geonames_id=None, locations_db=None):
         calls["locations"].append(name)
         calls["location_kwargs"][name] = {
-            "wikidata_qid": wikidata_qid, "geonames_id": geonames_id,
+            "wikidata_qid": wikidata_qid,
+            "geonames_id": geonames_id,
         }
         return f"loc:{name}"
 
@@ -105,8 +113,14 @@ def api_stub(monkeypatch):
 
 class TestEventHelpers:
     def test_prepare_event_data_normalizes_location_and_rejects_missing_fields(self):
-        assert events.prepare_event_data({"event_label": "", "place_name": "Place"}) is None
-        assert events.prepare_event_data({"event_label": "Event", "place_name": ""}) is None
+        assert (
+            events.prepare_event_data({"event_label": "", "place_name": "Place"})
+            is None
+        )
+        assert (
+            events.prepare_event_data({"event_label": "Event", "place_name": ""})
+            is None
+        )
 
         assert events.prepare_event_data(
             {"event_label": "Event", "place_name": "Place", "place_detail": "Room"}
@@ -123,6 +137,7 @@ class TestEventHelpers:
             "place_category": "alte_heimat",
             "date_label": "1933",
         }
+
         def resolve(label):
             return f"concept:{label}"
 
@@ -145,7 +160,9 @@ class TestEventHelpers:
         monkeypatch.setattr(
             events,
             "get_or_create_timespan",
-            lambda start, end, certainty=None: calls.append((start, end, certainty)) or 7,
+            lambda start, end, certainty=None: (
+                calls.append((start, end, certainty)) or 7
+            ),
         )
 
         timespan_id, certainty = events.create_event_timespan(
@@ -168,9 +185,7 @@ class TestEventHelpers:
 
         monkeypatch.setattr(events, "get_or_create_location", fake_location)
         row = {"place_name": "Gießen", "place_detail": "Marktplatz 11"}
-        event_data = events.prepare_event_data(
-            {"event_label": "Event", **row}
-        )
+        event_data = events.prepare_event_data({"event_label": "Event", **row})
 
         result = events.create_event_locations(
             row,
@@ -229,10 +244,14 @@ class TestCreateEventFromRowPayload:
         assert payload["concepts"] == ["concept:birth", "concept:alte_heimat"]
         assert len(payload["urls"]) == 3  # geonames, wikidata, giessen.de
 
-    def test_uncertain_event_is_not_confirmed_and_has_single_url(self, person_df, api_stub):
+    def test_uncertain_event_is_not_confirmed_and_has_single_url(
+        self, person_df, api_stub
+    ):
         row = row_by_label(person_df, "Wohnort", occurrence=0)
 
-        events.create_event_from_row(row, "Josef Stern", start_location=row["start_location"])
+        events.create_event_from_row(
+            row, "Josef Stern", start_location=row["start_location"]
+        )
 
         _, payload = api_stub["posted"][0]
         assert payload["is_confirmed"] is False
@@ -243,22 +262,30 @@ class TestCreateEventFromRowPayload:
         row = row_by_label(person_df, "Hachschara")
         assert row["start_location"] != row["end_location"]
 
-        events.create_event_from_row(row, "Josef Stern", start_location=row["start_location"])
+        events.create_event_from_row(
+            row, "Josef Stern", start_location=row["start_location"]
+        )
 
         _, payload = api_stub["posted"][0]
         assert payload["end_location"] == "loc:Schlesien"
         assert payload["start_location"] == "loc:Gießen"
         assert "urls" not in payload  # no external_links on this row
 
-    def test_lifecycle_falls_back_to_event_label_when_categories_are_ambiguous(self, person_df, api_stub):
+    def test_lifecycle_falls_back_to_event_label_when_categories_are_ambiguous(
+        self, person_df, api_stub
+    ):
         row = row_by_label(person_df, "Auswanderung", occurrence=0)
 
-        events.create_event_from_row(row, "Josef Stern", start_location=row["start_location"])
+        events.create_event_from_row(
+            row, "Josef Stern", start_location=row["start_location"]
+        )
 
         _, payload = api_stub["posted"][0]
         assert payload["lifecycle"] == "auswanderung"
         assert payload["concepts"] == [
-            "concept:emigration_transit", "concept:Zug", "concept:verkehrsmittel"
+            "concept:emigration_transit",
+            "concept:Zug",
+            "concept:verkehrsmittel",
         ]
 
     def test_missing_event_label_skips_creation(self, api_stub):
@@ -273,8 +300,11 @@ class TestCreateEventFromRowPayload:
 
     def test_no_dates_means_no_timespan(self, api_stub):
         row = {
-            "event_label": "Undated event", "place_name": "Nowhere",
-            "date_start": "", "date_end": "", "date_certainty": "",
+            "event_label": "Undated event",
+            "place_name": "Nowhere",
+            "date_start": "",
+            "date_end": "",
+            "date_certainty": "",
         }
         events.create_event_from_row(row, "Josef Stern")
 
@@ -285,9 +315,13 @@ class TestCreateEventFromRowPayload:
 
     def test_wikidata_and_geonames_ids_passed_to_location(self, person_df, api_stub):
         row = row_by_label(person_df, "Alte Heimat Geburt")
-        assert row["wikidata_qid"] and row["geonames_id"]  # sanity check on fixture data
+        assert (
+            row["wikidata_qid"] and row["geonames_id"]
+        )  # sanity check on fixture data
 
-        events.create_event_from_row(row, "Josef Stern", start_location=row["start_location"])
+        events.create_event_from_row(
+            row, "Josef Stern", start_location=row["start_location"]
+        )
 
         kwargs = api_stub["location_kwargs"]["Gießen (Marktplatz 11)"]
         # geonames_id round-trips through pandas as a "N.0" float string;
@@ -295,18 +329,25 @@ class TestCreateEventFromRowPayload:
         assert kwargs["wikidata_qid"] == events.clean_str(row["wikidata_qid"])
         assert kwargs["geonames_id"] == events.clean_str(row["geonames_id"])
 
-    @pytest.mark.parametrize("date_certainty,expected", [
-        ("certain", True),
-        ("Certain", True),  # case-insensitive
-        ("probable", False),
-        ("uncertain", False),
-        ("disputed", False),
-        ("", False),
-    ])
-    def test_is_confirmed_matches_date_certainty(self, api_stub, date_certainty, expected):
+    @pytest.mark.parametrize(
+        "date_certainty,expected",
+        [
+            ("certain", True),
+            ("Certain", True),  # case-insensitive
+            ("probable", False),
+            ("uncertain", False),
+            ("disputed", False),
+            ("", False),
+        ],
+    )
+    def test_is_confirmed_matches_date_certainty(
+        self, api_stub, date_certainty, expected
+    ):
         row = {
-            "event_label": "Event", "place_name": "Somewhere",
-            "date_start": "1930", "date_certainty": date_certainty,
+            "event_label": "Event",
+            "place_name": "Somewhere",
+            "date_start": "1930",
+            "date_certainty": date_certainty,
         }
         events.create_event_from_row(row, "Josef Stern")
 
@@ -319,22 +360,30 @@ class TestCreateEventFromRowPayload:
 
         monkeypatch.setattr(events, "get_or_create_concept", fake_concept)
         row = {
-            "event_label": "Event", "place_name": "Somewhere",
-            "event_type": "unresolvable", "transport_mode": "", "place_category": "alte_heimat",
+            "event_label": "Event",
+            "place_name": "Somewhere",
+            "event_type": "unresolvable",
+            "transport_mode": "",
+            "place_category": "alte_heimat",
         }
         events.create_event_from_row(row, "Josef Stern")
 
         _, payload = api_stub["posted"][0]
         assert payload["concepts"] == ["concept:alte_heimat"]
 
-    def test_processing_entire_sheet_creates_one_event_per_valid_row(self, person_df, api_stub):
+    def test_processing_entire_sheet_creates_one_event_per_valid_row(
+        self, person_df, api_stub
+    ):
         expected = sum(
-            1 for _, row in person_df.iterrows()
+            1
+            for _, row in person_df.iterrows()
             if row["event_label"].strip() and row["place_name"].strip()
         )
 
         results = [
-            events.create_event_from_row(row.to_dict(), "Josef Stern", start_location=row["start_location"])
+            events.create_event_from_row(
+                row.to_dict(), "Josef Stern", start_location=row["start_location"]
+            )
             for _, row in person_df.iterrows()
         ]
 
@@ -349,14 +398,17 @@ class TestLifecycleClassification:
     '_Vokabular' sheet); confirm classify_lifecycle()'s behaviour for each
     value in isolation."""
 
-    @pytest.mark.parametrize("place_category,expected", [
-        ("alte_heimat", "alte_heimat"),
-        ("neue_heimat", "neue_heimat"),
-        ("reise_zurueck", "reise_zurueck"),
-        ("transit", "altro"),
-        ("ort_der_zeit", "altro"),
-        ("verkehrsmittel", "altro"),
-        ("erinnerungsort", "altro"),
-    ])
+    @pytest.mark.parametrize(
+        "place_category,expected",
+        [
+            ("alte_heimat", "alte_heimat"),
+            ("neue_heimat", "neue_heimat"),
+            ("reise_zurueck", "reise_zurueck"),
+            ("transit", "altro"),
+            ("ort_der_zeit", "altro"),
+            ("verkehrsmittel", "altro"),
+            ("erinnerungsort", "altro"),
+        ],
+    )
     def test_place_category_vocabulary(self, place_category, expected):
         assert events.classify_lifecycle(place_category) == expected

@@ -24,9 +24,7 @@ from api_client import (
 from utils import clean_str, is_empty
 
 
-def read_belege_rows(
-    xlsx_path: str | Path, sheet_name: str = "Belege"
-) -> list[dict]:
+def read_belege_rows(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[dict]:
     """Read the Belege sheet into named row dictionaries.
 
     Keeping column handling here prevents the import orchestration and the
@@ -39,18 +37,26 @@ def read_belege_rows(
         workbook.close()
 
     fields = (
-        "identifier", "quelle", "interview_id", "interview_date",
-        "interviewee_identifier", "mentioned_persons", "timecode", "concepts",
-        "quote", "classification", "event_ids", "event_confidence", "notes",
+        "identifier",
+        "quelle",
+        "interview_id",
+        "interview_date",
+        "interviewee_identifier",
+        "mentioned_persons",
+        "timecode",
+        "concepts",
+        "quote",
+        "classification",
+        "event_ids",
+        "event_confidence",
+        "notes",
     )
     named_rows = []
     for row in rows[3:]:
         if not row or all(cell is None for cell in row):
             continue
-        cells = (list(row) + [None] * len(fields))[:len(fields)]
-        named_rows.append(
-            {field: cells[index] for index, field in enumerate(fields)}
-        )
+        cells = (list(row) + [None] * len(fields))[: len(fields)]
+        named_rows.append({field: cells[index] for index, field in enumerate(fields)})
     return named_rows
 
 
@@ -150,9 +156,7 @@ def prepare_belege_payloads(
             interview_payloads.append(interview_payload)
         extraction_payload = build_extraction_payload(row, person_map)
         if extraction_payload:
-            extraction_payloads.append(
-                (archive_id_for_row(row), extraction_payload)
-            )
+            extraction_payloads.append((archive_id_for_row(row), extraction_payload))
     return interview_payloads, extraction_payloads
 
 

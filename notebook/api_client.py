@@ -224,7 +224,7 @@ def get_or_create_concept(label, parent_id=None, icon=None, identity=None):
     if icon:
         payload["icon"] = icon
     created = api_post("concepts", payload)
-    
+
     # Handle both single dict and list responses (from BulkMixin)
     if isinstance(created, list):
         if created:
@@ -232,12 +232,12 @@ def get_or_create_concept(label, parent_id=None, icon=None, identity=None):
         else:
             print(f"ERROR: Empty response when creating concept: {created}")
             return None
-    
+
     concept_id = created.get("id")
     if not concept_id:
         print(f"ERROR: No 'id' in concept creation response: {created}")
         return None
-    
+
     _concept_cache[key] = concept_id
     return concept_id
 
@@ -331,8 +331,7 @@ def _find_person_by_name(persons, raw_name):
         exact_full = full_tokens == source_tokens
         exact_family = family_tokens == source_tokens[-1:]
         matching_edges = (
-            full_tokens[0] == source_tokens[0]
-            and full_tokens[-1] == source_tokens[-1]
+            full_tokens[0] == source_tokens[0] and full_tokens[-1] == source_tokens[-1]
         )
         if not matching_edges or not _is_subsequence(source_tokens, full_tokens):
             continue
@@ -425,8 +424,7 @@ def get_person_id(protagonist_col, name_col, identifier=None):
             duplicate_ids = [
                 person_id
                 for person_id in dict.fromkeys(
-                    person["id"]
-                    for person in [*identity_matches, *identifier_matches]
+                    person["id"] for person in [*identity_matches, *identifier_matches]
                 )
                 if person_id != match["id"]
             ]
@@ -465,7 +463,9 @@ def get_person_id(protagonist_col, name_col, identifier=None):
                     and match.get("family_name")
                     and match.get("family_name") != family
                 ):
-                    previous_names["previous_family_name"] = match.get("family_name", "")
+                    previous_names["previous_family_name"] = match.get(
+                        "family_name", ""
+                    )
                 api_patch(
                     "persons",
                     match["id"],
@@ -545,9 +545,7 @@ def normalize_interview_type(value):
     interview_type = clean_str(value)
     if not interview_type or interview_type.startswith("#"):
         return ""
-    interview_type = re.sub(
-        r"^Interview\s*", "", interview_type, flags=re.IGNORECASE
-    )
+    interview_type = re.sub(r"^Interview\s*", "", interview_type, flags=re.IGNORECASE)
     return interview_type.strip("()")
 
 
@@ -599,9 +597,9 @@ def upsert_interviews(payloads):
         for field, value in payload.items():
             if field != "archive_id" and value not in (None, ""):
                 if field == "urls":
-                    merged[field] = list(dict.fromkeys(
-                        [*merged.get(field, []), *value]
-                    ))
+                    merged[field] = list(
+                        dict.fromkeys([*merged.get(field, []), *value])
+                    )
                 else:
                     merged[field] = value
 

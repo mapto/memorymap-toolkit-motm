@@ -63,8 +63,9 @@ def test_resolve_coordinates_uses_own_geocoder_before_nominatim():
         "Unknown",
         {},
         rebuild_locations.SourceLocation(name="Unknown"),
-        own_geocoder=lambda query: calls.append(("own", query))
-        or {"lat": 50.6, "long": 8.7},
+        own_geocoder=lambda query: (
+            calls.append(("own", query)) or {"lat": 50.6, "long": 8.7}
+        ),
         nominatim=lambda query: calls.append(("nominatim", query)) or None,
     )
 
@@ -91,19 +92,26 @@ def test_wider_region_uses_taxonomy_path_and_context():
         ),
     }
 
-    assert rebuild_locations.wider_region_for(
-        "Berlin", {}, None, geo_paths, {}
-    ) == "GO – geographischer Ort > Deutschland"
-    assert rebuild_locations.wider_region_for(
-        "Steinstraße 19",
-        {},
-        rebuild_locations.SourceLocation(name="Steinstraße 19", details={"Gießen"}),
-        geo_paths,
-        {},
-    ) == "GO – geographischer Ort > Deutschland > Gießen"
-    assert rebuild_locations.wider_region_for(
-        "Sennfeld (Adelsheim)", {}, None, geo_paths, {}
-    ) == "GO – geographischer Ort > Deutschland"
+    assert (
+        rebuild_locations.wider_region_for("Berlin", {}, None, geo_paths, {})
+        == "GO – geographischer Ort > Deutschland"
+    )
+    assert (
+        rebuild_locations.wider_region_for(
+            "Steinstraße 19",
+            {},
+            rebuild_locations.SourceLocation(name="Steinstraße 19", details={"Gießen"}),
+            geo_paths,
+            {},
+        )
+        == "GO – geographischer Ort > Deutschland > Gießen"
+    )
+    assert (
+        rebuild_locations.wider_region_for(
+            "Sennfeld (Adelsheim)", {}, None, geo_paths, {}
+        )
+        == "GO – geographischer Ort > Deutschland"
+    )
 
 
 def test_latinize_text_transliterates_non_latin_region_labels():
@@ -133,9 +141,9 @@ def test_order_output_headers_places_derived_columns_after_super_region():
 
 
 def test_location_key_merges_address_name_variants():
-    assert rebuild_locations.location_key("Ghettohaus, Walltorstraße 48") == rebuild_locations.location_key(
-        "Walltorstraße 48"
-    )
+    assert rebuild_locations.location_key(
+        "Ghettohaus, Walltorstraße 48"
+    ) == rebuild_locations.location_key("Walltorstraße 48")
 
 
 def test_read_metadata_sources_collects_birth_place_evidence(monkeypatch, tmp_path):
@@ -162,9 +170,9 @@ def test_read_metadata_sources_collects_birth_place_evidence(monkeypatch, tmp_pa
     assert source.direct_coordinates == [(48.2, 16.3)]
     assert source.wikidata_ids == {"Q174"}
     assert source.details == {"Österreich"}
-    assert rebuild_locations.location_key("Marktplatz 11, Giessen") == rebuild_locations.location_key(
-        "Marktplatz 11"
-    )
+    assert rebuild_locations.location_key(
+        "Marktplatz 11, Giessen"
+    ) == rebuild_locations.location_key("Marktplatz 11")
 
 
 def test_rebuild_preserves_columns_and_adds_provenance_columns(tmp_path, monkeypatch):

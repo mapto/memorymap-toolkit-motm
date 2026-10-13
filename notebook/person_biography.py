@@ -105,9 +105,7 @@ def _alias_target(name: str, aliases: Mapping[str, str]) -> str | None:
         if key == person_taxonomy_key(canonical):
             return canonical
         if "," in canonical:
-            family_name, given_name = (
-                part.strip() for part in canonical.split(",", 1)
-            )
+            family_name, given_name = (part.strip() for part in canonical.split(",", 1))
             if key == person_taxonomy_key(f"{given_name} {family_name}"):
                 return canonical
     return None
@@ -348,9 +346,7 @@ def _metadata_people(record: Mapping[str, Any], aliases: Mapping[str, str]):
                 if part
             ),
             "birth_span": _record_span(main_person, "birth"),
-            "birth_place": _clean_place(
-                (record.get("birth_place") or {}).get("name")
-            ),
+            "birth_place": _clean_place((record.get("birth_place") or {}).get("name")),
             "death_span": _record_span(main_person, "death"),
             "death_place": None,
         }
@@ -423,15 +419,13 @@ def _collect_sheet_facts(
             continue
         facts.has_biographical_event = True
         event_label = clean_str(row.get("event_label", "")) or kind
-        event_context = f"{person_name!r} {kind} event {event_label!r} in {source_label!r}"
+        event_context = (
+            f"{person_name!r} {kind} event {event_label!r} in {source_label!r}"
+        )
         span = _event_date_span(row)
         place = _clean_place(row.get("place_name"))
         place_detail = _clean_place(row.get("place_detail"))
-        if (
-            place
-            and place_detail
-            and not place_names_equivalent(place, place_detail)
-        ):
+        if place and place_detail and not place_names_equivalent(place, place_detail):
             place = f"{place} ({place_detail})"
         if kind == "birth":
             facts.birth_span = _merge_span(
@@ -467,9 +461,7 @@ def _rows_for_sheet(dataframe, workbook_name: str, sheet_name: str):
         raise PersonBiographyError("Chronotopi events must be supplied as a dataframe")
     selected = dataframe
     if "source_workbook" in selected.columns:
-        selected = selected[
-            selected["source_workbook"].map(_basename) == workbook_name
-        ]
+        selected = selected[selected["source_workbook"].map(_basename) == workbook_name]
     if "name" in selected.columns:
         selected = selected[
             selected["name"].map(_clean_name) == _clean_name(sheet_name)
@@ -600,9 +592,7 @@ def build_person_biography_plan(
     conflicts: list[str] = []
 
     source_owners: dict[str, str] = {}
-    has_source_workbook_column = "source_workbook" in getattr(
-        dataframe, "columns", ()
-    )
+    has_source_workbook_column = "source_workbook" in getattr(dataframe, "columns", ())
     for workbook_path, sheet_names in sorted(overview.items()):
         workbook_name = _basename(workbook_path)
         metadata_name = config.metadata_workbook_for(workbook_name)
@@ -624,7 +614,11 @@ def build_person_biography_plan(
             if not cleaned_sheet or cleaned_sheet.startswith("_"):
                 continue
             previous_owner = source_owners.get(cleaned_sheet)
-            if previous_owner and previous_owner != workbook_name and not has_source_workbook_column:
+            if (
+                previous_owner
+                and previous_owner != workbook_name
+                and not has_source_workbook_column
+            ):
                 raise PersonBiographyError(
                     f"Chronotopi sheet {cleaned_sheet!r} appears in multiple "
                     "workbooks; add a source_workbook column before validating"
@@ -701,9 +695,11 @@ def _location_name(location_id: Any, cache: dict[str, str | None]) -> str | None
     key = str(location_id)
     if key not in cache:
         location = api_get(f"locations/{location_id}")
-        cache[key] = _clean_place(
-            location.get("current_name") or location.get("name")
-        ) if isinstance(location, Mapping) else None
+        cache[key] = (
+            _clean_place(location.get("current_name") or location.get("name"))
+            if isinstance(location, Mapping)
+            else None
+        )
     return cache[key]
 
 
@@ -754,9 +750,7 @@ def validate_existing_person_biographies(plan) -> None:
                         existing_value = timespan.get(
                             "start" if kind == "birth" else "end"
                         )
-                        metadata_span = getattr(
-                            biography, f"metadata_{kind}_span"
-                        )
+                        metadata_span = getattr(biography, f"metadata_{kind}_span")
                         existing_span = _stored_date_span(
                             existing_value,
                             metadata_span,
@@ -874,10 +868,9 @@ def import_person_biographies(
         )
         patch = {}
         if birth_value or death_value:
-            if (
-                birth_value != clean_str(current_timespan.get("start"))
-                or death_value != clean_str(current_timespan.get("end"))
-            ):
+            if birth_value != clean_str(
+                current_timespan.get("start")
+            ) or death_value != clean_str(current_timespan.get("end")):
                 new_timespan_id = get_or_create_timespan(
                     start=birth_value,
                     end=death_value,
@@ -904,9 +897,7 @@ def import_person_biographies(
                 continue
 
             concept_id = (
-                location_concept_resolver(place)
-                if location_concept_resolver
-                else None
+                location_concept_resolver(place) if location_concept_resolver else None
             )
             location_id = get_or_create_location(
                 place,

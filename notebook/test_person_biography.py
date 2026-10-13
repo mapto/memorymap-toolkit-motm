@@ -132,7 +132,9 @@ def _write_sources(tmp_path, *, main_birth="1924", main_place="Frankfurt an der 
         },
     ]
     dataframe = pd.DataFrame(rows)
-    overview = {"chronotopi_test.xlsx": ["Ada Subject", "Johanna Stern", "Auguste Stern"]}
+    overview = {
+        "chronotopi_test.xlsx": ["Ada Subject", "Johanna Stern", "Auguste Stern"]
+    }
     return dataframe, overview, synonyms_path
 
 
@@ -150,7 +152,9 @@ def _find_biography(plan, name):
     return next(item for item in plan.values() if item.person_name == name)
 
 
-def test_build_plan_reconciles_main_and_family_metadata_at_available_precision(tmp_path):
+def test_build_plan_reconciles_main_and_family_metadata_at_available_precision(
+    tmp_path,
+):
     plan = _build_plan(tmp_path)
 
     ada = _find_biography(plan, "Ada Subject")
@@ -173,18 +177,30 @@ def test_build_plan_reconciles_main_and_family_metadata_at_available_precision(t
 
 
 def test_relative_death_event_is_not_assigned_to_the_sheet_protagonist():
-    assert biography._classify_biographical_event(
-        {"event_label": "Tod des Vaters", "event_type": "death"}
-    ) is None
-    assert biography._classify_biographical_event(
-        {"event_label": "Geburtshaus Marktplatz 11", "event_type": "return_visit_transit"}
-    ) is None
+    assert (
+        biography._classify_biographical_event(
+            {"event_label": "Tod des Vaters", "event_type": "death"}
+        )
+        is None
+    )
+    assert (
+        biography._classify_biographical_event(
+            {
+                "event_label": "Geburtshaus Marktplatz 11",
+                "event_type": "return_visit_transit",
+            }
+        )
+        is None
+    )
 
 
 def test_murder_event_type_is_a_death_event():
-    assert biography._classify_biographical_event(
-        {"event_label": "Tod/Ermordung", "event_type": "murder"}
-    ) == "death"
+    assert (
+        biography._classify_biographical_event(
+            {"event_label": "Tod/Ermordung", "event_type": "murder"}
+        )
+        == "death"
+    )
 
 
 @pytest.mark.parametrize(
@@ -242,9 +258,7 @@ def test_source_preflight_reports_metadata_conflicts(
 def test_parse_span_handles_chronotopi_excel_date_spellings():
     assert _span_label(parse_timespan("1924.10.30")) == "1924-10-30"
     assert _span_label(parse_timespan("03.Juli 1880")) == "1880-07-03"
-    assert _span_label(parse_timespan("1974.0")) == (
-        "1974-01-01 through 1974-12-31"
-    )
+    assert _span_label(parse_timespan("1974.0")) == ("1974-01-01 through 1974-12-31")
 
 
 def _span_label(span):
@@ -269,9 +283,7 @@ def test_api_import_sets_lifespan_and_birth_and_death_places(monkeypatch):
     monkeypatch.setattr(
         biography,
         "api_get",
-        lambda endpoint: {"id": 7, "lifespan": None}
-        if endpoint == "persons/7"
-        else {},
+        lambda endpoint: {"id": 7, "lifespan": None} if endpoint == "persons/7" else {},
     )
     monkeypatch.setattr(
         biography,

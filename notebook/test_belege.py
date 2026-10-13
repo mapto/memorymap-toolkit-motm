@@ -69,13 +69,10 @@ def api_stub(monkeypatch):
 
     def fake_bulk_upsert(endpoint, items):
         calls["upserts"].append((endpoint, items))
-        first_id = 1000 + sum(
-            len(batch) for _, batch in calls["upserts"][:-1]
-        )
+        first_id = 1000 + sum(len(batch) for _, batch in calls["upserts"][:-1])
         return {
             "created_items": [
-                {"id": first_id + index, **item}
-                for index, item in enumerate(items)
+                {"id": first_id + index, **item} for index, item in enumerate(items)
             ],
             "updated_items": [],
             "errors": [],
@@ -178,8 +175,10 @@ def test_import_belege_creates_and_links_interview_from_quelle(tmp_path, monkeyp
     monkeypatch.setattr(
         belege,
         "upsert_interviews",
-        lambda items: ({"IS_E_00170": 21},
-                       calls["interview_upserts"].append(("interviews", items)) or []),
+        lambda items: (
+            {"IS_E_00170": 21},
+            calls["interview_upserts"].append(("interviews", items)) or [],
+        ),
     )
     monkeypatch.setattr(belege, "api_bulk_upsert", fake_bulk_upsert)
     monkeypatch.setattr(belege, "get_or_create_concept", lambda label: None)
@@ -194,12 +193,18 @@ def test_import_belege_creates_and_links_interview_from_quelle(tmp_path, monkeyp
 
 
 def test_parse_interview_id_from_quelle_normalizes_archive_number():
-    assert belege.parse_interview_id_from_quelle(
-        "Anne Betten – [IS_E_170](https://example.test/interview)"
-    ) == "IS_E_00170"
-    assert belege.parse_interview_id_from_quelle(
-        "Anne Betten – [IS_E_00124](https://example.test/interview)"
-    ) == "IS_E_00124"
+    assert (
+        belege.parse_interview_id_from_quelle(
+            "Anne Betten – [IS_E_170](https://example.test/interview)"
+        )
+        == "IS_E_00170"
+    )
+    assert (
+        belege.parse_interview_id_from_quelle(
+            "Anne Betten – [IS_E_00124](https://example.test/interview)"
+        )
+        == "IS_E_00124"
+    )
 
 
 def test_parse_interview_date_preserves_complete_dates():

@@ -368,11 +368,11 @@ def translate_text(text: str, source: str, target: str, delay: float = 0.15) -> 
     """
     if source == target or not text:
         return text
-    query = urllib.parse.urlencode(
-        {"q": text, "langpair": f"{source}|{target}"}
-    )
+    query = urllib.parse.urlencode({"q": text, "langpair": f"{source}|{target}"})
     url = f"https://api.mymemory.translated.net/get?{query}"
-    request = urllib.request.Request(url, headers={"User-Agent": "memorymap-toolkit/1.0"})
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "memorymap-toolkit/1.0"}
+    )
     last_error = None
     for attempt in range(4):
         try:
@@ -390,10 +390,15 @@ def translate_text(text: str, source: str, target: str, delay: float = 0.15) -> 
                 raise ConceptTranslationError(f"Empty translation returned for: {text}")
             time.sleep(delay)
             return translated
-        except (ConceptTranslationError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+        except (
+            ConceptTranslationError,
+            urllib.error.URLError,
+            TimeoutError,
+            json.JSONDecodeError,
+        ) as error:
             last_error = error
             if attempt < 3:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
 
     raise ConceptTranslationError(
         f"Translation request failed for {source}->{target}: {text}"
@@ -418,7 +423,10 @@ def reusable_translation_values(
             language: existing_catalogs.get(language, {}).get(concept_id)
             for language in LANGUAGES
         }
-        if any(not entry or not entry.get("msgstr", "").strip() for entry in entries.values()):
+        if any(
+            not entry or not entry.get("msgstr", "").strip()
+            for entry in entries.values()
+        ):
             continue
         if len({entry.get("msgid", "") for entry in entries.values()}) != 1:
             continue
@@ -468,7 +476,9 @@ def bootstrap_catalogs(
                 values = {source_language: source_label}
                 for target in LANGUAGES:
                     if target not in values:
-                        values[target] = translated(source_label, source_language, target)
+                        values[target] = translated(
+                            source_label, source_language, target
+                        )
         else:
             values = {language: existing.get(language, "") for language in LANGUAGES}
             if use_machine_translation:
@@ -480,7 +490,9 @@ def bootstrap_catalogs(
                     )
                 for target in LANGUAGES:
                     if not values.get(target):
-                        values[target] = translated(source_label, source_language, target)
+                        values[target] = translated(
+                            source_label, source_language, target
+                        )
 
         if not all(values.get(language) for language in LANGUAGES):
             missing = [language for language in LANGUAGES if not values.get(language)]

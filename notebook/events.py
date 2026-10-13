@@ -128,9 +128,7 @@ def create_event_locations(
         concept_id = location_concept_resolver(event_data["location_name"])
         if concept_id:
             location_kwargs["concept_id"] = concept_id
-    location_id = get_or_create_location(
-        event_data["location_name"], **location_kwargs
-    )
+    location_id = get_or_create_location(event_data["location_name"], **location_kwargs)
 
     normalized_start = clean_str(start_location) if start_location else ""
     start_location_id = None
@@ -175,7 +173,9 @@ def resolve_event_concepts(
             categories.append(value)
 
     resolver = concept_resolver or get_or_create_concept
-    concept_ids = [concept_id for concept_id in (resolver(c) for c in categories) if concept_id]
+    concept_ids = [
+        concept_id for concept_id in (resolver(c) for c in categories) if concept_id
+    ]
     if time_concept_resolver:
         time_concept_id = time_concept_resolver(clean_str(row.get("date_label", "")))
         if time_concept_id and time_concept_id not in concept_ids:
@@ -284,7 +284,9 @@ def create_event_from_row(
         location_concept_resolver=location_concept_resolver,
     )
     print(f"End location: [{location_id}] {event_data['location_name']}")
-    print(f"Start location: [{start_location_id}] {clean_str(start_location) if start_location else ''}")
+    print(
+        f"Start location: [{start_location_id}] {clean_str(start_location) if start_location else ''}"
+    )
 
     timespan_id, date_certainty = create_event_timespan(row)
     print(f"Timespan: [{timespan_id}]")

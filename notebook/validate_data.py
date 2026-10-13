@@ -130,9 +130,7 @@ DATE_COLUMNS = ("date_start", "date_end")
 LOCATION_SECTIONS = frozenset(
     {"aliases", "canonical_parents", "excluded_contains", "reviewed_unmapped"}
 )
-PERSON_SECTIONS = frozenset(
-    {"aliases", "metadata_by_chronotopi", "metadata_relatives"}
-)
+PERSON_SECTIONS = frozenset({"aliases", "metadata_by_chronotopi", "metadata_relatives"})
 WIKIDATA_ID = re.compile(r"(?:https?://www\.wikidata\.org/wiki/)?Q\d+")
 
 
@@ -221,8 +219,7 @@ class PersonSynonyms:
     def association_map(self) -> dict[str, str]:
         """Metadata workbook file name keyed by chronotopi workbook file name."""
         return {
-            Path(pair.source).name: Path(pair.target).name
-            for pair in self.associations
+            Path(pair.source).name: Path(pair.target).name for pair in self.associations
         }
 
 

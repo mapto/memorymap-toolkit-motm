@@ -181,12 +181,14 @@ def test_read_person_record_extracts_place_metadata(tmp_path):
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Scheda individuale"
-    sheet.append([
-        "Geburtsort",
-        "Frankfurt an der Oder\nLand: Deutsches Reich | "
-        "Geokoordinaten (Breite/Länge): [52.35 / 14.55] | "
-        "Ortsname: Frankfurt an der Oder",
-    ])
+    sheet.append(
+        [
+            "Geburtsort",
+            "Frankfurt an der Oder\nLand: Deutsches Reich | "
+            "Geokoordinaten (Breite/Länge): [52.35 / 14.55] | "
+            "Ortsname: Frankfurt an der Oder",
+        ]
+    )
 
     workbook_path = tmp_path / "metadati_place.xlsx"
     workbook.save(workbook_path)
@@ -334,9 +336,7 @@ def test_get_or_create_person_uses_reviewed_alias_resolution_with_identifier(
     monkeypatch.setattr(
         metadati,
         "api_get",
-        lambda endpoint, params=None: existing
-        if endpoint == "persons/20"
-        else [],
+        lambda endpoint, params=None: existing if endpoint == "persons/20" else [],
     )
     monkeypatch.setattr(metadati, "api_patch", lambda *args: patches.append(args))
     monkeypatch.setattr(

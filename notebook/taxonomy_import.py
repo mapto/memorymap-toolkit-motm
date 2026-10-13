@@ -261,8 +261,7 @@ def import_taxonomy(
             )
         if _label_key(target_label) not in personae_labels:
             raise TaxonomyError(
-                f"Person alias target {target_label!r} is not in the Personae "
-                "taxonomy"
+                f"Person alias target {target_label!r} is not in the Personae taxonomy"
             )
         if _label_key(target_label) not in personae_leaf_labels:
             raise TaxonomyError(

@@ -44,13 +44,21 @@ def test_canonical_location_name_maps_variants_to_workbook_entity():
         "grosen linden": {"name": "Großen-Linden"},
     }
 
-    assert locations.canonical_location_name("Koblenz (Bundesarchiv)", workbook) == "Koblenz"
-    assert locations.canonical_location_name("Großen-Linden", workbook) == "Großen-Linden"
+    assert (
+        locations.canonical_location_name("Koblenz (Bundesarchiv)", workbook)
+        == "Koblenz"
+    )
+    assert (
+        locations.canonical_location_name("Großen-Linden", workbook) == "Großen-Linden"
+    )
     assert locations.canonical_location_name("?", workbook) is None
-    assert locations.canonical_location_name(
-        "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
-        workbook,
-    ) is None
+    assert (
+        locations.canonical_location_name(
+            "Association of Israelis of Central European Origin (AICEO) (irgun-jeckes.org/familie-alsberg/)",
+            workbook,
+        )
+        is None
+    )
 
 
 def test_canonical_location_name_matches_aliases_to_workbook_rows():
@@ -61,10 +69,14 @@ def test_canonical_location_name_matches_aliases_to_workbook_rows():
         locations.normalize_location("Marktplatz 11"): {"name": "Marktplatz 11"},
     }
 
-    assert locations.canonical_location_name("Frankfurt_Main", workbook) == "Frankfurt am Main"
-    assert locations.canonical_location_name(
-        "Gießen (Marktplatz 11)", workbook
-    ) == "Marktplatz 11"
+    assert (
+        locations.canonical_location_name("Frankfurt_Main", workbook)
+        == "Frankfurt am Main"
+    )
+    assert (
+        locations.canonical_location_name("Gießen (Marktplatz 11)", workbook)
+        == "Marktplatz 11"
+    )
     assert locations.taxonomy_label_key("Frankfurt_Main") == "frankfurt main"
     assert locations.taxonomy_label_key("FRANKFURT-MAIN") == "frankfurt main"
 
@@ -153,15 +165,34 @@ def test_load_locations_reads_coordinate_fields_by_header_order(tmp_path, monkey
     path = tmp_path / "locations.xlsx"
     workbook = Workbook()
     sheet = workbook.active
-    sheet.append([
-        "location", "bag_of_words", "super_region", "wider_region",
-        "coordinate_source", "lat", "long", "label",
-        "www.geonames.org", "www.wikidata.org",
-    ])
-    sheet.append([
-        "Berlin", "berlin", "Deutschland", "GO > Deutschland > Berlin",
-        "chronotopi", 52.5, 13.4, "", "", "https://www.wikidata.org/wiki/Q64",
-    ])
+    sheet.append(
+        [
+            "location",
+            "bag_of_words",
+            "super_region",
+            "wider_region",
+            "coordinate_source",
+            "lat",
+            "long",
+            "label",
+            "www.geonames.org",
+            "www.wikidata.org",
+        ]
+    )
+    sheet.append(
+        [
+            "Berlin",
+            "berlin",
+            "Deutschland",
+            "GO > Deutschland > Berlin",
+            "chronotopi",
+            52.5,
+            13.4,
+            "",
+            "",
+            "https://www.wikidata.org/wiki/Q64",
+        ]
+    )
     workbook.save(path)
 
     locations._locations_db.clear()
@@ -178,24 +209,28 @@ def test_load_locations_collects_every_populated_column_after_geonames(tmp_path)
     path = tmp_path / "locations-extra-urls.xlsx"
     workbook = Workbook()
     sheet = workbook.active
-    sheet.append([
-        "location",
-        "lat",
-        "long",
-        "www.geonames.org",
-        "www.wikidata.org",
-        "www.example.org",
-        "archive.example",
-    ])
-    sheet.append([
-        "Berlin",
-        52.5,
-        13.4,
-        "https://www.geonames.org/2950159/berlin.html",
-        "https://www.wikidata.org/wiki/Q64",
-        "https://www.example.org/berlin",
-        "https://archive.example/item/42",
-    ])
+    sheet.append(
+        [
+            "location",
+            "lat",
+            "long",
+            "www.geonames.org",
+            "www.wikidata.org",
+            "www.example.org",
+            "archive.example",
+        ]
+    )
+    sheet.append(
+        [
+            "Berlin",
+            52.5,
+            13.4,
+            "https://www.geonames.org/2950159/berlin.html",
+            "https://www.wikidata.org/wiki/Q64",
+            "https://www.example.org/berlin",
+            "https://archive.example/item/42",
+        ]
+    )
     workbook.save(path)
 
     locations._locations_db.clear()
@@ -214,14 +249,16 @@ def test_save_locations_preserves_all_extra_url_columns_by_header(tmp_path):
     path = tmp_path / "locations-save-extra-urls.xlsx"
     workbook = Workbook()
     sheet = workbook.active
-    sheet.append([
-        "location",
-        "lat",
-        "long",
-        "www.geonames.org",
-        "www.wikidata.org",
-        "www.example.org",
-    ])
+    sheet.append(
+        [
+            "location",
+            "lat",
+            "long",
+            "www.geonames.org",
+            "www.wikidata.org",
+            "www.example.org",
+        ]
+    )
     sheet.append(["Berlin", 52.5, 13.4, "", "", ""])
     workbook.save(path)
 
@@ -237,16 +274,21 @@ def test_save_locations_preserves_all_extra_url_columns_by_header(tmp_path):
 
     saved = load_workbook(path, read_only=True, data_only=True).active
     headers = [cell.value for cell in saved[1]]
-    row = {header: saved.cell(2, index + 1).value for index, header in enumerate(headers)}
+    row = {
+        header: saved.cell(2, index + 1).value for index, header in enumerate(headers)
+    }
     assert row["www.wikidata.org"] == "https://www.wikidata.org/wiki/Q64"
     assert row["www.example.org"] == "https://www.example.org/berlin"
     assert row["archive.example"] == "https://archive.example/item/42"
 
 
 def test_extract_geonames_id_uses_numeric_url_segment():
-    assert locations.extract_geonames_id(
-        "https://www.geonames.org/3017382/republic-of-france.html"
-    ) == "3017382"
+    assert (
+        locations.extract_geonames_id(
+            "https://www.geonames.org/3017382/republic-of-france.html"
+        )
+        == "3017382"
+    )
     assert locations.extract_geonames_id("3017382") == "3017382"
     assert locations.extract_geonames_id("republic-of-france.html") is None
 
@@ -275,11 +317,14 @@ def test_cached_coordinates_skip_external_lookup_and_send_numeric_geonames_id(
     monkeypatch.setattr("api_client.api_get", lambda endpoint, params=None: [])
     monkeypatch.setattr(
         "api_client.api_post",
-        lambda endpoint, payload, fail_on_error=True: posts.append(payload)
-        or {"id": 42},
+        lambda endpoint, payload, fail_on_error=True: (
+            posts.append(payload) or {"id": 42}
+        ),
     )
 
-    assert locations.get_or_create_location("Frankreich", locations_db=locations_db) == 42
+    assert (
+        locations.get_or_create_location("Frankreich", locations_db=locations_db) == 42
+    )
     assert posts == [
         {
             "current_name": "Frankreich",
@@ -379,7 +424,9 @@ def test_load_locations_falls_back_to_geonames_and_persists(tmp_path, monkeypatc
     assert read_coordinates(path) == (50.59, 8.67)
 
 
-def test_load_locations_falls_back_to_wikidata_when_geonames_fails(tmp_path, monkeypatch):
+def test_load_locations_falls_back_to_wikidata_when_geonames_fails(
+    tmp_path, monkeypatch
+):
     path = tmp_path / "locations.xlsx"
     write_locations(
         path,
@@ -464,10 +511,14 @@ def test_resolve_location_logs_failed_name_geocoder(monkeypatch, caplog):
     with caplog.at_level("WARNING", logger="locations"):
         assert locations.resolve_location_coordinates({"name": "Unknown place"}) is None
 
-    assert "Name geocoder returned no usable coordinates for Unknown place" in caplog.text
+    assert (
+        "Name geocoder returned no usable coordinates for Unknown place" in caplog.text
+    )
 
 
-def test_coordinate_lookup_logs_failure_and_continues_to_next_source(monkeypatch, caplog):
+def test_coordinate_lookup_logs_failure_and_continues_to_next_source(
+    monkeypatch, caplog
+):
     def failed_geonames(url):
         raise locations.requests.RequestException("GeoNames unavailable")
 
@@ -603,12 +654,14 @@ def test_rebuild_location_workbook_delegates_to_shared_rebuild(monkeypatch):
     )
 
     assert result == {"rows": 1}
-    assert calls == [{
-        "input_path": Path("input.xlsx"),
-        "output_path": Path("output.xlsx"),
-        "data_root": Path("data"),
-        "taxonomy_path": Path("taxonomy.mmd"),
-    }]
+    assert calls == [
+        {
+            "input_path": Path("input.xlsx"),
+            "output_path": Path("output.xlsx"),
+            "data_root": Path("data"),
+            "taxonomy_path": Path("taxonomy.mmd"),
+        }
+    ]
 
 
 def test_sync_location_concepts_patches_unlinked_resolvable_points():

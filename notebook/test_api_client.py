@@ -205,8 +205,10 @@ def test_get_person_id_merges_reviewed_alias_duplicate_into_canonical_person(
     monkeypatch.setattr(
         api_client,
         "api_post",
-        lambda endpoint, payload: posts.append((endpoint, payload))
-        or {"canonical_id": 20, "merged_ids": [31]},
+        lambda endpoint, payload: (
+            posts.append((endpoint, payload))
+            or {"canonical_id": 20, "merged_ids": [31]}
+        ),
     )
     monkeypatch.setattr(
         api_client,
@@ -255,8 +257,10 @@ def test_get_person_id_merges_alias_when_import_uses_canonical_spelling(monkeypa
     monkeypatch.setattr(
         api_client,
         "api_post",
-        lambda endpoint, payload: posts.append((endpoint, payload))
-        or {"canonical_id": 20, "merged_ids": [31]},
+        lambda endpoint, payload: (
+            posts.append((endpoint, payload))
+            or {"canonical_id": 20, "merged_ids": [31]}
+        ),
     )
     api_client._person_cache.clear()
 
@@ -286,8 +290,9 @@ def test_get_person_id_creates_reviewed_alias_with_canonical_fields(monkeypatch)
     monkeypatch.setattr(
         api_client,
         "api_post",
-        lambda endpoint, payload: posts.append((endpoint, payload))
-        or {"id": 70, **payload},
+        lambda endpoint, payload: (
+            posts.append((endpoint, payload)) or {"id": 70, **payload}
+        ),
     )
     api_client._person_cache.clear()
 
@@ -341,8 +346,10 @@ def test_get_person_id_prefers_metadata_identifier_and_merges_alias_matches(
     monkeypatch.setattr(
         api_client,
         "api_post",
-        lambda endpoint, payload: posts.append((endpoint, payload))
-        or {"canonical_id": 40, "merged_ids": [20, 31]},
+        lambda endpoint, payload: (
+            posts.append((endpoint, payload))
+            or {"canonical_id": 40, "merged_ids": [20, 31]}
+        ),
     )
     monkeypatch.setattr(
         api_client,
@@ -386,9 +393,10 @@ def test_find_person_by_name_prefers_exact_family_field():
 def test_find_person_by_name_ignores_parenthetical_role_annotation():
     persons = [{"id": 4, "given_name": "Frau Doktor", "family_name": "Nelken"}]
 
-    assert api_client._find_person_by_name(
-        persons, "Frau Doktor Nelken (Tante 2)"
-    )["id"] == 4
+    assert (
+        api_client._find_person_by_name(persons, "Frau Doktor Nelken (Tante 2)")["id"]
+        == 4
+    )
 
 
 def test_find_person_by_name_rejects_ambiguous_candidates():
@@ -407,8 +415,9 @@ def test_get_person_id_preserves_display_case_when_creating_person(monkeypatch):
     monkeypatch.setattr(
         api_client,
         "api_post",
-        lambda endpoint, payload: posts.append((endpoint, payload))
-        or {"id": 7, **payload},
+        lambda endpoint, payload: (
+            posts.append((endpoint, payload)) or {"id": 7, **payload}
+        ),
     )
     api_client._person_cache.clear()
 

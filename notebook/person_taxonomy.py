@@ -318,8 +318,7 @@ def _parent_first_occurrences(
             parent_index = new_indexes.get(occurrence.parent_index)
             if parent_index is None:
                 raise PersonTaxonomyError(
-                    f"Could not reindex parent for taxonomy node "
-                    f"{occurrence.label!r}"
+                    f"Could not reindex parent for taxonomy node {occurrence.label!r}"
                 )
             parent = ordered[parent_index]
             top_level = parent.top_level
@@ -398,8 +397,7 @@ def augment_personae_taxonomy(
             index
             for index, occurrence in enumerate(occurrences)
             if occurrence.parent_index is None
-            and _label_key(_extract_key(occurrence.label))
-            == _label_key("Personae")
+            and _label_key(_extract_key(occurrence.label)) == _label_key("Personae")
         ),
         None,
     )
@@ -425,8 +423,7 @@ def augment_personae_taxonomy(
             target_label
         ):
             raise PersonTaxonomyError(
-                f"Source name {source!r} maps to both {previous!r} and "
-                f"{target_label!r}"
+                f"Source name {source!r} maps to both {previous!r} and {target_label!r}"
             )
         aliases[source_key] = target_label
 
@@ -511,11 +508,9 @@ def augment_personae_taxonomy(
         if key in person_labels:
             canonical = person_labels[key]
             assigned_family = person_family_by_key.get(key)
-            if (
-                assigned_family is not None
-                and person_taxonomy_key(assigned_family)
-                != person_taxonomy_key(family_name)
-            ):
+            if assigned_family is not None and person_taxonomy_key(
+                assigned_family
+            ) != person_taxonomy_key(family_name):
                 raise PersonTaxonomyError(
                     f"Person {canonical!r} is assigned to both the "
                     f"{assigned_family!r} and {family_name!r} family branches"

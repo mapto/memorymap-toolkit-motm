@@ -130,7 +130,9 @@ def main() -> None:
         concepts = fetch_concepts(connection)
         validate_catalogs(concepts, catalogs)
         if args["--dry-run"]:
-            print(f"validated {len(concepts)} concepts across {len(LANGUAGES)} languages")
+            print(
+                f"validated {len(concepts)} concepts across {len(LANGUAGES)} languages"
+            )
             return
         imported = import_catalogs(connection, catalogs)
         print(f"imported {imported} concept translations")

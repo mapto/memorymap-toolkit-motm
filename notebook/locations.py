@@ -294,7 +294,9 @@ def extract_geonames_coordinates(url: str) -> dict | None:
         try:
             return {"lat": float(map_match.group(1)), "long": float(map_match.group(2))}
         except ValueError as exc:
-            logger.warning("Invalid coordinates embedded in GeoNames URL %s: %s", url, exc)
+            logger.warning(
+                "Invalid coordinates embedded in GeoNames URL %s: %s", url, exc
+            )
             return None
 
     # Entity URL with numeric ID
@@ -584,7 +586,9 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
             before = _coordinate_pair(entry)
             # Coordinates in the workbook are the trusted local cache. Do not
             # query external providers when both cached values are present.
-            after = before if before is not None else resolve_location_coordinates(entry)
+            after = (
+                before if before is not None else resolve_location_coordinates(entry)
+            )
             if after is not None and after != before:
                 changed = True
         if changed and save_enriched:
@@ -811,9 +815,8 @@ def _prepare_location_metadata(
         "name": name,
         "key": key,
         "coordinates": coordinates,
-        "wikidata_id": db_entry.get("wikidata_id") or (
-            wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None
-        ),
+        "wikidata_id": db_entry.get("wikidata_id")
+        or (wikidata_qid if wikidata_qid and wikidata_qid not in ("", "nan") else None),
         "geonames_id": (
             extract_geonames_id(db_entry.get("geonames_id"))
             or extract_geonames_id(db_entry.get("geonames_url"))
@@ -825,7 +828,11 @@ def _prepare_location_metadata(
 def _find_location_match(existing, key, normalize_fn):
     """Find an existing API location with the same normalized name."""
     return next(
-        (location for location in existing if normalize_fn(location["current_name"]) == key),
+        (
+            location
+            for location in existing
+            if normalize_fn(location["current_name"]) == key
+        ),
         None,
     )
 
@@ -991,7 +998,9 @@ def get_or_create_location(
     return created["id"]
 
 
-def rebuild_location_workbook(input_path=None, output_path=None, data_root=None, taxonomy_path=None, **kwargs):
+def rebuild_location_workbook(
+    input_path=None, output_path=None, data_root=None, taxonomy_path=None, **kwargs
+):
     """Rebuild the shared location workbook for the chronotopi import.
 
     The source-merging and geospatial containment implementation lives in
@@ -1077,9 +1086,7 @@ def seed_location_entities(locations_db, resolve_location=None):
             and concept_id is None
             and not taxonomy_match_excluded(name)
         ):
-            raise RuntimeError(
-                f"Canonical location {name!r} has no GO concept mapping"
-            )
+            raise RuntimeError(f"Canonical location {name!r} has no GO concept mapping")
         resolved_entries.append((name, entry, concept_id))
 
     created_or_reused = []

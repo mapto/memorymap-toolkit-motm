@@ -94,7 +94,9 @@ class TestCreateEventFromRowIntegration:
         assert fetched["timespan"] is not None
         assert fetched["end_location"] is not None
         assert fetched["persons"], "protagonist should be linked as a Person"
-        assert fetched["concepts"], "event_type/place_category should be linked as Concepts"
+        assert fetched["concepts"], (
+            "event_type/place_category should be linked as Concepts"
+        )
         assert fetched["urls"], "external_links should be linked as URLs"
 
         timespan = api_client.api_get(f"timespans/{fetched['timespan']}")
@@ -114,7 +116,10 @@ class TestCreateEventFromRowIntegration:
         # (Concepts are deliberately excluded, see module docstring.)
         cleanup.append(("timespans", fetched["timespan"]))
         cleanup.append(("locations", fetched["end_location"]))
-        if fetched["start_location"] and fetched["start_location"] != fetched["end_location"]:
+        if (
+            fetched["start_location"]
+            and fetched["start_location"] != fetched["end_location"]
+        ):
             cleanup.append(("locations", fetched["start_location"]))
         for pid in fetched["persons"]:
             cleanup.append(("persons", pid))
@@ -194,12 +199,16 @@ class TestDatabaseConsistency:
         place = unique("IT SamePlace")
 
         row1 = {
-            "event_label": unique("IT Event A"), "place_name": place,
-            "event_type": "residence", "place_category": "neue_heimat",
+            "event_label": unique("IT Event A"),
+            "place_name": place,
+            "event_type": "residence",
+            "place_category": "neue_heimat",
         }
         row2 = {
-            "event_label": unique("IT Event B"), "place_name": place,
-            "event_type": "residence", "place_category": "neue_heimat",
+            "event_label": unique("IT Event B"),
+            "place_name": place,
+            "event_type": "residence",
+            "place_category": "neue_heimat",
         }
 
         event_id_1 = events.create_event_from_row(row1, person)
@@ -225,8 +234,10 @@ class TestDatabaseConsistency:
     def test_created_event_is_visible_and_unique_in_list_endpoint(self, cleanup):
         label = unique("IT ListVisibility")
         row = {
-            "event_label": label, "place_name": unique("IT SomePlace"),
-            "event_type": "residence", "place_category": "neue_heimat",
+            "event_label": label,
+            "place_name": unique("IT SomePlace"),
+            "event_type": "residence",
+            "place_category": "neue_heimat",
         }
 
         event_id = events.create_event_from_row(row, unique("IT Person"))
@@ -239,5 +250,7 @@ class TestDatabaseConsistency:
 
         all_events = api_client.api_get("events")
         matches = [e for e in all_events if e["description"] == label]
-        assert len(matches) == 1, "event should appear exactly once in the list endpoint"
+        assert len(matches) == 1, (
+            "event should appear exactly once in the list endpoint"
+        )
         assert matches[0]["id"] == event_id
