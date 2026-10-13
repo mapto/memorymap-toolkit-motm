@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -26,36 +27,59 @@ from .person_merge import PersonMergeError, merge_person_records
 
 class SourceCategoryHeatmapViewTests(TestCase):
 	def setUp(self):
-		self.used_root = Concept.objects.create()
-		self.used_root.set_current_language("en")
-		self.used_root.label = "Used category"
-		self.used_root.save()
+		self.used_root = self.make_concept("Used concept")
+		self.unused_root = self.make_concept("Unused concept")
+		self.used_child = self.make_concept("Used child", parent=self.used_root)
 
-		self.unused_root = Concept.objects.create()
-		self.unused_root.set_current_language("en")
-		self.unused_root.label = "Unused category"
-		self.unused_root.save()
+		# The used concept is mentioned in three interviews
+		for number in ("001", "002", "003"):
+			interview = Interview.objects.create(archive_id=f"I-{number}")
+			extraction = Extraction.objects.create(
+				identifier=f"E-{number}",
+				interview=interview,
+			)
+			extraction.concepts.add(self.used_child)
 
-		used_child = Concept.objects.create(parent=self.used_root)
-		used_child.set_current_language("en")
-		used_child.label = "Used child"
-		used_child.save()
+	def make_concept(self, label, parent=None):
+		concept = Concept.objects.create(parent=parent)
+		concept.set_current_language("en")
+		concept.label = label
+		concept.save()
+		return concept
 
-		interview = Interview.objects.create(archive_id="I-001")
-		extraction = Extraction.objects.create(
-			identifier="E-001",
-			interview=interview,
-		)
-		extraction.concepts.add(used_child)
-
-	def test_heatmap_excludes_unused_root_categories(self):
+	def heatmap_concept_pks(self):
 		view = SourceCategoryHeatmapView()
 		view.object_list = Interview.objects.all()
 		context = view.get_context_data()
+		return [row["concept"].pk for row in context["grid"]]
 
-		assert [row["category"].pk for row in context["grid"]] == [
-			self.used_root.pk
-		]
+	def test_heatmap_excludes_unused_root_concepts(self):
+		assert self.heatmap_concept_pks() == [self.used_root.pk]
+
+	def test_heatmap_excludes_concepts_in_fewer_than_three_interviews(self):
+		rare_root = self.make_concept("Rare concept")
+		rare_child = self.make_concept("Rare child", parent=rare_root)
+		for number in ("001", "002"):
+			extraction = Extraction.objects.create(
+				identifier=f"E-rare-{number}",
+				interview=Interview.objects.get(archive_id=f"I-{number}"),
+			)
+			extraction.concepts.add(rare_child)
+
+		assert self.heatmap_concept_pks() == [self.used_root.pk]
+
+	def test_heatmap_counts_interviews_not_total_mentions(self):
+		busy_root = self.make_concept("Busy concept")
+		busy_child = self.make_concept("Busy child", parent=busy_root)
+		interview = Interview.objects.get(archive_id="I-001")
+		for number in range(5):
+			extraction = Extraction.objects.create(
+				identifier=f"E-busy-{number}",
+				interview=interview,
+			)
+			extraction.concepts.add(busy_child)
+
+		assert self.heatmap_concept_pks() == [self.used_root.pk]
 
 
 class ExtractionSerializerTests(TestCase):
@@ -802,6 +826,45 @@ class LocationDetailViewTests(TestCase):
 		assert content.index("<th>Date</th>") < content.index("<th>Person</th>")
 		assert content.index("<th>Person</th>") < content.index("<th>Place</th>")
 		assert f'href="{person_url}">Ada Lovelace</a>' in content
+
+
+class EventListViewTests(TestCase):
+	def test_timeline_lists_person_between_date_and_place(self):
+		location = LocationPoint.objects.create(current_name="Timeline location")
+		person = Person.objects.create(given_name="Ada", family_name="Lovelace")
+		event = Event.objects.create(start_location=location)
+		event.persons.add(person)
+
+		with override("en"):
+			response = self.client.get(reverse("event_list"))
+			person_url = reverse("person_detail", args=[person.pk])
+
+		assert response.status_code == 200
+		content = response.content.decode()
+		assert content.index('data-col="0">Date') < content.index('data-col="1">Person')
+		assert content.index('data-col="1">Person') < content.index('data-col="2">Place')
+		assert f'href="{person_url}">Ada Lovelace</a>' in content
+
+	def test_timeline_orders_events_by_start_then_end_date(self):
+		long_1950s = Event.objects.create(
+			timespan=Timespan.objects.create(start=date(1950, 1, 1), end=date(1960, 1, 1))
+		)
+		short_1950s = Event.objects.create(
+			timespan=Timespan.objects.create(start=date(1950, 1, 1), end=date(1955, 1, 1))
+		)
+		early = Event.objects.create(
+			timespan=Timespan.objects.create(start=date(1940, 1, 1), end=date(1945, 1, 1))
+		)
+
+		with override("en"):
+			response = self.client.get(reverse("event_list"))
+
+		assert response.status_code == 200
+		assert [event.pk for event in response.context["events"]] == [
+			early.pk,
+			short_1950s.pk,
+			long_1950s.pk,
+		]
 
 
 class LocationPointSerializerTests(TestCase):

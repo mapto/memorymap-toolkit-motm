@@ -152,6 +152,11 @@ msgstr "Elenco"
 msgid "Heatmap"
 msgstr "Mappa di calore"
 
+#: templates/mmt_map/base.html:134 templates/mmt_motm/event_list.html:6
+#: templates/mmt_motm/text_only.html:23
+msgid "Timeline"
+msgstr "Linea del tempo"
+
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
 #: templates/mmt_motm/extraction_list.html:6
@@ -484,10 +489,6 @@ msgstr "Intervistatore/trice"
 msgid "No sources found."
 msgstr "Nessuna fonte trovata."
 
-#: templates/mmt_motm/life_journey_heatmap.html:6
-msgid "Life Journey × Sources"
-msgstr "Percorso di vita × Fonti"
-
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
 msgstr "Nomi alternativi:"
@@ -641,15 +642,6 @@ msgstr "Concetti principali"
 msgid "No people found."
 msgstr "Nessuna persona trovata."
 
-#: templates/mmt_motm/source_category_heatmap.html:6
-#: templates/mmt_motm/text_only.html:83
-msgid "Sources × Categories"
-msgstr "Fonti × Categorie"
-
-#: templates/mmt_motm/source_category_heatmap.html:11
-msgid "Category \\ Source"
-msgstr "Categoria \\ Fonte"
-
 #: templates/mmt_motm/text_only.html:6
 msgid "Site Overview"
 msgstr "Panoramica del sito"
@@ -662,17 +654,9 @@ msgstr "Tabella ricercabile e consultabile"
 msgid "Searchable table of all events"
 msgstr "Tabella ricercabile di tutti gli eventi"
 
-#: templates/mmt_motm/text_only.html:31
-msgid "Persons × Life Journey Heatmap"
-msgstr "Persone × Mappa di calore del percorso di vita"
-
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
 msgstr "Tutti i luoghi in elenco"
-
-#: templates/mmt_motm/text_only.html:46
-msgid "Concepts & Themes"
-msgstr "Concetti e temi"
 
 #: templates/mmt_motm/text_only.html:53
 msgid "Word cloud"
@@ -681,10 +665,6 @@ msgstr "Nuvola di parole"
 #: templates/mmt_motm/text_only.html:57
 msgid "Hierarchy"
 msgstr "Gerarchia"
-
-#: templates/mmt_motm/text_only.html:63
-msgid "Sources & Quotes"
-msgstr "Fonti e citazioni"
 
 #: templates/mmt_motm/text_only.html:69
 msgid "Recorded"
@@ -701,10 +681,6 @@ msgstr "Pagine basate su mappa"
 #: templates/mmt_motm/text_only.html:95
 msgid "Interactive Map"
 msgstr "Mappa interattiva"
-
-#: templates/mmt_motm/text_only.html:96
-msgid "Places & events"
-msgstr "Luoghi ed eventi"
 
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"

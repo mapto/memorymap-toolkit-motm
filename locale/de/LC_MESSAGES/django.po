@@ -152,6 +152,11 @@ msgstr "Liste"
 msgid "Heatmap"
 msgstr "Heatmap"
 
+#: templates/mmt_map/base.html:134 templates/mmt_motm/event_list.html:6
+#: templates/mmt_motm/text_only.html:23
+msgid "Timeline"
+msgstr "Zeitleiste"
+
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
 #: templates/mmt_motm/extraction_list.html:6
@@ -484,10 +489,6 @@ msgstr "Interviewer:in"
 msgid "No sources found."
 msgstr "Keine Quellen gefunden."
 
-#: templates/mmt_motm/life_journey_heatmap.html:6
-msgid "Life Journey × Sources"
-msgstr "Lebenslauf × Quellen"
-
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
 msgstr "Alternative Namen:"
@@ -641,15 +642,6 @@ msgstr "Top-Konzepte"
 msgid "No people found."
 msgstr "Keine Personen gefunden."
 
-#: templates/mmt_motm/source_category_heatmap.html:6
-#: templates/mmt_motm/text_only.html:83
-msgid "Sources × Categories"
-msgstr "Quellen × Kategorien"
-
-#: templates/mmt_motm/source_category_heatmap.html:11
-msgid "Category \\ Source"
-msgstr "Kategorie \\ Quelle"
-
 #: templates/mmt_motm/text_only.html:6
 msgid "Site Overview"
 msgstr "Seitenübersicht"
@@ -662,17 +654,9 @@ msgstr "Durchsuchbare und durchstöberbare Tabelle"
 msgid "Searchable table of all events"
 msgstr "Durchsuchbare Tabelle aller Ereignisse"
 
-#: templates/mmt_motm/text_only.html:31
-msgid "Persons × Life Journey Heatmap"
-msgstr "Personen × Lebenslauf-Heatmap"
-
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
 msgstr "Alle Orte als Liste"
-
-#: templates/mmt_motm/text_only.html:46
-msgid "Concepts & Themes"
-msgstr "Konzepte & Themen"
 
 #: templates/mmt_motm/text_only.html:53
 msgid "Word cloud"
@@ -681,10 +665,6 @@ msgstr "Wortwolke"
 #: templates/mmt_motm/text_only.html:57
 msgid "Hierarchy"
 msgstr "Hierarchie"
-
-#: templates/mmt_motm/text_only.html:63
-msgid "Sources & Quotes"
-msgstr "Quellen & Zitate"
 
 #: templates/mmt_motm/text_only.html:69
 msgid "Recorded"
@@ -701,10 +681,6 @@ msgstr "Kartenbasierte Seiten"
 #: templates/mmt_motm/text_only.html:95
 msgid "Interactive Map"
 msgstr "Interaktive Karte"
-
-#: templates/mmt_motm/text_only.html:96
-msgid "Places & events"
-msgstr "Orte & Ereignisse"
 
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"

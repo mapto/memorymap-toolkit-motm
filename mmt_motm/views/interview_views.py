@@ -41,12 +41,14 @@ class SourceCategoryHeatmapView(ListView):
     model = Interview
     template_name = "mmt_motm/source_category_heatmap.html"
     context_object_name = "interviews"
+    # Only concepts mentioned in at least this many interviews get a row
+    min_interviews = 3
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         interviews = Interview.objects.order_by("archive_id")
 
-        # Build root-id lookup: concept_id → root category id
+        # Build root-id lookup: concept_id → root concept id
         all_concepts = Concept.objects.values("id", "parent_id")
         parent_map = {c["id"]: c["parent_id"] for c in all_concepts}
 
@@ -60,7 +62,7 @@ class SourceCategoryHeatmapView(ListView):
                 cid = pid
             return cid
 
-        # Count extractions per (interview_id, root_category_id)
+        # Count extractions per (interview_id, root_concept_id)
         extractions = (
             Extraction.objects.filter(interview__isnull=False)
             .values_list("interview_id", "concepts__id")
@@ -73,28 +75,31 @@ class SourceCategoryHeatmapView(ListView):
             key = (interview_id, root_id)
             counts[key] = counts.get(key, 0) + 1
 
-        # Only show root categories that occur in at least one interview.
+        # Only show root concepts that occur in at least one interview.
         used_root_ids = {root_id for _, root_id in counts if root_id is not None}
-        categories = Concept.objects.filter(
+        concepts = Concept.objects.filter(
             parent__isnull=True,
             id__in=used_root_ids,
         ).order_by("translations__label")
 
         max_count = max(counts.values()) if counts else 1
 
-        # Build grid: one row per category, one cell per interview
+        # Build grid: one row per concept, one cell per interview
         grid = []
-        for cat in categories:
-            row_total = sum(counts.get((iv.id, cat.id), 0) for iv in interviews)
+        for concept in concepts:
+            row_total = sum(counts.get((iv.id, concept.id), 0) for iv in interviews)
             cells = []
             for interview in interviews:
-                cells.append(counts.get((interview.id, cat.id), 0))
-            grid.append({"category": cat, "cells": cells, "total": row_total})
+                cells.append(counts.get((interview.id, concept.id), 0))
+            # Skip concepts mentioned in fewer than min_interviews interviews
+            if sum(1 for count in cells if count) < self.min_interviews:
+                continue
+            grid.append({"concept": concept, "cells": cells, "total": row_total})
 
         # Sort by total count, most frequent first
         grid.sort(key=lambda row: row["total"], reverse=True)
 
-        context["categories"] = categories
+        context["concepts"] = concepts
         context["interviews"] = interviews
         context["grid"] = grid
         context["max_count"] = max_count

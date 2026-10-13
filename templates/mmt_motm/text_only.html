@@ -20,7 +20,7 @@
                 <a href="{% url 'event_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ events }}</span>
                     <span class="dash-label">
-                        <strong>{% trans "Events" %}</strong>
+                        <strong>{% trans "Timeline" %}</strong>
                         <small>{% trans "Searchable table of all events" %}</small>
                     </span></span>
                 </a>
@@ -28,7 +28,7 @@
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-th"></i></span>
                     <span class="dash-label">
                         <strong>{% trans "Life Journey" %}</strong>
-                        <small>{% trans "Persons × Life Journey Heatmap" %}</small>
+                        <small>{% trans "People" %} × {% trans "Life Journey" %} {% trans "Heatmap" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'location_list' %}" class="dash-row">
@@ -43,7 +43,7 @@
 
         <!-- Right column: secondary groups -->
         <div class="col-md-5 pl-md-4">
-            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Concepts & Themes" %}</h6>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Concepts" %} & {% trans "Taxonomy" %}</h6>
             <div class="dash-section mb-3">
                 <div class="dash-span-group">
                     <span class="dash-count-span">{{ concepts }}</span>
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Sources & Quotes" %}</h6>
+            <h6 class="mb-2" style="color: #9f9f9f; padding-left: 1.5rem;">{% trans "Sources" %} & {% trans "Quotes" %}</h6>
             <div class="dash-section mb-3">
                 <a href="{% url 'interview_list' %}" class="dash-row">
                     <span class="dash-inner"><span class="dash-count">{{ interviews }}</span>
@@ -80,7 +80,7 @@
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-th"></i></span>
                     <span class="dash-label">
                         <strong>{% trans "Heatmap" %}</strong>
-                        <small>{% trans "Sources × Categories" %}</small>
+                        <small>{% trans "Sources" %} × {% trans "Concepts" %}</small>
                     </span></span>
                 </a>
             </div>
@@ -93,7 +93,7 @@
                     <span class="dash-inner"><span class="dash-count"><i class="fas fa-globe"></i></span>
                     <span class="dash-label">
                         <strong>{% trans "Interactive Map" %}</strong>
-                        <small>{% trans "Places & events" %}</small>
+                        <small>{% trans "Places" %} & {% trans "Events" %}</small>
                     </span></span>
                 </a>
                 <a href="{% url 'location_map' %}" class="dash-row">

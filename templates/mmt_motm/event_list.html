@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>{% trans "Events" %}</h1>
+    <h1>{% trans "Timeline" %}</h1>
     <input type="text" id="events-filter" class="form-control mb-2" placeholder="{% trans 'Filter events…' %}">
     <p class="text-muted" aria-live="polite">
         <span id="event-count">{{ events|length }}</span>
@@ -11,16 +11,17 @@
     </p>
     <table class="table table-sm table-striped table-hover" id="events-table">
         <thead>
-            <tr class="event-row">
+            <tr>
                 <th class="sortable" data-col="0">{% trans "Date" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="1">{% trans "Place" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="2">{% trans "Description" %} <span class="sort-arrow"></span></th>
-                <th class="sortable" data-col="3">{% trans "Life Journey" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="1">{% trans "Person" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="2">{% trans "Place" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="3">{% trans "Description" %} <span class="sort-arrow"></span></th>
+                <th class="sortable" data-col="4">{% trans "Life Journey" %} <span class="sort-arrow"></span></th>
             </tr>
         </thead>
         <tbody>
             {% for event in events %}
-            <tr>
+            <tr class="event-row">
                 <td data-value="{% if event.timespan and event.timespan.start %}
                         {{ event.timespan.start|date:'Y-m-d' }}{% endif %}">
                     {% if event.timespan %}
@@ -28,6 +29,11 @@
                             {% include "mmt_motm/_timespan.html" %}
                         {% endwith %}
                     {% endif %}
+                </td>
+                <td>
+                    {% for person in event.display_persons %}
+                        <a href="{% url 'person_detail' person.pk %}">{{ person }}</a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
                 </td>
                 <td>
                     {% if event.start_location and event.end_location and event.start_location.pk != event.end_location.pk %}
@@ -63,10 +69,16 @@
     var listFilter = MmtList.attachFilter({
         input: filterInput,
         count: document.getElementById('event-count'),
-        itemSelector: '#events-table tbody tr.event-row'
+        itemSelector: '#events-table tbody tr.event-row',
+        getText: function (row) {
+            return Array.from(row.cells).map(function (cell) {
+                return cell.textContent;
+            }).join(' ').replace(/\s+/g, ' ');
+        }
     });
     var dataRows = listFilter.items;
     var currentSort = { col: 0, dir: 'asc' };
+    headers[0].classList.add('asc');
 
     headers.forEach(function(th) {
         th.addEventListener('click', function() {

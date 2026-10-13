@@ -1,8 +1,9 @@
 import json
 
+from django.db.models import Prefetch
 from django.views.generic import DetailView, ListView
 
-from ..models import Event, Interview
+from ..models import Event, Interview, Person
 from ..person_identity import deduplicate_people
 
 
@@ -28,9 +29,20 @@ class EventListView(ListView):
     context_object_name = "events"
 
     def get_queryset(self):
-        return Event.objects.select_related(
-            "timespan", "start_location", "end_location"
-        ).order_by("timespan__start")
+        persons = Person.objects.order_by("family_name", "given_name", "pk")
+        return (
+            Event.objects.select_related("timespan", "start_location", "end_location")
+            .prefetch_related(Prefetch("persons", queryset=persons))
+            .order_by("timespan__start", "timespan__end", "pk")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        events = list(self.object_list)
+        for event in events:
+            event.display_persons = deduplicate_people(event.persons.all())
+        context["events"] = events
+        return context
 
 
 class LifeJourneyHeatmapView(ListView):

@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <h1>{% trans "Sources × Categories" %}</h1>
+    <h1>{% trans "Sources" %} × {% trans "Concepts" %}</h1>
     <div class="table-responsive">
     <table class="table table-bordered table-sm text-center" id="heatmap-table">
         <thead>
             <tr>
-                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">{% trans "Category \ Source" %}</th>
+                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">{% trans "Concept" %} \ {% trans "Source" %}</th>
                 {% for interview in interviews %}
                 <th class="heatmap-header" style="white-space:nowrap;writing-mode:vertical-rl;text-orientation:mixed;max-width:2rem;">
                     <a href="{% url 'interview_detail' interview.pk %}">{{ interview.archive_id }}</a>
@@ -20,8 +20,8 @@
             {% for row in grid %}
             <tr>
                 <td class="text-left font-weight-bold" style="position:sticky;left:0;background:#fff;z-index:1;">
-                    {% if row.category.icon %}<i class="fas {{ row.category.icon }}"></i> {% endif %}
-                    <a href="{% url 'concept_detail' row.category.pk %}">{{ row.category.label }}</a>
+                    {% if row.concept.icon %}<i class="fas {{ row.concept.icon }}"></i> {% endif %}
+                    <a href="{% url 'concept_detail' row.concept.pk %}">{{ row.concept.label }}</a>
                 </td>
                 {% for count in row.cells %}
                 <td class="heatmap-cell" data-count="{{ count }}">
