@@ -10,7 +10,7 @@ instead of using the notebook's ``skip`` table.
 The script is read-only and offline. It does not log in, call the API, use a
 geocoder, or write any file. It only reports; fixes need a separate decision.
 
-Usage, from the ``notebook`` folder::
+Usage, from the ``import`` folder::
 
     ./.venv/bin/python validate_data.py          # up to 15 findings per list
     ./.venv/bin/python validate_data.py --all    # every finding
@@ -79,8 +79,8 @@ from timespan import parse_date
 from utils import clean_str
 from verify_excel_headers import verify_files
 
-NOTEBOOK_DIR = Path(__file__).resolve().parent
-REPO_ROOT = NOTEBOOK_DIR.parent
+IMPORT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = IMPORT_DIR.parent
 DATA_DIR = REPO_ROOT / "data"
 SOURCE_DIR = DATA_DIR / "nuove schede"
 TEMPLATE_DIR = DATA_DIR / "template"

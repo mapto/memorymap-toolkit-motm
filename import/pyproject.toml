@@ -1,6 +1,6 @@
 [project]
-name = "notebook"
-version = "0.1.0"
+name = "import"
+version = "0.2.0"
 description = "Preprocessing tools for Minors on the Move/Memory Mapper"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -99,7 +99,7 @@ db.sqlite3
 
 static/
 media/
-notebook/.ipynb_checkpoints
+import/.ipynb_checkpoints
 media_old/
 backups/
 tmp/
