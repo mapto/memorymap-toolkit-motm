@@ -1,4 +1,14 @@
-"""Error and value types for person taxonomy synonyms."""
+"""Error and value types for person taxonomy synonyms.
+
+These types are the shared vocabulary of the person import. ``PersonTaxonomyError``
+signals that source names cannot be mapped to one person. ``validate_data.py``
+catches it and records it in the validation report, so one ambiguous name does
+not end the whole check. ``PersonName`` holds a reviewed name as
+``Surname, Given``, the form Personae leaves use, and renders it as
+``Given Surname``, the form sheet names use. ``PersonTaxonomySynonyms`` is the
+loaded, read-only view of the synonym JSON. ``synonyms`` builds one per file,
+and the lookups in ``names`` and ``augment`` query it.
+"""
 
 from __future__ import annotations
 
@@ -14,14 +24,26 @@ class PersonTaxonomyError(ValueError):
 
 @dataclass(frozen=True)
 class PersonName:
-    """A person's family and given names, as written in a 'Surname, Given' label."""
+    """A person's family and given names, as written in a 'Surname, Given' label.
+
+    Personae leaves are stored as ``Surname, Given``, while sheet names use
+    ``Given Surname``. This value object keeps the two parts once, so both
+    spellings are derived rather than stored separately. Instances are immutable
+    and compare equal when both parts match.
+    """
 
     family_name: str
     given_name: str
 
     @classmethod
     def from_label(cls, label: str) -> PersonName | None:
-        """Parse a 'Surname, Given' label; return None when it has no comma."""
+        """Parse a 'Surname, Given' label, or return None when it has no comma.
+
+        Only the first comma separates the two parts, so a given name may contain
+        further commas. The parts are stripped but not otherwise validated, so an
+        empty part is possible when this is called directly. The synonym loader
+        cleans labels first and rejects those without a comma.
+        """
         if "," not in label:
             return None
         family_name, given_name = (part.strip() for part in label.split(",", 1))
@@ -46,7 +68,11 @@ class PersonName:
 class PersonTaxonomySynonyms:
     """Reviewed person aliases and metadata links from the synonyms JSON.
 
-    The mappings are read-only; copy them before changing anything.
+    ``synonyms`` builds one instance per file, and the methods here answer the
+    questions the importers ask: which Personae label a spelling means, which
+    metadata workbook belongs to a chronotopi workbook, and who an unnamed
+    relative is within one workbook. The mappings are read-only proxies shared
+    by every caller, so copy them before changing anything.
     """
 
     aliases: Mapping[str, str]
@@ -54,7 +80,13 @@ class PersonTaxonomySynonyms:
     metadata_relatives: Mapping[str, Mapping[str, PersonName]]
 
     def canonical_label(self, value: str) -> str | None:
-        """Return the reviewed canonical Personae label for a source name."""
+        """Return the reviewed Personae label for a source spelling, or None.
+
+        An explicit alias wins. Otherwise the value matches a reviewed label in
+        either its ``Surname, Given`` or ``Given Surname`` form, compared with the
+        same key normalization used for aliases. None means the table has no
+        entry, and callers fall back to the source name.
+        """
         key = person_taxonomy_key(value)
         target = self.aliases.get(key)
         if target:
@@ -76,8 +108,12 @@ class PersonTaxonomySynonyms:
     ) -> PersonName | None:
         """Return the reviewed person for an unnamed relative of one workbook.
 
-        Links are scoped to one workbook, because the same relation text can name
-        different people in different families.
+        ``metadati.relationships.create_relationship`` calls this when a relative's
+        given name is a placeholder, and uses the result in place of the
+        placeholder names. Links are scoped to one workbook, because the same
+        relation text can name different people in different families. Returns
+        None when there is no metadata source or no link for the relation, so the
+        placeholder is kept.
         """
         if not metadata_source:
             return None

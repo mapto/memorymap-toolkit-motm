@@ -1,4 +1,18 @@
-"""Classifying and collecting facts from sheets and metadata."""
+"""Classifying and collecting facts from sheets and metadata.
+
+This module turns the inputs of the plan step into facts for one person. Rows for
+one chronotopi workbook and sheet are selected by ``_rows_for_sheet``. Each row is
+classified as birth or death by ``_classify_biographical_event``, and its dates
+and places are collected by ``_collect_sheet_facts``. A metadati person record is
+read by ``_metadata_for_workbook`` and reduced to one entry per identity key by
+``_metadata_people``. Events about relatives, such as a parent's death, are
+ignored, so a family member's event is not stored as the protagonist's.
+
+The module reads dataframes and workbooks. It makes no API calls and writes
+nothing. ``_BIRTH_WORDS``, ``_DEATH_WORDS``, and ``_OTHER_SUBJECT_RE`` hold the
+German and English event words and the German relative phrases that the
+classifier matches.
+"""
 
 from __future__ import annotations
 
@@ -40,6 +54,14 @@ _OTHER_SUBJECT_RE = re.compile(
 
 
 def _classify_biographical_event(row: Mapping[str, Any]) -> str | None:
+    """Return ``"birth"``, ``"death"``, or None for one chronotopi event row.
+
+    The event label is checked first. If it names another person, such as a
+    parent's death in German, the row is ignored. Without this check, a relative's
+    death would be recorded as the protagonist's. Otherwise the words of the event
+    type and label are matched against the birth and death word sets, and birth
+    wins when both match.
+    """
     label = clean_str(row.get("event_label", ""))
     if _OTHER_SUBJECT_RE.search(label):
         return None
@@ -53,6 +75,17 @@ def _classify_biographical_event(row: Mapping[str, Any]) -> str | None:
 
 
 def _metadata_people(record: Mapping[str, Any], aliases: Mapping[str, str]):
+    """Collect metadati birth and death values for each person in a workbook.
+
+    ``record`` is the dict from ``read_person_record``. The main person and each
+    family member with a usable name are keyed by identity, so a relative's dates
+    can be joined to the chronotopi sheet for the same person. If a key occurs
+    twice, spans and places are merged, and a clash raises
+    ``PersonBiographyConflictError`` at once. Returns a dict from key to a dict
+    with ``name``, ``birth_span``, ``birth_place``, ``death_span``, and
+    ``death_place``. ``death_place`` is always None, because the record has no
+    death place field.
+    """
     people: dict[str, dict[str, Any]] = {}
     main_person = record.get("person") or {}
     main_key = _identity_from_person_fields(main_person, aliases)
@@ -132,6 +165,15 @@ def _collect_sheet_facts(
     source_label: str,
     conflicts: list[str],
 ) -> _MutableBiography:
+    """Build one chronotopi sheet's birth and death facts from its event rows.
+
+    Each birth or death row merges its date into the matching span and its place
+    into the matching place. ``_merge_span`` and ``_merge_place`` record a clash
+    in ``conflicts`` rather than letting a later row overwrite an earlier one. A
+    ``place_detail`` that differs from ``place_name`` is appended in parentheses.
+    ``has_biographical_event`` is set when at least one row is a birth or death.
+    The function reads no API.
+    """
     facts = _MutableBiography(person_name=person_name, identity_key=identity_key)
     facts.source_workbooks.add(source_label)
     for row in rows:
@@ -178,6 +220,15 @@ def _collect_sheet_facts(
 
 
 def _rows_for_sheet(dataframe, workbook_name: str, sheet_name: str):
+    """Return the chronotopi event rows for one workbook and one sheet.
+
+    ``dataframe`` can hold events from several workbooks. Rows are kept when their
+    ``source_workbook`` basename equals ``workbook_name`` and their cleaned ``name``
+    equals ``sheet_name``. A missing column is not filtered on, so without a
+    ``source_workbook`` column the rows for a sheet title in every workbook are
+    returned. The plan step rules that out first. Returns a list of dicts, one per
+    row. Raises ``PersonBiographyError`` when ``dataframe`` has no ``columns``.
+    """
     if not hasattr(dataframe, "columns"):
         raise PersonBiographyError("Chronotopi events must be supplied as a dataframe")
     selected = dataframe

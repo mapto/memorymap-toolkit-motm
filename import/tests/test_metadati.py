@@ -524,3 +524,210 @@ def test_create_relationship_keeps_unlinked_placeholder_unmerged(monkeypatch):
             },
         ),
     ]
+
+
+def test_import_all_metadati_imports_workbooks_and_skips_templates(
+    tmp_path, monkeypatch
+):
+    """Import each metadati workbook in a folder, skipping templates."""
+    (tmp_path / "metadati_stern.xlsx").touch()
+    (tmp_path / "metadati_template.xlsx").touch()
+    (tmp_path / "chronotopi_stern.xlsx").touch()
+    read_names = []
+
+    def fake_read_person_record(xlsx_path):
+        read_names.append(xlsx_path.name)
+        return {
+            "identifier": None,
+            "person": {},
+            "birth_place": {},
+            "interviews": [],
+            "family": [],
+        }
+
+    class Response:
+        def json(self):
+            return {"family_name": "Stern"}
+
+    class FakeSession:
+        def get(self, url):
+            return Response()
+
+    monkeypatch.setattr(
+        metadati.importer, "read_person_record", fake_read_person_record
+    )
+    monkeypatch.setattr(
+        metadati.importer,
+        "get_or_create_person",
+        lambda data, identifier=None: 5,
+    )
+    monkeypatch.setattr(
+        metadati.importer, "get_or_create_location", lambda birth_place: None
+    )
+    monkeypatch.setattr(metadati.importer, "SESSION", FakeSession())
+
+    results = metadati.import_all_metadati(directory=tmp_path)
+
+    assert results == [5]
+    assert read_names == ["metadati_stern.xlsx"]
+
+
+def test_get_or_create_person_creates_person_with_identifier_and_lifespan(
+    monkeypatch,
+):
+    """Create a new Person with its identifier and lifespan when none matches."""
+    posts = []
+    timespan_requests = []
+
+    def fake_get_or_create_timespan(start=None, end=None):
+        timespan_requests.append((start, end))
+        return 3
+
+    def fake_post(endpoint, payload, fail_on_error=True):
+        posts.append((endpoint, payload))
+        return {"id": 40}
+
+    monkeypatch.setattr(metadati.people, "_person_cache", {})
+    monkeypatch.setattr(
+        metadati.people, "canonical_person_name", lambda given, family: None
+    )
+    monkeypatch.setattr(metadati.people, "person_taxonomy_alias", lambda value: None)
+    monkeypatch.setattr(metadati.people, "api_get", lambda endpoint, params=None: [])
+    monkeypatch.setattr(
+        metadati.people,
+        "api_patch",
+        lambda *args: pytest.fail("a new person should not be patched"),
+    )
+    monkeypatch.setattr(
+        metadati.people, "get_or_create_timespan", fake_get_or_create_timespan
+    )
+    monkeypatch.setattr(metadati.people, "api_post", fake_post)
+
+    person_id = metadati.get_or_create_person(
+        {
+            "given_name": "Josef",
+            "family_name": "Stern",
+            "gender": "male",
+            "birth_date": "1900-01-01",
+            "death_date": "1970-01-01",
+            "education": "Gymnasium",
+        },
+        identifier="META-040",
+    )
+
+    assert person_id == 40
+    assert timespan_requests == [("1900-01-01", "1970-01-01")]
+    assert posts == [
+        (
+            "persons",
+            {
+                "identifier": "META-040",
+                "given_name": "Josef",
+                "family_name": "Stern",
+                "education": "Gymnasium",
+                "gender": "male",
+                "lifespan": 3,
+            },
+        ),
+    ]
+
+
+def test_get_or_create_location_links_region_chain(monkeypatch):
+    """Link the innermost region of a birth place to its location."""
+    calls = []
+    region_ids = {"Deutsches Reich": 5, "Brandenburg": 6}
+
+    def fake_get(endpoint, params=None):
+        calls.append(("get", endpoint, params))
+        return []
+
+    def fake_post(endpoint, payload, fail_on_error=True):
+        calls.append(("post", endpoint, payload))
+        return {"id": region_ids[payload["name"]]}
+
+    def fake_patch(endpoint, obj_id, payload):
+        calls.append(("patch", endpoint, obj_id, payload))
+
+    monkeypatch.setattr(metadati.places, "_location_workbook_cache", None)
+    monkeypatch.setattr(
+        metadati.places,
+        "load_locations_db",
+        lambda enrich_coordinates=True: {},
+    )
+    monkeypatch.setattr(
+        metadati.places,
+        "get_or_create_location_point",
+        lambda name, wikidata_qid=None, locations_db=None: 77,
+    )
+    monkeypatch.setattr(metadati.places, "api_get", fake_get)
+    monkeypatch.setattr(metadati.places, "api_post", fake_post)
+    monkeypatch.setattr(metadati.places, "api_patch", fake_patch)
+
+    location_id = metadati.get_or_create_location(
+        {
+            "name": "Frankfurt an der Oder",
+            "wikidata_id": None,
+            "regions": ["Deutsches Reich", "Brandenburg"],
+        }
+    )
+
+    assert location_id == 77
+    assert calls == [
+        ("get", "regions", {"search": "Deutsches Reich"}),
+        ("post", "regions", {"name": "Deutsches Reich"}),
+        ("get", "regions", {"search": "Brandenburg"}),
+        ("post", "regions", {"name": "Brandenburg", "part_of": 5}),
+        ("patch", "locations", 77, {"region": 6}),
+    ]
+
+
+def test_maybe_update_person_place_sets_an_empty_birth_place(monkeypatch):
+    """Set the birth place of a Person that has none, with a single PATCH."""
+    patches = []
+
+    def fake_patch(endpoint, obj_id, payload):
+        patches.append((endpoint, obj_id, payload))
+
+    monkeypatch.setattr(
+        metadati.places, "api_get", lambda endpoint, params=None: {"id": 7}
+    )
+    monkeypatch.setattr(metadati.places, "api_patch", fake_patch)
+
+    metadati._maybe_update_person_place(7, "birth_place", 77, "Frankfurt an der Oder")
+
+    assert patches == [("persons", 7, {"birth_place": 77})]
+
+
+def test_maybe_update_lifespan_fills_missing_lifespan_with_new_timespan(monkeypatch):
+    """Create and link a Timespan when a Person has no lifespan yet."""
+    searches = []
+    posts = []
+    patches = []
+
+    class Response:
+        def json(self):
+            return {"lifespan": None}
+
+    def fake_get(endpoint, params=None):
+        searches.append(endpoint)
+        return []
+
+    def fake_post(endpoint, payload, fail_on_error=True):
+        posts.append((endpoint, payload))
+        return {"id": 9}
+
+    monkeypatch.setattr(api_client.SESSION, "get", lambda url: Response())
+    monkeypatch.setattr(
+        api_client.SESSION,
+        "patch",
+        lambda url, json: patches.append((url, json)),
+    )
+    monkeypatch.setattr(metadati.timespans, "_timespan_cache", {})
+    monkeypatch.setattr(metadati.timespans, "api_get", fake_get)
+    monkeypatch.setattr(metadati.timespans, "api_post", fake_post)
+
+    metadati._maybe_update_lifespan(7, {"birth_date": "1924-10-30", "death_date": None})
+
+    assert searches == ["timespans"]
+    assert posts == [("timespans", {"start": "1924-10-30", "end": None})]
+    assert patches == [(f"{api_client.BASE_URL}/persons/7/", {"lifespan": 9})]

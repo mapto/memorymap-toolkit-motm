@@ -1,4 +1,16 @@
-"""Building the person biography import plan from workbooks."""
+"""Building the person biography import plan from workbooks.
+
+This is the plan step. It reads the chronotopi events, the chronotopi overview of
+workbooks and sheets, the metadati person workbooks, and the reviewed person
+synonyms file, and returns one ``PersonBiography`` per identity key. It makes no
+API calls and writes no files. The notebook calls it before the validate and
+apply steps. ``validate_data.py`` calls it to report source problems without
+changing anything.
+
+Sheets with no birth or death event are left out. Most source disagreements are
+collected and raised together as ``PersonBiographyConflictError``. Configuration
+problems, such as a missing metadati workbook, raise ``PersonBiographyError``.
+"""
 
 from __future__ import annotations
 
@@ -30,8 +42,32 @@ def build_person_biography_plan(
 ) -> dict[str, PersonBiography]:
     """Build and validate a source-only Person biography import plan.
 
-    The workbook association in ``person_taxonomy_synonyms.json`` is the
-    authority for metadata matching. No API calls or workbook writes occur.
+    This is the plan step. It makes no API calls and writes nothing, so a
+    disagreement stops the run before any record changes. Each chronotopi sheet
+    is read for birth and death events, checked against the metadati workbook
+    that the synonyms file names for its chronotopi workbook, and merged with any
+    other sheet for the same person. The workbook association in
+    ``person_taxonomy_synonyms.json`` is the authority for metadata matching.
+
+    Args:
+        overview: Maps each chronotopi workbook path to its sheet titles. Each
+            sheet is one person.
+        dataframe: Chronotopi event rows as a pandas DataFrame. The optional
+            ``name`` and ``source_workbook`` columns select one sheet's rows.
+        data_root: Folder that holds the metadati workbooks named in the synonyms
+            file.
+        synonyms_path: Synonyms JSON to read. The reviewed default is used when
+            None.
+
+    Returns:
+        A dict from identity key to ``PersonBiography``. Sheets with no birth or
+        death event are omitted.
+
+    Raises:
+        PersonBiographyError: A chronotopi workbook has no metadata workbook
+            configured, the configured one is missing, or a sheet title appears in
+            two workbooks without a ``source_workbook`` column.
+        PersonBiographyConflictError: Sources disagree about a date or a place.
     """
     config = load_person_taxonomy_synonyms(synonyms_path)
     aliases = config.aliases

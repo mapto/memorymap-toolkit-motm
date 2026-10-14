@@ -2,6 +2,23 @@
 
 Reads metadati_*.xlsx files and imports person records, relationships,
 interviews, and birth places via the Django REST API.
+
+The implementation is split by concern. ``values`` and ``sheets`` clean cells
+and parse workbooks without calling the API. ``timespans``, ``people``,
+``places``, ``relationships``, and ``interviews`` each handle one kind of record
+in the API. ``importer`` runs them in order, one person record at a time.
+
+The names below are re-exported here, so callers can write
+``from metadati import ...``. ``metadati.ipynb`` imports ``import_all_metadati``
+this way. Other packages import ``read_person_record`` from here too:
+``person_taxonomy.augment``, ``person_biography.sources``,
+``rebuild_locations``, and ``validate_data``. Some underscore-prefixed names are
+re-exported because the tests use them.
+
+The cache dicts are the same objects as in their submodules, so clearing one
+here clears the shared cache. ``_location_workbook_cache`` is the exception: it
+is copied at import time and stays None. The live cache is
+``metadati.places._location_workbook_cache``.
 """
 
 from metadati.values import (

@@ -6,7 +6,13 @@ shared parser and database helpers in ``concept_translations.py`` while owning
 the import-only rules: every database Concept must occur in all three catalogs,
 the English ``msgid`` must agree across them, and every ``msgstr`` must be
 non-empty. Those checks happen before the transaction writes anything because
-an incomplete localization set is more dangerous than a failed import.
+an incomplete localization set is more dangerous than a failed import. Only
+after they pass does the command upsert one row per concept and language, all
+in one transaction. ``--dry-run`` stops after the checks.
+
+Example, from the host against the development compose stack::
+
+    uv run python import_concept_translations.py --host localhost --port 5433 --dry-run
 
 Usage:
     import_concept_translations.py [options]
@@ -45,7 +51,8 @@ def read_catalogs(locale_root: Path) -> dict[str, dict[int, dict[str, str]]]:
 
     Requiring all three expected paths makes a missing locale an immediate
     error instead of allowing a partial import that would reintroduce the
-    language inconsistency this tool is meant to repair.
+    language inconsistency this tool is meant to repair. Returns the output of
+    ``parse_po`` for each language, keyed by language code. Only files are read.
     """
     catalogs = {}
     for language in LANGUAGES:
@@ -60,11 +67,12 @@ def validate_catalogs(
     concepts: dict[int, dict[str, str]],
     catalogs: dict[str, dict[int, dict[str, str]]],
 ) -> None:
-    """Prove that PO entries and database Concepts form a complete match.
+    """Check that PO entries and database Concepts form a complete match.
 
-    Concept IDs are the identity check, while the shared English ``msgid`` is
-    the cross-catalog consistency check. Empty translations and unknown IDs
-    are rejected before ``import_catalogs`` gets a database cursor.
+    Concept IDs are the identity check, and the English ``msgid`` must agree
+    across the three catalogs. Missing or unknown IDs, empty translations, and
+    inconsistent ``msgid`` values raise ``ConceptTranslationError``. The check
+    runs before any write, and on its own it is the whole of ``--dry-run``.
     """
     expected_ids = set(concepts)
     for language in LANGUAGES:
@@ -97,10 +105,11 @@ def validate_catalogs(
 def import_catalogs(connection, catalogs: dict[str, dict[int, dict[str, str]]]) -> int:
     """Upsert all three language rows and return the number of attempted rows.
 
-    The caller uses the psycopg2 connection context manager, so a successful
-    command commits the complete set and an exception rolls it back. The
-    database constraint decides whether each row is inserted or updated;
-    concept IDs and language codes remain the durable identity.
+    This function never commits. ``main`` runs it inside the psycopg2
+    connection's ``with`` block, which commits the complete set on success and
+    rolls it back on an exception. The ``ON CONFLICT`` clause decides whether
+    each row is inserted or updated, keyed by language code and concept ID.
+    Labels are stripped before they are written.
     """
     with connection.cursor() as cursor:
         count = 0
@@ -121,7 +130,15 @@ def import_catalogs(connection, catalogs: dict[str, dict[int, dict[str, str]]]) 
 
 
 def main() -> None:
-    """Parse options, validate catalogs, and optionally perform the import."""
+    """Run the import: validate the catalogs, then upsert them.
+
+    Invoked from the command line, as shown in the README. Options are parsed
+    from the module docstring by docpie. Side effects are reads of the three PO
+    files and the Concept table, then the upserts, unless ``--dry-run`` is set.
+    It prints the number of validated concepts or imported rows. Validation
+    failures raise ``ConceptTranslationError``, which is not caught here, so the
+    process exits non-zero before any write.
+    """
     args = docpie(__doc__)
     input_root = Path(args["--input-root"] or DEFAULT_LOCALE_ROOT)
 

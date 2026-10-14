@@ -1,4 +1,4 @@
-"""Shared database and gettext helpers for Concept translation maintenance.
+"""Provide shared database and gettext helpers for Concept translation maintenance.
 
 The executable entry points live in ``export_concept_translations.py`` and
 ``import_concept_translations.py``. Keeping the database access, PO handling,
@@ -10,8 +10,9 @@ source but Django is not necessarily installed.
 
 The legacy database has Concept labels stored in the ``en`` Parler language
 slot even though most labels are German. ``bootstrap_catalogs`` therefore has
-an explicit repair mode: it infers the likely source language, preserves that
-label as the source value, and fills the other two languages through the
+an explicit repair mode: it infers the likely source language, keeps the
+readable form of that label as the source value, reuses unambiguous entries
+from supplied catalogs, and fills the remaining languages through the
 translation service. Ordinary export remains strict so a later missing
 translation cannot silently become a new machine-generated value. The PO
 files use the English label as the stable ``msgid`` and ``concept:<id>`` as
@@ -115,7 +116,9 @@ class ConceptTranslationError(RuntimeError):
 
     Translation data is shared application state, so malformed PO syntax,
     incomplete catalogs, and unknown concept IDs should stop the operation
-    before any database rows are changed.
+    before any database rows are changed. The PO parser, catalog checks,
+    bootstrap, and translation helpers raise it. The command-line entry
+    points do not catch it, so a failure ends the run with a non-zero exit.
     """
 
 
@@ -123,9 +126,10 @@ def load_dotenv(path: Path) -> dict[str, str]:
     """Read the small ``KEY=value`` subset needed by these standalone scripts.
 
     A local parser avoids making Django or an additional dotenv package a
-    prerequisite for export/import. It intentionally handles comments,
-    optional ``export`` prefixes, and simple quoted values, which covers the
-    repository's `.env` file; command-line overrides are applied later.
+    prerequisite for export/import. It handles comments, optional ``export``
+    prefixes, and simple quoted values, which covers the repository's
+    ``.env`` file. Command-line overrides are applied later by
+    ``database_connection``. A missing file yields an empty dict.
     """
     values: dict[str, str] = {}
     if not path.exists():
@@ -147,12 +151,16 @@ def load_dotenv(path: Path) -> dict[str, str]:
 
 
 def database_connection(dotenv_path: Path, overrides: dict[str, str] | None = None):
-    """Open PostgreSQL using `.env` defaults with explicit CLI overrides.
+    """Open a PostgreSQL connection from ``.env`` defaults and CLI overrides.
 
     The compose stack exposes different host/port pairs from inside and
-    outside Docker, so the scripts must allow callers to override connection
-    details without editing `.env`. Direct psycopg2 access also lets the
-    utility operate on the Parler table without booting the full web app.
+    outside Docker (the README uses port 5433 from the host), so callers must
+    be able to override connection details without editing ``.env``. Empty
+    override values are ignored. Missing settings fall back to the
+    ``memorymap`` database, the ``memorymapper`` user, and localhost port 5432.
+    Direct psycopg2 access lets the utilities read and write the Parler table
+    without booting the full web app. The caller owns the returned connection
+    and should close it.
     """
     values = load_dotenv(dotenv_path)
     values.update({key: value for key, value in (overrides or {}).items() if value})
@@ -171,7 +179,10 @@ def fetch_concepts(connection) -> dict[int, dict[str, str]]:
     The master ID is retained as the primary identity because labels are not
     unique and the old data has incorrect language codes. Reading all rows in
     one shape gives export and bootstrap the evidence needed to distinguish a
-    complete catalog from the legacy all-``en`` state.
+    complete catalog from the legacy all-``en`` state. Both command-line entry
+    points start with this read-only query. The result maps each master ID to
+    ``{language_code: label}``, with NULL labels as empty strings. An empty
+    table raises ``ConceptTranslationError``.
     """
     with connection.cursor() as cursor:
         cursor.execute(
@@ -193,10 +204,11 @@ def infer_source_language(label: str) -> str:
     """Choose the likely source language for a legacy label.
 
     This is deliberately a conservative, explainable heuristic rather than a
-    claim of perfect language detection: taxonomy codes and known English
-    labels are handled explicitly, German markers are recognized next, and
-    ambiguous labels default to German because the inspected legacy data is
-    predominantly German. The result is used only by the opt-in bootstrap.
+    claim of perfect language detection. Known German and English taxonomy
+    codes and labels are matched first, then German characters and stop words,
+    then an underscore, which marks an English code. Anything still ambiguous
+    defaults to German because the inspected legacy data is predominantly
+    German. Returns ``"de"`` or ``"en"``. Only the opt-in bootstrap calls this.
     """
     normalized = label.strip()
     lowered = normalized.lower()
@@ -218,8 +230,10 @@ def canonical_source_label(label: str) -> str:
     """Normalize machine taxonomy codes into readable source labels.
 
     A few imported concepts are identifiers such as ``alte_heimat`` rather
-    than prose. Translating the human-readable form produces useful PO source
-    strings while retaining the database concept ID as the authoritative key.
+    than prose. Mapping them to the readable form gives useful PO source
+    strings, while the database concept ID stays the authoritative key. Other
+    labels are returned stripped but otherwise unchanged. Only the legacy
+    machine-translation path in ``bootstrap_catalogs`` calls this.
     """
     normalized = label.strip()
     lowered = normalized.lower()
@@ -227,16 +241,23 @@ def canonical_source_label(label: str) -> str:
 
 
 def _po_value(value: str) -> str:
-    """Encode one PO string with Unicode preserved and escapes quoted safely."""
+    """Return ``value`` as one double-quoted PO string literal.
+
+    ``json.dumps`` keeps umlauts and other Unicode readable in the catalog
+    while escaping quotes, backslashes, and newlines. The escapes are the ones
+    ``_decode_po_value`` reads back with ``ast.literal_eval``, so writing and
+    parsing stay symmetric.
+    """
     return json.dumps(value, ensure_ascii=False)
 
 
 def _po_field(name: str, value: str) -> list[str]:
     """Format a PO field, using continuation lines when a value contains newlines.
 
-    Keeping multiline formatting valid is important for the long concept
-    labels in this dataset; a single-line shortcut would produce catalogs that
-    gettext tools cannot parse reliably.
+    A value that contains newlines is written as an empty first string followed
+    by one quoted fragment per source line, the layout gettext tools use for
+    multi-line strings. That keeps such labels readable and easy to review in
+    diffs. Returns the field as a list of lines.
     """
     if "\n" not in value:
         return [f"{name} {_po_value(value)}"]
@@ -247,7 +268,12 @@ def _po_field(name: str, value: str) -> list[str]:
 
 
 def _decode_po_value(value: str) -> str:
-    """Decode one quoted PO fragment without evaluating arbitrary code."""
+    """Decode one quoted PO fragment, either after a keyword or on its own line.
+
+    ``ast.literal_eval`` accepts only Python literals, so reading a catalog
+    cannot execute code. Raises ``ConceptTranslationError`` when the text is
+    not a string literal.
+    """
     try:
         decoded = ast.literal_eval(value)
     except (SyntaxError, ValueError) as error:
@@ -260,16 +286,24 @@ def _decode_po_value(value: str) -> str:
 def parse_po(path: Path) -> dict[int, dict[str, str]]:
     """Read the concept entries from a generated PO catalog.
 
-    The parser accepts the deliberately small PO shape written by
-    ``write_po``. Header entries and comments are ignored, while malformed
-    syntax, invalid concept contexts, and duplicate IDs fail loudly so an
-    import cannot accidentally target the wrong rows.
+    The parser accepts only the small PO shape that ``write_po`` produces, so
+    import never has to interpret arbitrary gettext files. Comments, the
+    header, and entries without a ``concept:`` context are skipped. An
+    unsupported line, a non-integer concept suffix, or a duplicate ID raises
+    ``ConceptTranslationError`` so an import cannot target the wrong rows.
+    Returns a dict from concept ID to ``msgid`` and ``msgstr``.
     """
     entries: dict[int, dict[str, str]] = {}
     current: dict[str, str] = {}
     active_field: str | None = None
 
     def flush() -> None:
+        """Store the entry collected so far under its concept ID, then reset it.
+
+        Blank lines and end of file close an entry. Entries without a
+        ``concept:`` context are dropped, and bad or repeated IDs raise
+        ``ConceptTranslationError``.
+        """
         nonlocal current
         context = current.get("msgctxt", "")
         if context.startswith("concept:"):
@@ -311,7 +345,14 @@ def parse_po(path: Path) -> dict[int, dict[str, str]]:
 
 
 def _catalog_header(language: str) -> list[str]:
-    """Build deterministic gettext metadata for one supported language."""
+    """Build deterministic gettext metadata for one supported language.
+
+    gettext tools expect a header that declares the charset and plural rules,
+    so every catalog carries one. The timestamps are fixed rather than read
+    from the clock, which keeps repeated exports identical when the database
+    has not changed. ``parse_po`` skips this entry because it has no
+    ``concept:`` context. Returns the header as PO lines.
+    """
     language_names = {"en": "English", "de": "German", "it": "Italian"}
     plural_forms = {
         "en": "nplurals=2; plural=(n != 1);",
@@ -337,11 +378,13 @@ def _catalog_header(language: str) -> list[str]:
 
 
 def write_po(path: Path, language: str, entries: dict[int, dict[str, str]]) -> None:
-    """Write a complete, ID-stable PO catalog for one language.
+    """Write an ID-stable PO catalog for one language.
 
     Entries are sorted by Concept ID to keep diffs reviewable and to make
-    repeated exports deterministic. The parent directory is created here so
-    the command works with a fresh checkout or a custom output root.
+    repeated exports deterministic. The parent directory is created here so a
+    fresh checkout or a custom output root works. Any existing file is
+    overwritten, as UTF-8. The function does not check completeness;
+    ``bootstrap_catalogs`` does that before export calls it.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = _catalog_header(language)
@@ -361,10 +404,13 @@ def write_po(path: Path, language: str, entries: dict[int, dict[str, str]]) -> N
 def translate_text(text: str, source: str, target: str, delay: float = 0.15) -> str:
     """Translate one label through the public service used only for bootstrap.
 
-    Normal import/export is offline and deterministic. Isolating this network
-    call behind one function makes the opt-in repair boundary explicit and
-    lets the caller control request pacing; failures become a domain error
-    instead of producing a partial translation.
+    Only the explicit ``--machine-translate`` repair reaches this function, so
+    ordinary import and export stay offline and deterministic. Text is returned
+    unchanged when the languages match or the text is empty. Otherwise the
+    function sends a GET request to the MyMemory API and sleeps for ``delay``
+    seconds after each success. Failures are retried with exponential backoff,
+    up to four attempts in total. After the last attempt it raises
+    ``ConceptTranslationError``, so a partial translation is never returned.
     """
     if source == target or not text:
         return text
@@ -410,7 +456,16 @@ def reusable_translation_values(
     source_label: str,
     source_language: str,
 ) -> dict[str, str] | None:
-    """Reuse one unambiguous complete entry from an older PO catalog set."""
+    """Reuse one unambiguous complete entry from an older PO catalog set.
+
+    When ``bootstrap_catalogs`` runs with existing catalogs, a legacy label that
+    already has reviewed text keeps that wording instead of going to the
+    translation service. The source label is compared case-insensitively with
+    the source-language ``msgstr``. Only concepts with non-empty en, de, and it
+    entries and one shared msgid count as candidates. If the candidates disagree
+    or there are none, this returns None so the caller translates instead of
+    guessing. The function has no side effects.
+    """
     if not existing_catalogs:
         return None
 
@@ -450,18 +505,34 @@ def bootstrap_catalogs(
 ) -> dict[str, dict[int, dict[str, str]]]:
     """Build complete English, German, and Italian catalogs from DB rows.
 
-    Without machine translation this function is a strict completeness check.
-    With it enabled, the legacy all-``en`` rows are reinterpreted using the
-    source-language heuristic, existing values are preserved, and only missing
-    target languages are translated. A small in-run cache avoids sending the
-    same label to the public service more than once; the resulting catalogs
-    still require human review before import.
+    Without machine translation this is a strict completeness check, and a
+    concept missing any language raises ``ConceptTranslationError``. With it
+    enabled, legacy all-``en`` rows are reinterpreted with
+    ``infer_source_language`` and existing values are kept. Legacy rows first
+    try unambiguous entries in ``existing_catalogs``, and any language still
+    missing is filled through ``translate_text``. A per-run cache sends each
+    request once. The catalogs still need human review before import.
+
+    Args:
+        concepts: Rows from ``fetch_concepts``, keyed by concept ID.
+        use_machine_translation: Enable the legacy repair path.
+        delay: Seconds to pause after each successful translation request.
+        existing_catalogs: Previously written catalogs to reuse, or None.
+
+    Returns:
+        ``{language: {concept_id: {"msgid": ..., "msgstr": ...}}}``, where
+        ``msgid`` is always the English label.
     """
     catalogs = {language: {} for language in LANGUAGES}
     cache: dict[tuple[str, str, str], str] = {}
 
     def translated(text: str, source: str, target: str) -> str:
-        """Reuse identical translation requests within this export run."""
+        """Reuse identical translation requests within this export run.
+
+        Concept labels are not unique, so the same text can recur across rows.
+        The cache lives for one ``bootstrap_catalogs`` call, so each
+        (text, source, target) request reaches ``translate_text`` at most once.
+        """
         key = (text, source, target)
         if key not in cache:
             cache[key] = translate_text(text, source, target, delay)
@@ -515,9 +586,12 @@ def bootstrap_catalogs(
 def connection_from_arguments(args):
     """Adapt docpie's option mapping to the shared DB connection helper.
 
-    Keeping this adapter in the shared module ensures both entry points use
-    identical `.env` fallback and Docker host/port override behavior while
-    leaving their command-specific orchestration independent.
+    Both command-line entry points pass their parsed options here. The
+    ``--dotenv``, ``--host``, ``--port``, ``--database``, ``--user``, and
+    ``--password`` options map onto ``database_connection``, and a missing
+    ``--dotenv`` selects the repository ``.env`` file. Keeping this mapping in
+    the shared module gives both commands the same fallback and override rules.
+    Returns the open psycopg2 connection.
     """
     dotenv_value = args.get("--dotenv")
     overrides = {

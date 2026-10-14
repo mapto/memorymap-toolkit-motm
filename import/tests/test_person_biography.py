@@ -419,3 +419,75 @@ def test_choose_date_rejects_incoming_span_that_misses_existing_date():
             person_name="Ada Subject",
             kind="birth",
         )
+
+
+def test_identity_key_matches_sheet_name_and_person_fields_through_alias():
+    """A sheet title and a Person with the reviewed alias share one identity key."""
+    aliases = {"johanna stern": "Kaminka, Johanna"}
+
+    sheet_key = biography.identity._identity_from_name("Johanna Stern", aliases)
+    person_key = biography.identity._identity_from_person_fields(
+        {"given_name": "Johanna", "family_name": "Kaminka"}, aliases
+    )
+    unrelated_key = biography.identity._identity_from_name("Ada Subject", aliases)
+
+    assert sheet_key == person_key == "kaminka johanna"
+    assert unrelated_key == "ada subject"
+
+
+@pytest.mark.parametrize(
+    ("incoming_birth", "expected_birth", "expected_conflicts"),
+    [
+        (Timespan(date(1924, 10, 30)), Timespan(date(1924, 10, 30)), 0),
+        (
+            Timespan(date(1930, 5, 1)),
+            Timespan(date(1924, 1, 1), date(1924, 12, 31)),
+            1,
+        ),
+    ],
+)
+def test_merge_biographies_keeps_overlapping_birth_date_and_records_clashes(
+    incoming_birth, expected_birth, expected_conflicts
+):
+    """Two sheets for one person keep the overlapping birth date and log a clash."""
+    existing = biography._MutableBiography(
+        person_name="Ada Subject",
+        identity_key="ada subject",
+        birth_span=Timespan(date(1924, 1, 1), date(1924, 12, 31)),
+        birth_place="Frankfurt an der Oder",
+        source_workbooks={"chronotopi_test.xlsx / Ada Subject"},
+    )
+    incoming = biography._MutableBiography(
+        person_name="Ada Subject",
+        identity_key="ada subject",
+        birth_span=incoming_birth,
+        birth_place="Frankfurt an der Oder (Altstadt 3)",
+        source_workbooks={"other_chronotopi.xlsx / Ada Subject"},
+    )
+    conflicts = []
+
+    biography.merge._merge_biographies(existing, incoming, conflicts)
+
+    assert existing.birth_span == expected_birth
+    assert len(conflicts) == expected_conflicts
+    assert existing.birth_place == "Frankfurt an der Oder"
+    assert existing.source_workbooks == {
+        "chronotopi_test.xlsx / Ada Subject",
+        "other_chronotopi.xlsx / Ada Subject",
+    }
+
+
+def test_location_name_is_read_once_per_id_and_cleaned(monkeypatch):
+    """Read a location name once per ID and return it with whitespace cleaned."""
+    endpoints = []
+
+    def fake_api_get(endpoint):
+        endpoints.append(endpoint)
+        return {"id": 5, "current_name": "  Frankfurt an der Oder  "}
+
+    monkeypatch.setattr(biography.places, "api_get", fake_api_get)
+    cache = {}
+
+    assert biography.places._location_name(5, cache) == "Frankfurt an der Oder"
+    assert biography.places._location_name("5", cache) == "Frankfurt an der Oder"
+    assert endpoints == ["locations/5"]

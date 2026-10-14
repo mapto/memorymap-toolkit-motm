@@ -1,4 +1,25 @@
-"""Merging reviewed person names into the Personae taxonomy."""
+"""Merging reviewed person names into the Personae taxonomy.
+
+The chronotopi workbooks name people by sheet, and the metadati workbooks name
+the same people and their relatives in their own spellings. This module reads
+both, places each person as a leaf under the surname branch of the metadata
+record associated with their chronotopi workbook, and returns the aliases that
+map every source spelling to that leaf. Grouping follows the workbook
+association in the reviewed JSON, not a surname parsed from a label.
+
+The result feeds ``taxonomy_import.import_taxonomy``, which creates the API
+concepts. This module makes no API calls and writes no files; it reads the
+metadati workbooks from ``data_root``. The metadati package is imported inside
+``augment_personae_taxonomy`` rather than at module level, because metadati
+imports ``api_client``, which imports this package; a module-level import would
+form an import cycle.
+
+Usage, from the chronotopi notebook::
+
+    augmentation = augment_personae_taxonomy(taxonomy, overview, data_root=root)
+    taxonomy = augmentation.taxonomy
+    person_aliases = augmentation.aliases
+"""
 
 from __future__ import annotations
 
@@ -44,11 +65,28 @@ def augment_personae_taxonomy(
 ) -> PersonaeAugmentation:
     """Add metadata and chronotopi people under their metadata surname branch.
 
-    ``overview`` is the same workbook-path-to-sheet-names map used by the
-    chronotopi import. Each workbook must have a reviewed metadata association
-    in the JSON mapping so the branch label comes from the main metadata record.
-    The returned aliases are normalized source-name keys to canonical Personae
-    leaf labels and are intended for :func:`taxonomy_import.import_taxonomy`.
+    Sheet names and metadata records can spell the same person differently, so
+    people are reconciled through reviewed aliases instead of one leaf per sheet
+    name. A flat leaf per name would duplicate people and drop the surname
+    grouping. Each person ends up once, under the branch of the metadata record
+    that owns their chronotopi workbook. The main metadata person's surname names
+    that branch, relatives in the same record join it, and sheets starting with an
+    underscore are skipped. The inputs are not modified, and no API call or file
+    write happens here.
+
+    Args:
+        taxonomy: Parsed source taxonomy whose Personae branch is the base.
+        overview: Chronotopi workbook path mapped to its sheet names.
+        data_root: Folder holding the metadata workbooks named in the JSON.
+        synonyms_path: Synonym JSON to use instead of the repository copy.
+
+    Returns:
+        A ``PersonaeAugmentation`` with the merged taxonomy and the aliases that
+        map each source-name key to a Personae leaf label.
+
+    Raises:
+        PersonTaxonomyError: If a workbook has no metadata association, its
+            metadata file is missing or has no usable surname, or names conflict.
     """
     from metadati import read_person_record
 
@@ -80,6 +118,13 @@ def augment_personae_taxonomy(
     personae_root = occurrences[personae_root_index]
 
     def register_alias(source: str, target: str) -> None:
+        """Map a source spelling to a Personae person, keeping reviewed entries.
+
+        Sheet names, metadata spellings, and existing leaves reach the same leaf
+        through these aliases. Entries from the synonym JSON are never replaced,
+        and empty names are ignored. A spelling already mapped to a different
+        person raises ``PersonTaxonomyError`` instead of guessing.
+        """
         source_key = person_taxonomy_key(source)
         target_label = _clean_name(target)
         if not source_key or not target_label or source_key in explicit_alias_keys:
@@ -94,6 +139,12 @@ def augment_personae_taxonomy(
         aliases[source_key] = target_label
 
     def alias_target(source: str) -> str | None:
+        """Return the alias target for a source spelling, or None if unmapped.
+
+        Each successful lookup marks the key as referenced. At the end, an alias
+        whose target is not a Personae leaf is dropped if it was never looked up;
+        a referenced one raises instead.
+        """
         key = person_taxonomy_key(source)
         target = aliases.get(key)
         if target is not None:
@@ -133,6 +184,12 @@ def augment_personae_taxonomy(
             register_alias(variant, occurrence.label)
 
     def ensure_family_branch(family_name: str) -> int:
+        """Return the index of the family branch under Personae, creating it.
+
+        A branch is matched by its label after taxonomy label normalization. Two
+        matches raise ``PersonTaxonomyError``, and so does a family name that
+        already belongs to a different Personae node, such as a person leaf.
+        """
         family_key = _label_key(family_name)
         matches = [
             index
@@ -167,6 +224,13 @@ def augment_personae_taxonomy(
         return index
 
     def ensure_person(family_name: str, label: str) -> str:
+        """Return the canonical leaf label for a person, filed under a family.
+
+        A person who already exists in Personae is moved under ``family_name``
+        when needed, so each person keeps one leaf. Raises ``PersonTaxonomyError``
+        for an empty label, a label that names a branch or collective node, or a
+        person already assigned to a different family during this run.
+        """
         clean_label = _clean_name(label)
         key = person_taxonomy_key(clean_label)
         if not key:
@@ -218,6 +282,12 @@ def augment_personae_taxonomy(
         return clean_label
 
     def canonical_metadata_name(person: Mapping) -> str | None:
+        """Return the reviewed or constructed label for a metadata person.
+
+        A reviewed alias for any spelling of the person wins. Otherwise the label
+        is ``Surname, Given`` from the record, or None when either part is a
+        placeholder, so an unnamed relative creates no leaf.
+        """
         for variant in _metadata_name_variants(person):
             target = alias_target(variant)
             if target:
@@ -232,6 +302,12 @@ def augment_personae_taxonomy(
         person: Mapping,
         family_name: str,
     ) -> str | None:
+        """Add one metadata person under a family and register their spellings.
+
+        Returns the canonical leaf label, or None for an unnamed person, which is
+        skipped. Every spelling in the record becomes an alias, so a sheet that
+        uses the same spelling resolves to this leaf.
+        """
         label = canonical_metadata_name(person)
         if not label:
             return None

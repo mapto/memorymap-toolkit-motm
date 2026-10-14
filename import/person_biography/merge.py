@@ -1,4 +1,14 @@
-"""Combining source facts into one biography per person."""
+"""Combining source facts into one biography per person.
+
+Each chronotopi sheet's facts are first combined with its metadati values by
+``_combine_source_facts``. When a second sheet or workbook resolves to a person
+already in the plan, ``_merge_biographies`` folds it in. Both use the same
+rules. Overlapping spans are intersected, equivalent places keep the existing
+spelling, and any disagreement is appended to a shared conflict list. The plan
+raises that list as one ``PersonBiographyConflictError`` after the sources have
+been read, so one run reports the disagreements together. Neither function
+touches the API. Both change their first argument in place.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +24,18 @@ def _combine_source_facts(
     metadata_name: str,
     conflicts: list[str],
 ) -> _MutableBiography:
+    """Add one metadati record's birth and death values to a sheet's facts.
+
+    An overlapping chronotopi span is replaced by its overlap with the metadati
+    span. A span that does not overlap, or a place that is not equivalent, is
+    appended to ``conflicts``. A metadati span or place fills an empty chronotopi
+    field. The metadati values are also copied to the ``metadata_*`` fields, which
+    the apply step uses to tell a year-level start from an exact day. When
+    ``metadata`` is None, ``event_facts`` is returned unchanged. The argument is
+    changed in place and returned. Without this step, a sheet would be planned
+    from chronotopi alone, and a disagreement with its metadati workbook would go
+    unnoticed.
+    """
     if metadata is None:
         return event_facts
 
@@ -59,6 +81,15 @@ def _merge_biographies(
     incoming: _MutableBiography,
     conflicts: list[str],
 ) -> None:
+    """Fold a second source's facts for one person into ``existing``, in place.
+
+    Called by ``build_person_biography_plan`` when a sheet or workbook resolves to
+    an identity key already in the plan. The plan holds one entry per key, so the
+    second set of facts must be merged rather than stored beside the first. Birth
+    and death spans and places, and their ``metadata_*`` counterparts, follow the
+    rules in ``_combine_source_facts``. Source labels are unioned, and conflicts
+    are appended to ``conflicts``.
+    """
     for kind in ("birth", "death"):
         for suffix in ("span", "place"):
             attribute = f"{kind}_{suffix}"

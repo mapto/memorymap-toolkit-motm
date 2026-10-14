@@ -1,4 +1,24 @@
-"""Extract, validate, and import birth/death facts from chronotopi sources."""
+"""Extract, validate, and import birth/death facts from chronotopi sources.
+
+The import runs in three steps. Only the last one writes to the API:
+
+1. Plan: ``build_person_biography_plan`` reads the chronotopi events and the
+   metadati workbooks and returns one ``PersonBiography`` per person. It makes
+   no API calls.
+2. Validate: ``validate_existing_person_biographies`` compares the plan with the
+   stored Person records. It sends GET requests only.
+3. Apply: ``import_person_biographies`` writes the planned lifespan and birth
+   and death places. It creates and updates API records.
+
+Tests that mock the API must patch the submodule that uses a name, such as
+``person_biography.importer``. Patching this package has no effect on it.
+
+Usage, from the ``import`` folder::
+
+    plan = build_person_biography_plan(overview, events, data_root)
+    validate_existing_person_biographies(plan)
+    import_person_biographies(plan, locations_db=db, location_concept_resolver=f)
+"""
 
 from person_biography.model import (
     PersonBiographyError,

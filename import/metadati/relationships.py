@@ -1,4 +1,17 @@
-"""Relationship types and person-to-person links."""
+"""Relationship types and person-to-person links.
+
+The family table of a metadati sheet names each relative with a German relation
+label, such as "Mutter" or "Onkel väterl". ``RELATIONSHIP_MAP`` translates the
+common labels into English relationship-type names, and other labels are stored
+under their cleaned text. Each relative is resolved to a Person by
+``people.get_or_create_person``, and a Relationship is created from the main
+person to that relative.
+
+A relative who appears only as a placeholder name, such as "?", can be linked to
+a reviewed Personae person. The link is keyed by workbook file name and relation
+label. Placeholder duplicates of the same relative are then merged into that
+person. ``importer.import_record`` calls ``create_relationship`` for each row.
+"""
 
 from __future__ import annotations
 
@@ -53,7 +66,14 @@ _relationship_cache: dict = {}
 
 
 def get_or_create_relationship_type(label):
-    """Get or create a RelationshipType via the API."""
+    """Return the RelationshipType ID for a relation label, creating it if needed.
+
+    Returns None for an empty label. The label is cleaned with ``clean_label`` and
+    translated through ``RELATIONSHIP_MAP``, so German terms such as "vater"
+    become "father". Other labels keep their cleaned text as the name, and the
+    workbook wording is stored as ``original_label`` when a type is created. IDs
+    are cached per process. Side effects: API GET and, when missing, POST.
+    """
     if is_empty(label):
         return None
 
@@ -81,7 +101,14 @@ def get_or_create_relationship_type(label):
 
 
 def _is_unnamed_relative(person, family_name):
-    """True for a placeholder record that stands for the same relative."""
+    """Return True when a stored Person is a placeholder for the same relative.
+
+    The given name must be a placeholder, as judged by
+    ``person_taxonomy.is_placeholder_name``, for example "?" or "unbekannt". The
+    stored family name must then be a placeholder too, or equal ``family_name``
+    ignoring case and surrounding spaces. Used by ``_merge_unnamed_relatives``
+    to find duplicates.
+    """
     if not is_placeholder_name(person.get("given_name")):
         return False
     stored_family = person.get("family_name")
@@ -95,9 +122,16 @@ def _merge_unnamed_relatives(
 ):
     """Merge placeholder duplicates of a linked relative into the canonical person.
 
-    Each duplicate is renamed before the merge, so the backend merge does not
-    copy the placeholder into the canonical person's previous-name fields.
-    Records with an identifier are never merged automatically.
+    Called by ``create_relationship`` only after a reviewed link was found. The
+    duplicates are the other Persons that the main person relates to with the same
+    relation type, that match ``_is_unnamed_relative``, and that have no
+    identifier. Each duplicate is first renamed to ``given_name`` and
+    ``family_name``. The backend merge (``person_merge.merge_person_records``)
+    copies a differing name into an empty previous-name field of the canonical
+    Person, and the rename keeps the placeholder out of those fields. Records with
+    an identifier are never merged automatically. Side effects: API GET of
+    relationships and persons, a PATCH of each duplicate, and one merge POST. No
+    PATCH or merge is sent when there are no duplicates.
     """
     duplicate_ids = []
     for relationship in api_get("relationships"):
@@ -127,11 +161,17 @@ def _merge_unnamed_relatives(
 def create_relationship(
     main_person_id, data, fallback_family_name, source_workbook=None
 ):
-    """Create a Relationship via the API.
+    """Create or reuse the Relationship from the main Person to one relative.
 
-    An unnamed relative with a reviewed link for the source workbook is attached
-    to that Personae person, and placeholder duplicates of the same relation
-    are merged into it.
+    ``data`` is one row of the family table, and ``fallback_family_name`` is the
+    main Person's family name, used when the row has none. A placeholder name is
+    replaced by the reviewed Personae person for ``source_workbook`` and the row's
+    relation label, when such a link exists, and that person's placeholder
+    duplicates are then merged into it. The notes column becomes the description.
+    An existing Relationship between the same two people with the same type is
+    reused. Returns the Relationship ID, or None when the row has no relation or
+    the relative or type cannot be resolved. Side effects: API GET and POST calls,
+    plus the merge described above.
     """
     if is_empty(data.get("relation")):
         return None

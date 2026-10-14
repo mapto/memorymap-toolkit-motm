@@ -1,4 +1,18 @@
-"""Occurrence and hierarchy helpers for the Personae branch."""
+"""Occurrence and hierarchy helpers for the Personae branch.
+
+``augment_personae_taxonomy`` edits the Personae branch as a list of
+``TaxonomyOccurrence`` records. The list is needed because the label-keyed
+``hierarchy`` dictionary cannot tell repeated labels apart, and augmentation
+moves people between branches, which changes parent links. The helpers here
+read that list, reorder it so every parent precedes its children, rebuild the
+``hierarchy`` dictionary for the merged ``Taxonomy``, and identify Personae
+nodes. They also flag collective family nodes, which name a family rather than
+a person.
+
+The helpers are internal to the package. They do not call the API or touch the
+filesystem. Malformed parent links, cycles, and unreachable nodes raise
+``PersonTaxonomyError``, so a bad tree is reported before the importer runs.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +23,15 @@ from person_taxonomy.model import PersonTaxonomyError
 
 
 def _occurrences_for(taxonomy: Taxonomy) -> list[TaxonomyOccurrence]:
+    """Return a new list of the taxonomy's occurrences.
+
+    A taxonomy loaded from a Mermaid file already carries occurrences, which keep
+    repeated labels apart. A taxonomy built only from a label hierarchy has none,
+    so they are rebuilt from ``concept_nodes()``, which yields parents first. The
+    list is always new, so augmentation can append to it without changing the
+    caller's taxonomy. Raises ``PersonTaxonomyError`` if a node's parent is
+    missing from the rebuild.
+    """
     if taxonomy.occurrences:
         return list(taxonomy.occurrences)
 
@@ -40,6 +63,14 @@ def _occurrences_for(taxonomy: Taxonomy) -> list[TaxonomyOccurrence]:
 def _hierarchy_from_occurrences(
     occurrences: Sequence[TaxonomyOccurrence],
 ) -> dict[str, list[str]]:
+    """Rebuild the label-keyed hierarchy that ``Taxonomy`` expects.
+
+    The result maps ``ROOT_KEY`` to the top-level labels and every label to its
+    child labels, with an empty list for a leaf. It is recomputed after
+    augmentation edits the occurrences, so the merged taxonomy's ``hierarchy``
+    agrees with its occurrences. Repeated labels share one entry, so uniqueness
+    is checked separately by ``Taxonomy.validate_unique_labels``.
+    """
     hierarchy: dict[str, list[str]] = {ROOT_KEY: []}
     for occurrence in occurrences:
         if occurrence.parent_index is None:
@@ -54,7 +85,16 @@ def _hierarchy_from_occurrences(
 def _parent_first_occurrences(
     occurrences: Sequence[TaxonomyOccurrence],
 ) -> list[TaxonomyOccurrence]:
-    """Reindex occurrences so each parent precedes its children."""
+    """Reindex occurrences so each parent precedes its children.
+
+    Augmentation can move an existing person under a family branch that was
+    appended later in the list, which breaks parent-first order. The
+    ``concept_nodes`` walk needs each parent's index to be smaller than its
+    children's, so this walks the tree from the roots and rewrites
+    ``parent_index``, ``top_level``, and ``path`` for the new order. It raises
+    ``PersonTaxonomyError`` for an invalid parent index, a cycle, or a node that
+    cannot be reached from a root.
+    """
     children: dict[int, list[int]] = {}
     roots = []
     for index, occurrence in enumerate(occurrences):
@@ -72,6 +112,12 @@ def _parent_first_occurrences(
     visiting: set[int] = set()
 
     def visit(index: int) -> None:
+        """Append one occurrence, then recurse into its children.
+
+        Reaching a node that is still on the current walk means a cycle. Reaching
+        a node that was already placed means it has two paths. Either case raises
+        ``PersonTaxonomyError``.
+        """
         if index in visiting:
             raise PersonTaxonomyError("Personae taxonomy contains a parent cycle")
         if index in new_indexes:

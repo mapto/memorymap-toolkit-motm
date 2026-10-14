@@ -414,3 +414,88 @@ def test_canonical_person_name_returns_none_when_unmapped(tmp_path, monkeypatch)
         family_name="Stern", given_name="Josef"
     )
     assert canonical_person_name("Nobody", "Unknown") is None
+
+
+def test_hierarchy_from_occurrences_builds_label_keyed_tree():
+    """_hierarchy_from_occurrences() should list roots and children by label."""
+    from person_taxonomy import _hierarchy_from_occurrences
+    from taxonomy import TaxonomyOccurrence
+
+    occurrences = [
+        TaxonomyOccurrence(
+            label="Personae",
+            parent_index=None,
+            top_level="Personae",
+            path=("Personae",),
+        ),
+        TaxonomyOccurrence(
+            label="Stern",
+            parent_index=0,
+            top_level="Personae",
+            path=("Personae", "Stern"),
+        ),
+        TaxonomyOccurrence(
+            label="Stern, Josef",
+            parent_index=1,
+            top_level="Personae",
+            path=("Personae", "Stern", "Stern, Josef"),
+        ),
+    ]
+
+    assert _hierarchy_from_occurrences(occurrences) == {
+        ROOT_KEY: ["Personae"],
+        "Personae": ["Stern"],
+        "Stern": ["Stern, Josef"],
+        "Stern, Josef": [],
+    }
+
+
+def test_collective_family_nodes_stay_in_tree_but_are_not_aliases(tmp_path):
+    """A Personae node named like 'Stern familie' is kept but never aliased."""
+    synonyms_path = tmp_path / "person_synonyms.json"
+    synonyms_path.write_text("{}", encoding="utf-8")
+    taxonomy = Taxonomy(
+        hierarchy={
+            ROOT_KEY: ["Personae"],
+            "Personae": ["Stern familie"],
+            "Stern familie": [],
+        }
+    )
+
+    augmentation = augment_personae_taxonomy(
+        taxonomy,
+        {},
+        data_root=tmp_path,
+        synonyms_path=synonyms_path,
+    )
+    labels = {node.label for node in augmentation.taxonomy.concept_nodes()}
+
+    assert "Stern familie" in labels
+    assert person_taxonomy_key("Stern familie") not in augmentation.aliases
+
+
+def test_person_taxonomy_key_folds_case_punctuation_and_spacing_only():
+    """person_taxonomy_key() should equate spellings that differ only in form."""
+    assert person_taxonomy_key("Stern,  Josef.") == person_taxonomy_key("stern josef")
+    assert person_taxonomy_key("Josef\u00a0Stern") == person_taxonomy_key("Josef Stern")
+    assert person_taxonomy_key("Stern, Josef") != person_taxonomy_key("Josef Stern")
+
+
+def test_metadata_name_variants_include_previous_names_and_skip_placeholders():
+    """_metadata_name_variants() should expand current and previous names."""
+    from person_taxonomy import _metadata_name_variants
+
+    person = {
+        "given_name": "Josef",
+        "family_name": "Stern",
+        "previous_family_name": "Sternberg",
+        "previous_given_name": "unbekannt",
+    }
+
+    assert _metadata_name_variants(person) == [
+        "Josef Stern",
+        "Stern, Josef",
+        "Josef Sternberg",
+        "Sternberg, Josef",
+    ]
+    assert _metadata_name_variants({"given_name": "Josef", "family_name": "?"}) == []

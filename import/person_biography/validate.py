@@ -1,4 +1,14 @@
-"""Checking existing API records against planned biographies."""
+"""Checking existing API records against planned biographies.
+
+This is the validate step, between the plan and the apply step. It is read-only.
+It fetches Person, timespan, and location records and raises
+``PersonBiographyConflictError`` when a planned birth or death date or place
+disagrees with a stored value. The notebook calls it after ``login()`` and before
+any taxonomy, location, or Person write, so a clash is reported before anything
+changes. Persons are matched by identity key, using the default person synonyms
+file. ``get_person_id`` in the apply step can match a Person by a looser name, so
+a Person found only by that route is not checked here.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +23,13 @@ from person_biography.plan import _plan_values
 
 
 def _as_object_list(value):
+    """Return an API response as a list of records.
+
+    ``api_get`` returns a list for a collection and a dict for a single object, and
+    it can return other JSON values. A dict becomes a one-item list, and any other
+    non-list value becomes an empty list. Callers can then loop without checking
+    the shape first.
+    """
     if isinstance(value, list):
         return value
     if isinstance(value, Mapping):
@@ -21,7 +38,16 @@ def _as_object_list(value):
 
 
 def validate_existing_person_biographies(plan) -> None:
-    """Read-only API preflight for existing Person biography conflicts."""
+    """Read-only API preflight for existing Person biography conflicts.
+
+    Runs before any write, so a clash is reported before the first record changes.
+    For each planned biography, every Person whose identity key matches is checked.
+    A stored birth or death date that does not overlap the planned span is a
+    conflict, and so is a stored place that is not equivalent to the planned place.
+    All conflicts are collected and raised together as
+    ``PersonBiographyConflictError``. The only requests are GETs to ``persons``,
+    ``timespans``, and ``locations``. An empty plan returns at once, with no request.
+    """
     biographies = _plan_values(plan)
     if not biographies:
         return

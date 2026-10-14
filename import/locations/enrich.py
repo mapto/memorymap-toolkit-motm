@@ -1,4 +1,17 @@
-"""Region tokens and super-region enrichment for the workbook."""
+"""Compute region tokens and super-region links for the locations workbook.
+
+Each location name becomes a bag of lowercase words. A location is contained by
+another when the other's words form a strict subset of its own: the name
+``Gießen, Hessen`` contains every word of ``Hessen``, so ``Hessen`` is its
+super-region. Use this when a workbook lacks the ``bag_of_words`` or
+``super_region`` columns, or leaves ``super_region`` empty. The rebuild in
+``rebuild_locations`` derives ``super_region`` from the GO taxonomy path
+instead, and ``link_locations_to_regions`` in ``db`` reads the column.
+
+Nothing here makes network calls. ``enrich_locations_xlsx`` rewrites the
+workbook in place. It is exported from the package, and no script in
+``import/`` calls it at present.
+"""
 
 import regex as re
 
@@ -7,17 +20,30 @@ import regex as re
 
 
 def tokenize_location(name):
-    """Tokenize a location name into a set of lowercase words, stripping punctuation."""
+    """Tokenize a location name into lowercase words, without punctuation.
+
+    The set is the source of the ``bag_of_words`` column that the rebuild and
+    ``enrich_locations_xlsx`` write. Punctuation is deleted rather than replaced,
+    so a hyphenated name becomes one word: ``Frankfurt-Main`` yields
+    ``frankfurtmain``, while ``normalize_location`` splits it into two words.
+    Blank or punctuation-only names yield an empty set.
+    """
     name = str(name).strip().lower()
     name = re.sub(r"[^\w\s]", "", name)
     return set(name.split()) - {""}
 
 
 def compute_super_regions(locations):
-    """Given a dict of {name: bag_of_words}, return {name: super_region_name}.
+    """Return ``{name: super_region_name}`` for a ``{name: bag_of_words}`` dict.
 
-    A location A is the super-region of B if A's bag is a strict subset of B's bag.
-    Among all subsets, pick the one with the most words (closest ancestor).
+    A location A is the super-region of B when A's bag is a strict subset of B's
+    bag. Among all such subsets, the one with the most words is the closest
+    ancestor and is chosen. Names with no container map to an empty string.
+    Names whose bag is empty are skipped and do not appear in the result.
+
+    >>> regions = {"Hessen": {"hessen"}, "Marburg, Hessen": {"marburg", "hessen"}}
+    >>> compute_super_regions(regions)
+    {'Hessen': '', 'Marburg, Hessen': 'Hessen'}
     """
     items = [(name, bow) for name, bow in locations.items() if bow]
     result = {}
@@ -37,7 +63,13 @@ def compute_super_regions(locations):
 def enrich_locations_xlsx(xlsx_path):
     """Add bag_of_words and super_region columns to an existing locations.xlsx.
 
-    Only adds information; never removes existing data.
+    A missing ``bag_of_words`` column is inserted as column 2, and a missing
+    ``super_region`` column goes right after it. Every row with a name gets a
+    newly computed ``bag_of_words`` value, which replaces the value already in
+    that cell. ``super_region`` is filled from ``compute_super_regions`` only
+    where the cell is empty, so existing values are kept. Names are read from
+    column 1, and the file is saved in place. A missing file raises
+    ``FileNotFoundError``.
     """
     import openpyxl as _xl
 

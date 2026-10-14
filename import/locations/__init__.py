@@ -1,4 +1,22 @@
-"""Location reference data: reviewed synonyms, geocoding, workbook storage, and entity sync."""
+"""Expose the location reference API used by the import pipeline.
+
+Production code imports from this package rather than from its submodules.
+The submodules are split by responsibility: ``synonyms`` holds the reviewed
+location-to-GO rules, ``names`` normalizes spellings, ``geo`` resolves
+coordinates from GeoNames, Wikidata, and a local geocoder, ``enrich`` computes
+bag-of-words and super-region values, ``db`` loads and saves ``locations.xlsx``,
+and ``entities`` finds or creates API location points and their GO concepts.
+
+Underscore-prefixed names are re-exported for the tests, which inspect
+``_locations_db`` and ``_location_cache`` directly.
+
+Usage::
+
+    from locations import get_or_create_location, load_locations_db
+
+    database = load_locations_db(enrich_coordinates=False)
+    point_id = get_or_create_location("Gießen", locations_db=database)
+"""
 
 from locations.synonyms import (
     LOCATION_TAXONOMY_SYNONYMS_PATH,

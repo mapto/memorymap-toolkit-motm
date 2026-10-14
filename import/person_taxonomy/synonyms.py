@@ -1,4 +1,17 @@
-"""Loading the reviewed person synonym table."""
+"""Loading the reviewed person synonym table.
+
+``data/person_taxonomy_synonyms.json`` records, after manual review, how source
+spellings map to Personae labels, which chronotopi workbook belongs to which
+metadati workbook, and which unnamed relatives are which people. This module
+parses and validates that file into a ``PersonTaxonomySynonyms``. Validation is
+strict on purpose: a bad entry stops the import with a message that names it,
+rather than being dropped silently, which would leave a spelling unmatched.
+
+The importers call ``load_person_taxonomy_synonyms``, so they share one parsed
+copy. Parsing is cached per resolved path, so a change to the JSON is not seen
+by a process that has already loaded it. Tests pass a temporary file path
+instead of the repository copy.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +34,16 @@ PERSON_TAXONOMY_SYNONYMS_PATH = (
 
 @lru_cache(maxsize=8)
 def _read_person_taxonomy_synonyms(path: str) -> PersonTaxonomySynonyms:
+    """Parse and validate one synonym JSON file, caching the result by path.
+
+    The file must hold a JSON object. Alias sources are normalized to match keys,
+    and targets are cleaned. Two entries that map one source to different targets
+    are rejected, because matching would then be ambiguous. Metadata relative
+    targets must be ``Surname, Given`` labels. Invalid entries raise
+    ``PersonTaxonomyError`` naming the entry, and malformed JSON raises
+    ``json.JSONDecodeError``. Failed calls are not cached, so a corrected file is
+    read on the next call.
+    """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise PersonTaxonomyError("Person taxonomy synonym data must be a JSON object")

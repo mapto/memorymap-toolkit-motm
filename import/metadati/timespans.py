@@ -1,4 +1,17 @@
-"""Timespan lookup and lifespan updates for persons."""
+"""Timespan lookup and lifespan updates for persons.
+
+Birth and death dates in the metadati workbooks are text, and often partial: a
+bare year, or a year with a question mark. Writing them as they are would either
+duplicate Timespan rows or overwrite a more precise date already stored on the
+Person. This module therefore reuses an existing Timespan with the same start and
+end when one exists. For a Person who already has a lifespan, it fills an empty
+bound from the workbook and keeps a stored bound that the workbook date confirms,
+but raises on a conflict.
+
+``people.get_or_create_person`` calls ``_maybe_update_lifespan`` for every matched
+Person. The module writes to the API only: it may POST a Timespan, PATCH the
+Person's lifespan, and DELETE a Timespan that no Person references any more.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +32,14 @@ _timespan_cache: dict = {}
 
 
 def get_or_create_timespan(start=None, end=None):
-    """Get or create a Timespan singleton. Returns id or None."""
+    """Return the ID of a Timespan with these exact start and end, creating it.
+
+    The existing Timespans are listed through the API, and one whose start and end
+    match is reused. Otherwise a new Timespan is POSTed. Results are cached per
+    process, keyed by the pair. Returns None when both values are None. Unlike
+    ``api_client.get_or_create_timespan``, which POSTs on every cache miss, this
+    function does not create a duplicate of an existing exact match.
+    """
     if start is None and end is None:
         return None
     key = (start, end)
@@ -41,6 +61,14 @@ def get_or_create_timespan(start=None, end=None):
 
 
 def _data_date_interval(data, field_name, value):
+    """Return the (start, end) precision interval of one incoming date.
+
+    Prefers the ``<field_name>_date_interval`` pair that ``values`` stored on the
+    record, so that a bare year keeps its full range. Falls back to parsing
+    ``value`` when that pair is missing or does not parse. Returns None when the
+    value cannot be parsed. Used by ``_maybe_update_lifespan`` to feed
+    ``_compatible_date_or_existing``.
+    """
     interval = data.get(f"{field_name}_date_interval")
     if isinstance(interval, (tuple, list)) and len(interval) == 2:
         start = parse_timespan(interval[0])
@@ -54,6 +82,16 @@ def _data_date_interval(data, field_name, value):
 
 
 def _compatible_date_or_existing(current, incoming, interval, field_name, person_id):
+    """Return the date to keep for one lifespan bound, or raise on a conflict.
+
+    ``current`` is the stored date and ``incoming`` is the workbook date for the
+    bound named by ``field_name``. ``interval`` is the (start, end) precision
+    interval of the incoming date, or None. A missing or identical value keeps the
+    stored one, and a missing stored value takes the incoming one. When the stored
+    date's interval overlaps the incoming interval, the stored value is kept as the
+    more specific one. Any other difference raises ``ValueError`` that names the
+    Person, so the stored data is not overwritten.
+    """
     if not incoming:
         return current
     if not current:
@@ -84,7 +122,15 @@ def _compatible_date_or_existing(current, incoming, interval, field_name, person
 
 
 def _maybe_update_lifespan(person_id, data):
-    """Fill a person's lifespan without overwriting conflicting existing dates."""
+    """Fill or refine a Person's lifespan from birth and death dates, safely.
+
+    Called by ``people.get_or_create_person`` for every matched Person. Returns
+    without a request when neither date is given. A Person without a lifespan gets
+    a Timespan for the incoming dates. A Person with one has each bound merged by
+    ``_compatible_date_or_existing``, and nothing is written when the result is
+    unchanged. When the lifespan changes, the Person is PATCHed to the new
+    Timespan, and the old one is deleted if no other Person references it.
+    """
     birth = data.get("birth_date")
     death = data.get("death_date")
     if not birth and not death:

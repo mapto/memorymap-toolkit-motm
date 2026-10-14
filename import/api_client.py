@@ -1,7 +1,24 @@
 """API client for Memory Map Toolkit Django REST API.
 
-Provides session management, CRUD helpers, and domain-specific
-get_or_create_* functions for concepts, locations, persons, timespans, and URLs.
+Call ``login()`` once before any request. It stores the session cookie and the
+CSRF header that the ``api_*`` helpers send on every call. Those helpers retry
+dropped connections, for example while the development server reloads.
+
+On top of them, the module provides get-or-create functions for concepts
+(``get_or_create_concept``), persons (``get_person_id``), timespans
+(``get_or_create_timespan``), and URLs (``get_or_create_url``), plus the
+Interview helpers shared by the metadata and Belege importers. Source rows
+refer to the same record many times, so most of these functions search the API
+before creating and keep resolved IDs in module-level caches. The caches last
+for the whole process, so a record deleted or renamed in the database while the
+process runs is still resolved from the cache.
+
+Usage::
+
+    from api_client import get_person_id, login
+
+    login()  # reads MMT_LOGIN_URL, defaults to the local dev server
+    person_id = get_person_id("Helena Weinberg", "Helena Weinberg")
 """
 
 from __future__ import annotations
@@ -35,7 +52,20 @@ _RETRY_DELAY = 3  # seconds
 
 
 def _retry(fn, *args, **kwargs):  # type: ignore[no-untyped-def]
-    """Retry *fn* on connection errors (e.g. Django auto-reload)."""
+    """Retry *fn* on connection errors (e.g. Django auto-reload).
+
+    Connection errors, chunked-encoding errors, and ``ConnectionResetError``
+    make the function wait ``_RETRY_DELAY`` seconds and try again, for up to
+    ``_MAX_RETRIES`` attempts. The last error is re-raised if every attempt
+    fails. HTTP error statuses are not retried; callers check them with
+    ``raise_for_status()``.
+
+    An import runs for minutes against the development server, which drops
+    connections while Django reloads. Without this wrapper one reload would
+    abort the run partway through. A request that reached the server before
+    the connection dropped is sent again, so a retried POST can create a
+    duplicate record.
+    """
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
             return fn(*args, **kwargs)
@@ -55,7 +85,16 @@ def _retry(fn, *args, **kwargs):  # type: ignore[no-untyped-def]
 
 
 def login(username="admin", password="admin"):
-    """Authenticate with the Django admin and configure CSRF headers."""
+    """Authenticate with the Django admin and configure CSRF headers.
+
+    Sends a GET and then a POST to ``LOGIN_URL``, then sets ``X-CSRFToken`` and
+    ``Referer`` headers on ``SESSION`` so that later write requests carry the
+    CSRF token. The defaults are ``admin`` and ``admin``, which is what the
+    notebooks use when they call ``login()`` with no arguments. Prints
+    ``Authenticated`` or ``Login failed`` and returns ``True`` only when a
+    ``sessionid`` cookie was set. A missing ``csrftoken`` cookie raises
+    ``KeyError``; network errors from ``requests`` propagate.
+    """
     SESSION.get(LOGIN_URL)
     SESSION.post(
         LOGIN_URL,
@@ -79,6 +118,16 @@ def login(username="admin", password="admin"):
 
 
 def api_get(endpoint, params=None):
+    """Return all objects from a list endpoint, or one detail body.
+
+    ``endpoint`` is relative to ``BASE_URL`` and ``params`` holds query filters
+    such as ``{"search": name}``. A single request returns only one page, so the
+    helper asks for up to 10000 rows and follows the DRF ``next`` links until
+    the list is complete. Query parameters go on the first request only, because
+    each ``next`` link already carries them. A response without a ``results``
+    key, such as a plain list or a single object from ``persons/<id>``, is
+    returned as parsed JSON unchanged. Error statuses raise ``HTTPError``.
+    """
     request_params = dict(params or {})
     request_params.setdefault("limit", 10000)
     url = f"{BASE_URL}/{endpoint}/"
@@ -99,6 +148,16 @@ def api_get(endpoint, params=None):
 
 
 def api_post(endpoint, payload, fail_on_error=True):
+    """Create one object at *endpoint* and return the parsed JSON response.
+
+    An error status makes the function print the response body before raising
+    or returning. For validation errors that body names the rejected field,
+    which ``raise_for_status()`` alone would hide. With ``fail_on_error=False``
+    the function returns ``None`` instead of raising, for callers that can skip a
+    rejected record, such as ``events.py`` and ``locations/entities.py``. With the
+    default ``True``, an error status raises ``HTTPError``. Connection errors are
+    retried by ``_retry``.
+    """
     resp = _retry(SESSION.post, f"{BASE_URL}/{endpoint}/", json=payload)
     if resp.status_code >= 400:
         error_msg = f"API Error {resp.status_code}: {resp.text}"
@@ -123,12 +182,13 @@ def api_delete(endpoint, obj_id):
 def api_bulk_upsert(endpoint, items):
     """Create or update many objects in one request.
 
-    Uses the ``bulk_upsert`` action on the viewset.  Each item is matched
-    by the viewset's ``bulk_lookup_field``; matched records are updated,
-    others are created.
-
-    Returns the parsed response dict with ``created``, ``updated``, ``errors``,
-    ``created_items``, and ``updated_items``.
+    The request goes to the viewset's ``bulk_upsert`` action. Each item is
+    matched against its ``bulk_lookup_field``, compared case-insensitively on the
+    server. A match is updated and any other item is created. One request
+    replaces a POST per row, which avoids a round trip for every record and lets
+    a rerun update rows in place. Per-item failures do not raise; they are listed
+    under ``errors``, next to ``created``, ``updated``, ``created_items``, and
+    ``updated_items`` in the returned dict.
     """
     resp = _retry(
         SESSION.post, f"{BASE_URL}/{endpoint}/bulk_upsert/", json={"items": items}
@@ -140,10 +200,12 @@ def api_bulk_upsert(endpoint, items):
 def api_bulk_update(endpoint, items):
     """Update many objects by ID in one request.
 
-    Each item in *items* must include an ``id`` field and any fields to update.
-
-    Returns the parsed response dict with ``updated``, ``errors``,
-    ``updated_items``.
+    The request goes to the ``bulk_update`` action. Each item must include its
+    database ``id``, and the other fields are applied as a partial update. Items
+    without an ``id``, or with an ID the server does not know, are reported under
+    ``errors`` rather than raised. Callers already hold the IDs, as
+    ``locations/db.py`` does when it sets each location's region, so no lookup is
+    needed. The returned dict holds ``updated``, ``errors``, and ``updated_items``.
     """
     resp = _retry(
         SESSION.patch, f"{BASE_URL}/{endpoint}/bulk_update/", json={"items": items}
@@ -155,7 +217,11 @@ def api_bulk_update(endpoint, items):
 def api_bulk_create(endpoint, items):
     """Create many objects in one request (no matching/upsert).
 
-    Returns the parsed response dict with ``created``, ``errors``, ``items``.
+    Nothing is matched, so sending the same batch twice creates duplicates. Use
+    it only when every item is known to be new; ``api_bulk_upsert`` is the
+    idempotent choice. Per-item failures are listed under ``errors`` rather than
+    raised. The returned dict holds ``created``, ``errors``, and ``items``. No
+    module in ``import/`` calls this helper yet.
     """
     resp = _retry(
         SESSION.post, f"{BASE_URL}/{endpoint}/bulk_create/", json={"items": items}
@@ -177,13 +243,18 @@ _concept_cache = {}
 
 
 def get_or_create_concept(label, parent_id=None, icon=None, identity=None):
-    """Get or create a concept.  If *label* contains ' > ' it is treated as a
-    hierarchy, e.g. "Gegenstand > Grammophon" creates parent "Gegenstand" and
-    child "Grammophon" with the parent relationship set.
+    """Get or create a concept.
 
-    ``parent_id`` and ``identity`` let taxonomy imports distinguish equal
-    labels in different top-level categories while reusing one ID for a
-    repeated label within its category.
+    The lookup matches an existing concept by label, ignoring case, and by
+    parent, so the same label can exist under different parents. Only the first
+    ``" > "`` splits the label: ``"Gegenstand > Grammophon"`` creates
+    ``Grammophon`` under ``Gegenstand``, but ``"A > B > C"`` stores ``"B > C"``
+    as one child of ``A``. ``icon`` is set on creation and added to an existing
+    match only when that match has none. ``identity`` extends the in-memory
+    cache key and does not change the database lookup. Returns ``None`` for
+    blank, ``nan``, or ``None`` labels and when the response has no ID. HTTP
+    errors propagate. The chronotopi notebook passes this function to
+    ``import_taxonomy`` as its concept creator.
     """
     label = label.strip()
     if not label or label in ("nan", "None"):
@@ -256,7 +327,14 @@ def _clean_person_name(value):
 
 
 def _normalize_person_name(value):
-    """Normalize a workbook name for comparison with split Person fields."""
+    """Normalize a workbook name for comparison with split Person fields.
+
+    Runs ``_clean_person_name`` to drop parenthetical role notes and stray
+    punctuation, then casefolds the result, so ``Frau Doktor Nelken (Tante 2)``
+    and ``frau doktor nelken`` compare equal. Stored Persons keep given and
+    family names in separate fields, so ``_name_tokens`` and the search terms
+    built by ``get_person_id`` both start from this normalized text.
+    """
     return _clean_person_name(value).casefold()
 
 
@@ -274,6 +352,16 @@ def _person_alias_target(value):
 
 
 def _person_identity_key(person):
+    """Return the taxonomy key that identifies a stored Person by name.
+
+    A Person can hold a current and a previous given or family name after a
+    reviewed rename. Every given and family name pair, in both orders, is tried
+    against ``person_taxonomy_alias``, and the key of the first alias target
+    found is returned. A renamed Person therefore still matches its reviewed
+    alias. If no pair is an alias, the key is built from the current
+    ``family, given`` fields. ``get_person_id`` uses this key to find duplicates
+    of an alias target before merging them.
+    """
     given_names = dict.fromkeys(
         name
         for name in (person.get("given_name"), person.get("previous_given_name"))
@@ -299,6 +387,14 @@ def _person_identity_key(person):
 
 
 def _canonical_person_parts(label):
+    """Split a ``Family, Given`` alias target into ``(given, family)``.
+
+    The split happens at the first comma, and both parts are stripped. Returns
+    ``None`` when there is no comma or either part is blank. Alias targets from
+    ``person_taxonomy`` use the ``Family, Given`` form, but the API stores the
+    two names in separate fields, so ``get_person_id`` needs this split before it
+    creates or patches a Person.
+    """
     if "," not in label:
         return None
     family_name, given_name = label.split(",", 1)
@@ -315,7 +411,15 @@ def _find_person_by_name(persons, raw_name):
     Source sheets normally contain ``given family`` while the API returns
     separate fields. A first-name-plus-family match also handles database
     records with an additional middle name, such as ``Paul Avraham Alsberg``
-    versus the source label ``Paul Alsberg``.
+    versus the source label ``Paul Alsberg``. An exact comparison would miss
+    those records and create duplicates.
+
+    Every source token must occur, in order, among the stored given and family
+    tokens, and the first and last tokens must agree. Candidates rank by an exact
+    full-name match, then an exact family-name match, then the shorter stored
+    name. Returns the Person dict of the best candidate, or ``None`` when the
+    source name has fewer than two tokens, nothing matches, or the top two
+    candidates tie.
     """
     source_tokens = _name_tokens(raw_name)
     if len(source_tokens) < 2:
@@ -371,7 +475,23 @@ def _is_split_of_canonical_name(person, given, family):
 
 
 def get_person_id(protagonist_col, name_col, identifier=None):
-    """Get or create a Person from a combined source name."""
+    """Get or create a Person from a combined source name.
+
+    ``name_col`` is used unless it is blank, in which case ``protagonist_col`` is
+    used. Returns ``None`` when both are blank. Candidates come from API searches
+    on the name tokens. Reviewed aliases are matched by identity key, and other
+    names by ``_find_person_by_name``. A new Person takes the last word as its
+    family name and the rest as its given name, so a single word fills both
+    fields.
+
+    A reviewed alias is written in its canonical ``Family, Given`` form. Its
+    duplicates, found by identity key, are merged into one Person, and a duplicate
+    that stores the name split differently is renamed first. A passed
+    ``identifier`` is written when the Person has none, and a conflicting one
+    raises ``ValueError``. For other names an identifier only affects the search
+    and creation, and a cached name returns at once even when an identifier is
+    passed.
+    """
     raw_name = clean_str(name_col)
     if not raw_name:
         raw_name = clean_str(protagonist_col)
@@ -531,9 +651,10 @@ def get_person_id(protagonist_col, name_col, identifier=None):
 def normalize_interview_id(value):
     """Return the archive-ID format used by the Interview table.
 
-    Source files sometimes omit zero-padding, for example ``IS_E_170``.
-    Keeping normalization here means metadata and citation imports use the
-    same lookup key.
+    Source files sometimes omit zero-padding, so ``IS_E_170`` becomes
+    ``IS_E_00170``. Normalizing here means metadata and citation imports use the
+    same lookup key. Blank input returns ``None``. Values that are not an
+    uppercase prefix, one letter, and digits are returned trimmed but unchanged.
     """
     archive_id = clean_str(value)
     if not archive_id:
@@ -547,8 +668,11 @@ def normalize_interview_id(value):
 def normalize_interview_date(value):
     """Convert supported spreadsheet date values to an ISO date string.
 
-    A year-only source value is intentionally ignored because the database
-    field is a full ``DateField`` and a fabricated month/day would mislead.
+    ``datetime`` and ``date`` objects are converted directly. Text is accepted as
+    ``dd.mm.yyyy`` or ``yyyy-mm-dd``. Blank cells and anything else return
+    ``None``. A year-only source value is intentionally ignored because the
+    database field is a full ``DateField`` and a fabricated month/day would
+    mislead.
     """
     if is_empty(value):
         return None
@@ -566,7 +690,12 @@ def normalize_interview_date(value):
 
 
 def normalize_interview_type(value):
-    """Normalize the metadata workbook's interview-type label."""
+    """Normalize the metadata workbook's interview-type label.
+
+    The workbook writes labels such as ``Interview (oral)``. The ``Interview``
+    prefix and the surrounding brackets are removed, leaving ``oral``. Blank
+    cells and cells that start with ``#`` return an empty string.
+    """
     interview_type = clean_str(value)
     if not interview_type or interview_type.startswith("#"):
         return ""
@@ -584,7 +713,15 @@ def build_interview_payload(
     place=None,
     urls=None,
 ):
-    """Build the canonical Interview payload shared by all importers."""
+    """Build the canonical Interview payload shared by all importers.
+
+    Returns ``None`` when *archive_id* is blank. Optional fields are added only
+    when they have a value; ``interview_type`` and ``place`` are added whenever
+    they are not ``None``. The archive ID and the date are normalized by
+    ``normalize_interview_id`` and ``normalize_interview_date``, and an
+    unparseable date is dropped without an error. Both importers build the same
+    shape, so ``upsert_interviews`` can merge their payloads by archive ID.
+    """
     archive_id = normalize_interview_id(archive_id)
     if not archive_id:
         return None
@@ -610,8 +747,16 @@ def build_interview_payload(
 def upsert_interviews(payloads):
     """Upsert Interviews and return ``archive_id -> database ID`` plus errors.
 
-    Payloads with the same archive ID are merged before one bulk API request,
-    so metadata and Belege imports remain idempotent and share one write path.
+    Payloads with the same archive ID are merged into one item before a single
+    ``api_bulk_upsert`` request. Within a merge, later non-empty values replace
+    earlier ones, and ``urls`` are combined without duplicates. The server
+    matches Interviews by archive ID, so a rerun updates them rather than
+    creating copies. Metadata and Belege imports share this one write path.
+
+    Returns:
+        A tuple of the mapping from normalized archive ID to database ID (for
+        created and updated items) and a list of error strings. A failed request
+        returns an empty mapping and one error string instead of raising.
     """
     merged_payloads = {}
     for payload in payloads:
@@ -655,11 +800,15 @@ def upsert_interviews(payloads):
 def parse_interview_id_from_quelle(quelle):
     """Extract the interview ID from a quelle Markdown link.
 
-    The quelle column format is:
+    Used when a Belege row leaves ``interview_id`` blank. The ``quelle`` column
+    is expected in this form, with the archive ID in brackets::
+
         Interviewer Name – [IS_E_00124](https://dgd.ids-mannheim.de/...)
-    Returns the canonical archive ID (e.g. ``IS_E_00124``) or None. Some
-    source rows omit zero-padding (``IS_E_170``), so the numeric suffix is
-    normalized to the five-digit form used by the Interview table.
+
+    The bracketed text must be an uppercase prefix, one letter, and digits.
+    Numbers without zero-padding, such as ``IS_E_170``, are normalized with
+    ``normalize_interview_id``. Blank input and text without such an ID return
+    ``None``. ``belege.archive_id_for_row`` is the caller.
     """
     if is_empty(quelle):
         return None
@@ -675,7 +824,15 @@ _timespan_cache = {}
 
 
 def get_or_create_timespan(start, end, certainty=None):
-    """Get or create a Timespan object."""
+    """Get or create a Timespan object.
+
+    Only ``_timespan_cache`` is checked before the POST. The API is not searched,
+    and the Timespan model has no uniqueness rule, so importing the same range in
+    two runs creates two records. Blank values are left out of the payload, and
+    when start, end, and certainty are all blank the function returns ``None``
+    without a request. Values are sent as ``str()``. Called by ``events.py`` and
+    ``person_biography/importer.py``. HTTP errors from the POST propagate.
+    """
     key = (str(start), str(end), certainty)
     if key in _timespan_cache:
         return _timespan_cache[key]
@@ -701,6 +858,16 @@ _url_cache = {}
 
 
 def get_or_create_url(url_str):
+    """Return the ID of the URL record for *url_str*, creating it if missing.
+
+    *url_str* must be a string, because ``None`` raises ``AttributeError``.
+    Blank and ``"nan"`` values return ``None``. On each cache miss the helper
+    fetches the whole ``urls`` list and matches the exact string. It has to,
+    because the server enforces a unique ``url`` field, so a blind POST would fail
+    for a URL that already exists. A failed POST is printed and returns ``None``
+    rather than raising, so one bad link does not stop an import. Resolved IDs are
+    cached in ``_url_cache``. Called by ``events.py`` and ``metadati/interviews.py``.
+    """
     url_str = url_str.strip()
     if not url_str or url_str == "nan":
         return None

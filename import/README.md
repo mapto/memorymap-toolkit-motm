@@ -8,9 +8,7 @@ Then simply run
 
 If making changes, before committing, run:
 
-    uv run ruff format
-    uv run ruff check --fix
-    uv run pytest --doctest-modules
+    ./validate.sh
 
 ## Concept translations
 

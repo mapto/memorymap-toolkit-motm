@@ -1,4 +1,17 @@
-"""Person lookup and creation from metadati records."""
+"""Person lookup and creation from metadati records.
+
+A metadati record refers to people who may already exist in the Memory Map API:
+the main person, interviewers named in the sources, and relatives in the family
+table. ``get_or_create_person`` returns the existing Person when it can find
+one, and creates the Person otherwise. Matching by identifier and by name is what
+lets an import be repeated without entering the same person twice.
+
+Names are first normalized through the reviewed Personae names in
+``person_taxonomy``. ``PERSON_METADATA_FIELDS`` lists the workbook fields that
+are copied onto the Person record. Lifespans are handled by ``timespans``, and
+HTTP calls go through ``api_client``. The callers are ``importer``,
+``interviews``, and ``relationships``.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +31,18 @@ PERSON_METADATA_FIELDS = (
 
 
 def get_or_create_person(data, identifier=None):
-    """Create or match a Person via the API. Returns person id or None."""
+    """Match or create a Person from one name record and return its ID.
+
+    ``data`` holds the names, dates, gender, and metadata of one person. The
+    names are first replaced by their reviewed forms from ``person_taxonomy``,
+    and the source spelling is kept as a previous name when it differs. A
+    reviewed alias is resolved first, through ``api_client.get_person_id``.
+    Otherwise, with an identifier, the Person is found by identifier, or by a
+    case-insensitive name match among Persons without one, which then receives
+    the identifier. Without an identifier, the local cache is checked first, then
+    the name match. A match has its lifespan and fields updated, and an unmatched
+    person is created. Returns None when neither name part is present.
+    """
     source_given_name = data.get("given_name")
     source_family_name = data.get("family_name")
     canonical = canonical_person_name(source_given_name, source_family_name)
@@ -51,6 +75,13 @@ def get_or_create_person(data, identifier=None):
         return None
 
     def metadata_payload():
+        """Return the non-empty workbook metadata fields for a Person payload.
+
+        This covers ``PERSON_METADATA_FIELDS`` and the persecution group, which
+        becomes ``description``. Empty cells are left out, so an empty cell never
+        clears a stored value. A non-empty value is sent and replaces the stored
+        one.
+        """
         payload = {
             field: data[field]
             for field in PERSON_METADATA_FIELDS
@@ -62,6 +93,14 @@ def get_or_create_person(data, identifier=None):
         return payload
 
     def update_existing(existing):
+        """Send one PATCH with the workbook values for a matched Person.
+
+        ``existing`` is the Person dict from the API. Gender, identifier, and
+        previous names are filled only where the stored Person has none. Given and
+        family names are set to the resolved names when they differ. The metadata
+        fields from ``metadata_payload`` are always included. The PATCH is sent
+        only when the patch is non-empty.
+        """
         patch = metadata_payload()
         if existing:
             if data.get("gender") and not existing.get("gender"):

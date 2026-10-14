@@ -1,4 +1,13 @@
-"""Date span parsing, intersection, and merging."""
+"""Date span parsing, intersection, and merging.
+
+Dates arrive as text in three forms: chronotopi event columns, metadati date
+intervals, and dates already stored in Memory Map. This module turns each form
+into a ``Timespan`` that keeps the precision of its source. A year from a metadata
+workbook therefore stays a year instead of becoming an exact day. Spans are then
+intersected to find the range that both sources agree on, or merged so that a
+disagreement is recorded as a conflict. The module reads nothing and makes no API
+calls.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +17,14 @@ from utils import clean_str
 
 
 def _parse_span(value: Any) -> Timespan | None:
+    """Parse one date text into a ``Timespan``, or return None.
+
+    Empty text, text that ``parse_timespan`` rejects, an overflowing date, and a
+    span without a start all return None. A span with a start but no end becomes a
+    range that ends on its start. Returning None instead of raising lets each
+    caller fall back to another field, such as the date label or the metadati
+    value.
+    """
     text = clean_str(value)
     if not text:
         return None
@@ -26,6 +43,14 @@ def _parse_span(value: Any) -> Timespan | None:
 
 
 def _span_from_interval(value: Any) -> Timespan | None:
+    """Return a ``Timespan`` for a metadati date interval, or None.
+
+    Metadati stores an interval as a two-item ``(start, end)`` pair of ISO date
+    strings, which keeps a year-level range intact. A ``Timespan`` is returned
+    unchanged when it has a start. Otherwise both items are parsed with
+    ``_parse_span``. The result is None when either item fails to parse or the
+    start is after the end, so ``_record_span`` falls back to the single date.
+    """
     if isinstance(value, Timespan):
         return value if value.start else None
     if not isinstance(value, (tuple, list)) or len(value) != 2:
@@ -47,6 +72,12 @@ def _record_span(record: Mapping[str, Any], field_name: str) -> Timespan | None:
 
 
 def _span_intersection(left: Timespan, right: Timespan) -> Timespan | None:
+    """Return the overlap of two spans, or None when they do not overlap.
+
+    A span without an end counts as one day at its start, and a span without a
+    start never overlaps. Spans that touch on one day overlap, giving a one-day
+    result. The overlap is the value kept when two spans for one field are merged.
+    """
     if left.start is None or right.start is None:
         return None
     left_end = left.end or left.start
@@ -59,6 +90,12 @@ def _span_intersection(left: Timespan, right: Timespan) -> Timespan | None:
 
 
 def _span_label(span: Timespan | None) -> str:
+    """Return a short readable label for a span, for use in conflict messages.
+
+    Returns ``"unknown"`` when there is no span or it has no start. A one-day span
+    gives its ISO date, and a longer span gives ``start through end``. Labels are
+    used only in messages.
+    """
     if span is None or span.start is None:
         return "unknown"
     end = span.end or span.start
@@ -68,6 +105,15 @@ def _span_label(span: Timespan | None) -> str:
 
 
 def _event_date_span(row: Mapping[str, Any]) -> Timespan | None:
+    """Return the span for one chronotopi event row, preferring its date columns.
+
+    An exact range comes from ``date_start`` and ``date_end`` when both parse. If a
+    filled date column does not parse, ``date_label`` is used. Some sheets store a
+    year-only event as January 1 in both columns, which looks like an exact day.
+    When both columns give that one day and it is an end of a multi-day label
+    range, the label range is returned so the year's precision is kept. Returns
+    None when no usable date is present.
+    """
     start_raw = clean_str(row.get("date_start", ""))
     end_raw = clean_str(row.get("date_end", ""))
     label_span = _parse_span(row.get("date_label", ""))
@@ -105,6 +151,13 @@ def _merge_span(
     description: str,
     conflicts: list[str],
 ) -> Timespan | None:
+    """Combine two spans for one field, recording a clash rather than raising.
+
+    A missing side yields the other side. When both are present, their overlap is
+    returned. If they do not overlap, a message made of ``description`` and both
+    span labels is appended to ``conflicts``, and the existing span is returned
+    unchanged. The caller decides when to report the collected conflicts.
+    """
     if existing is None:
         return incoming
     if incoming is None:
@@ -123,6 +176,12 @@ def _stored_date_span(
     value: Any,
     metadata_span: Timespan | None,
 ) -> Timespan | None:
+    """Read a date already stored in Memory Map as a span, for comparison.
+
+    The stored value is taken as a single day. If the metadata span starts on that
+    same day, the metadata span is returned instead, so a year-level metadata range
+    keeps its precision. Returns None when ``value`` is empty or cannot be parsed.
+    """
     stored = _parse_span(value)
     if stored is None:
         return None

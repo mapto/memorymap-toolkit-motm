@@ -1,4 +1,18 @@
-"""Locations workbook storage and the in-memory location database."""
+"""Load, save, and extend the locations workbook and its in-memory database.
+
+``import/locations.xlsx`` (``LOCATIONS_WORKBOOK_PATH``) is the shared table of
+location coordinates and source URLs. The import reads it into ``_locations_db``,
+keyed by ``normalize_location``, backfills missing coordinates, and writes the
+results back, so coordinates found on one run are not looked up again on the
+next.
+
+``load_locations_db`` is called by the chronotopi notebook and by
+``metadati.places``, which turns coordinate lookups off. ``save_locations_db``
+runs after the backfill. ``rebuild_location_workbook`` delegates to
+``rebuild_locations``. ``link_locations_to_regions`` pushes super-region links to
+the API, and ``upsert_location_db`` records new IDs in memory. Only the active
+sheet is read and written.
+"""
 
 import logging
 import os
@@ -30,11 +44,25 @@ _locations_db = {}  # normalize_location(name) -> {name, lat, long, ...}
 
 
 def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=True):
-    """Load locations.xlsx and optionally backfill missing coordinates.
+    """Load locations.xlsx into ``_locations_db`` and optionally backfill coordinates.
 
-    Coordinates already present in the workbook always win. Missing pairs are
-    resolved from GeoNames first and Wikidata second, then persisted back to
-    the same workbook when ``save_enriched`` is true.
+    Each row with a name becomes a record keyed by ``normalize_location``. A later
+    row with the same key replaces an earlier one. A record holds ``name``,
+    ``lat``, ``long``, the Wikidata and GeoNames IDs and URLs, and ``extra_url``,
+    which maps each populated column after ``www.geonames.org`` to its URL.
+    Coordinates already in the workbook always win. With ``enrich_coordinates``,
+    missing pairs go through ``resolve_location_coordinates``, which may make
+    network requests. With ``save_enriched``, the workbook is rewritten when any
+    pair was added.
+
+    The function clears ``_locations_db``, refills it, and returns that same dict.
+    A missing file logs a warning and returns the dict as it is. A one-line summary
+    is printed. The chronotopi notebook and ``metadati.places`` call this function.
+
+    Args:
+        xlsx_path: Workbook to read. Defaults to ``LOCATIONS_WORKBOOK_PATH``.
+        enrich_coordinates: Look up missing coordinates. False skips the lookups.
+        save_enriched: Write the workbook back after new coordinates are found.
     """
     if xlsx_path is None:
         xlsx_path = LOCATIONS_WORKBOOK_PATH
@@ -55,7 +83,13 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
         return ws.cell(row, column).value if column else default
 
     def extra_urls_after_geonames(row):
-        """Collect every populated workbook column after the GeoNames column."""
+        """Collect every populated workbook column after the GeoNames column.
+
+        Columns to the right of ``www.geonames.org`` hold extra source URLs, such as
+        Wikidata links and archive pages. Blank cells and the strings ``nan`` and
+        ``none`` are skipped. Returns a dict from header to URL for this row, or an
+        empty dict when the GeoNames column is absent.
+        """
         geonames_column = headers.get("www.geonames.org")
         if geonames_column is None:
             return {}
@@ -109,7 +143,15 @@ def load_locations_db(xlsx_path=None, *, enrich_coordinates=True, save_enriched=
 
 
 def _extra_url_mapping(value):
-    """Normalize extra_url to a mapping of workbook headers to URL values."""
+    """Normalize extra_url to a mapping of workbook headers to URL values.
+
+    Each record keeps its extra URLs keyed by workbook header, so a value written
+    back must go to the column with that header. Accepted shapes are a dict keyed
+    by header (as ``load_locations_db`` builds), a list or tuple whose entries are
+    named ``extra_url_1``, ``extra_url_2``, and so on by position, and a single
+    value stored under ``extra_url``. Blank entries are dropped, and blank input
+    gives an empty dict. Used by ``save_locations_db``.
+    """
     if isinstance(value, dict):
         return {
             str(header).strip(): str(url).strip()
@@ -129,7 +171,16 @@ def _extra_url_mapping(value):
 
 
 def save_locations_db(xlsx_path=None):
-    """Save _locations_db back to locations.xlsx, merging with existing data."""
+    """Save _locations_db back to locations.xlsx, merging with existing data.
+
+    When the file exists, each record is matched to its row by normalized name,
+    and only empty cells are filled, so values already in the workbook are kept.
+    Records with no row are appended in key order, and missing extra URL headers
+    get new columns. When the file does not exist, a workbook is created with the
+    standard headers, one column per extra URL header, and one row per record.
+    Openpyxl errors propagate. A one-line summary is printed. Called by
+    ``load_locations_db`` after a backfill.
+    """
     if xlsx_path is None:
         xlsx_path = LOCATIONS_WORKBOOK_PATH
     HEADERS = [
@@ -245,7 +296,15 @@ def save_locations_db(xlsx_path=None):
 
 
 def upsert_location_db(name, wikidata_qid=None, geonames_id=None):
-    """Add location to the database if not already present."""
+    """Add location to the database if not already present.
+
+    Meant for code that learns a Wikidata QID or GeoNames ID during an import and
+    wants the next ``save_locations_db`` call to persist it. Blank names and
+    ``nan`` are ignored. An existing record receives the QID or ID, and its URL,
+    only when it has none, so stored values are not overwritten. A new record has
+    no coordinates. This function does not write the workbook, and no caller in
+    ``import/`` uses it at present.
+    """
     if not name or str(name).strip() in ("", "nan"):
         return
     name = str(name).strip()
@@ -300,6 +359,25 @@ def rebuild_location_workbook(
     ``rebuild_locations`` so it remains independently testable. This public
     wrapper makes that implementation part of the normal locations API and
     gives the chronotopi notebook one authoritative import entry point.
+
+    Path arguments are converted to ``Path``, and everything else is forwarded.
+    Unset paths take the ``rebuild_locations`` defaults. The default output is the
+    input workbook, so the call rewrites ``import/locations.xlsx`` in place.
+    Coordinates may be fetched over the network. The rebuild raises
+    ``RuntimeError`` and writes nothing when a retained row lacks valid
+    coordinates or no rows remain.
+
+    Returns the counts from ``rebuild_workbook``: ``rows``, ``dropped``, and
+    ``coordinates_<source>`` for each coordinate source. The notebook reads
+    ``rows``.
+
+    Args:
+        input_path: Existing workbook to merge from. Defaults to
+            ``import/locations.xlsx``.
+        output_path: Workbook to write. Defaults to the input path.
+        data_root: Folder of source workbooks. Defaults to ``data/nuove schede``.
+        taxonomy_path: MAXQDA taxonomy used for containment.
+        **kwargs: Forwarded to ``rebuild_workbook``, for example ``own_geocoder``.
     """
     from pathlib import Path
     from rebuild_locations import rebuild_workbook
@@ -317,7 +395,16 @@ def rebuild_location_workbook(
 
 
 def link_locations_to_regions(locations_db):
-    """Create LocationRegions from super_region data and link LocationPoints."""
+    """Create LocationRegions from super_region data and link LocationPoints.
+
+    The ``locations_db`` argument is accepted but never read: the function reads
+    ``LOCATIONS_WORKBOOK_PATH`` from disk. Each distinct ``super_region`` name is
+    bulk-upserted as an API region. Each workbook location is then matched to an
+    API location by name, ignoring case and surrounding spaces, and its region is
+    set through one bulk update when it differs. A missing workbook or
+    ``super_region`` column prints a note and returns. Returns None. No caller in
+    ``import/`` uses this function at present.
+    """
     from api_client import api_get, api_bulk_upsert, api_bulk_update
 
     xlsx_path = LOCATIONS_WORKBOOK_PATH

@@ -1,7 +1,24 @@
 """Belege (Extraction) import logic.
 
-Reads belege_*.xlsx files and imports their Interviews and Extractions
-through the Django REST API.
+A Belege workbook has one row per citation: a quoted passage stored as an
+``Extraction`` that points at the ``Interview`` it came from. Interviews must
+exist before the citations that reference them, so ``import_belege`` upserts
+them first and then links each citation to its Interview's database ID. Rows
+also name speakers, mentioned persons, and topics, which are resolved to
+database IDs. Interviews and Extractions are matched by archive ID and
+identifier, so rerunning an import updates existing records.
+
+``import_belege`` is the entry point. ``belege.ipynb`` calls it for each
+``belege_*.xlsx`` file under ``data/nuove schede``, and ``import.sh`` runs that
+notebook.
+
+Usage::
+
+    from api_client import login
+    from belege import import_belege
+
+    login()
+    import_belege("path/to/belege_<name>.xlsx")
 """
 
 from __future__ import annotations
@@ -27,8 +44,12 @@ from utils import clean_str, is_empty
 def read_belege_rows(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[dict]:
     """Read the Belege sheet into named row dictionaries.
 
-    Keeping column handling here prevents the import orchestration and the
-    payload builders from depending on positional Excel indexes.
+    The first three sheet rows (title, spacer, and header) are skipped, and blank
+    rows are dropped. Cells are mapped to the names in ``fields`` by position
+    only, so the header text is never checked and a reordered sheet would be read
+    wrongly. Short rows are padded with ``None`` and extra cells are ignored.
+    Keeping this mapping here prevents the import orchestration and the payload
+    builders from depending on positional Excel indexes.
     """
     workbook = load_workbook(xlsx_path)
     try:
@@ -61,7 +82,14 @@ def read_belege_rows(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[
 
 
 def load_person_map() -> dict[str, int]:
-    """Load all source identifiers needed by citation imports."""
+    """Load all source identifiers needed by citation imports.
+
+    Makes one paginated ``persons`` request and maps each Person ``identifier``
+    to its database ID, skipping Persons without an identifier. The map resolves
+    ``interviewee_identifier`` and the first ``mentioned_persons`` entry of each
+    row. An identifier that is not in the map leaves the link empty, with no
+    error.
+    """
     return {
         person["identifier"]: person["id"]
         for person in api_get("persons")
@@ -70,7 +98,13 @@ def load_person_map() -> dict[str, int]:
 
 
 def load_interview_map() -> dict[str, int]:
-    """Load existing Interview archive IDs for idempotent reimports."""
+    """Load existing Interview archive IDs for idempotent reimports.
+
+    Makes one paginated ``interviews`` request and skips Interviews without an
+    ``archive_id``. Keys are normalized so they match the IDs written by this
+    run. The map lets citations link to Interviews that earlier runs created,
+    even when this run upserts none for them.
+    """
     return {
         normalize_interview_id(interview["archive_id"]): interview["id"]
         for interview in api_get("interviews")
@@ -79,7 +113,14 @@ def load_interview_map() -> dict[str, int]:
 
 
 def archive_id_for_row(row: dict) -> str | None:
-    """Resolve a row's explicit archive ID or derive it from ``quelle``."""
+    """Resolve a row's explicit archive ID or derive it from ``quelle``.
+
+    The ``interview_id`` cell takes priority. Its value is cleaned with
+    ``clean_str`` but not zero-padded, so ``IS_E_170`` is looked up as written and
+    misses an Interview stored as ``IS_E_00170``. Without that cell the ID comes
+    from ``parse_interview_id_from_quelle``. Returns ``None`` when neither source
+    gives an ID.
+    """
     archive_id = clean_str(row["interview_id"])
     if archive_id:
         return archive_id
@@ -87,7 +128,13 @@ def archive_id_for_row(row: dict) -> str | None:
 
 
 def build_row_interview_payload(row: dict, person_map: dict[str, int]) -> dict | None:
-    """Build the shared Interview payload for one citation row."""
+    """Build the shared Interview payload for one citation row.
+
+    The archive ID comes from ``archive_id_for_row``, the interviewee is the
+    ``person_map`` entry for ``interviewee_identifier``, and the date goes through
+    ``build_interview_payload``, which normalizes it. Returns ``None`` when the
+    row has no archive ID. This function makes no API call.
+    """
     return build_interview_payload(
         archive_id_for_row(row),
         interviewee=person_map.get(clean_str(row["interviewee_identifier"])),
@@ -96,7 +143,14 @@ def build_row_interview_payload(row: dict, person_map: dict[str, int]) -> dict |
 
 
 def detect_quote_language(quote: str) -> str | None:
-    """Detect a quote language when the detector has enough confidence."""
+    """Detect a quote language when the detector has enough confidence.
+
+    Quotes shorter than 20 characters are not classified, so a fragment does not
+    receive a language label from a guess. Otherwise the top ``fast_langdetect``
+    result is used only when its score is above 0.7. Detector exceptions are
+    swallowed, so a detection failure leaves ``language`` unset instead of
+    stopping the import.
+    """
     if len(quote) < 20:
         return None
     try:
@@ -109,7 +163,17 @@ def detect_quote_language(quote: str) -> str | None:
 
 
 def build_extraction_payload(row: dict, person_map: dict[str, int]) -> dict | None:
-    """Build one Extraction payload, excluding its Interview foreign key."""
+    """Build one Extraction payload, excluding its Interview foreign key.
+
+    Returns ``None`` when the row has no ``identifier`` (the ``beleg_id`` cell).
+    ``language`` is added only when ``detect_quote_language`` finds one.
+    ``people_mentioned`` takes the first identifier in the comma- or
+    newline-separated ``mentioned_persons`` cell, because the model field holds a
+    single person. Other names and unknown identifiers are dropped. Each
+    comma-separated topic goes through ``get_or_create_concept``, which makes API
+    calls, and topics that resolve to no ID are omitted. The Interview foreign
+    key is added later by ``attach_interview_ids``.
+    """
     identifier = clean_str(row["identifier"])
     if not identifier:
         return None
@@ -147,7 +211,18 @@ def build_extraction_payload(row: dict, person_map: dict[str, int]) -> dict | No
 def prepare_belege_payloads(
     rows: list[dict], person_map: dict[str, int]
 ) -> tuple[list[dict], list[tuple[str | None, dict]]]:
-    """Prepare unique Interview payloads and citation payloads separately."""
+    """Prepare Interview payloads and citation payloads separately.
+
+    Every row with an archive ID yields one Interview payload. Repeats are kept
+    here because ``upsert_interviews`` merges them. Each citation is paired with
+    its archive ID, so ``attach_interview_ids`` can add the foreign key once the
+    Interviews exist. Rows without a usable payload are skipped. A tqdm progress
+    bar is shown, and concept lookups happen in ``build_extraction_payload``.
+
+    Returns:
+        A tuple of the Interview payload list and the citation list, where each
+        citation entry is an ``(archive_id, payload)`` pair.
+    """
     interview_payloads = []
     extraction_payloads = []
     for row in tqdm(rows, desc="Belege", unit="row"):
@@ -164,7 +239,17 @@ def attach_interview_ids(
     prepared_payloads: list[tuple[str | None, dict]],
     interview_map: dict[str, int],
 ) -> tuple[list[dict], list[str]]:
-    """Add Interview foreign keys to prepared citations and report misses."""
+    """Add Interview foreign keys to prepared citations and report misses.
+
+    A citation whose archive ID is in *interview_map* gets that database ID as
+    ``interview``. A citation whose ID is missing gets an error message but is
+    still returned without the foreign key, so the Extraction is written and the
+    gap is reported. Citations without an archive ID pass through unchanged and
+    without a message.
+
+    Returns:
+        A tuple of the payload list and the list of error strings.
+    """
     payloads = []
     errors = []
     for archive_id, payload in prepared_payloads:
@@ -182,7 +267,18 @@ def attach_interview_ids(
 
 
 def bulk_upsert_extractions(payloads: list[dict]) -> tuple[list[int], list[str]]:
-    """Write citation payloads in API-sized batches and collect failures."""
+    """Write citation payloads in batches of 200 and collect failures.
+
+    Each batch is one ``api_bulk_upsert`` request. The server matches Extractions
+    by ``identifier``, so a rerun updates existing records and fills in any
+    Interview link they lack. A batch that raises is recorded as an error and the
+    next batch still runs, so one failure does not discard the rest. Per-item
+    errors from the response are added to the same list.
+
+    Returns:
+        A tuple of the IDs of created and updated items and the list of error
+        strings.
+    """
     results = []
     errors = []
     for start in range(0, len(payloads), 200):
@@ -207,9 +303,17 @@ def bulk_upsert_extractions(payloads: list[dict]) -> tuple[list[int], list[str]]
 def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int]:
     """Import Belege rows and link each citation to its Interview source.
 
-    Interviews are upserted before Extractions because the extraction table
-    stores only the Interview foreign key. Rerunning the importer therefore
-    also repairs existing citations whose ``interview_id`` was empty.
+    The steps run in order: read the rows, load the Person and Interview maps
+    with two list requests, prepare the payloads (which resolves topics to concept
+    IDs), upsert the Interviews, link each citation, and upsert the citations in
+    batches. Interviews go first because each Extraction stores its Interview's
+    database ID. Rerunning the importer therefore also repairs existing citations
+    whose ``interview_id`` was empty.
+
+    Errors from the bulk writes are collected and printed as a summary rather than
+    raised. A missing file raises ``FileNotFoundError``, a missing sheet raises
+    ``KeyError``, and HTTP errors from the list requests or from concept creation
+    propagate. Returns the IDs of the created and updated Extractions.
     """
     xlsx_path = Path(xlsx_path)
     rows = read_belege_rows(xlsx_path, sheet_name)
