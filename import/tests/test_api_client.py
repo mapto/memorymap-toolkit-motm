@@ -130,6 +130,7 @@ def test_get_person_id_matches_first_name_and_family_with_middle_name(monkeypatc
     def fake_api_get(endpoint, params=None):
         if endpoint != "persons":
             return []
+        assert params is not None
         searches.append(params["search"])
         return [person] if params["search"].casefold() == "alsberg" else []
 
@@ -530,6 +531,7 @@ def test_get_person_id_reuses_cached_match(monkeypatch):
     searches = []
 
     def fake_api_get(endpoint, params=None):
+        assert params is not None
         searches.append(params["search"])
         return [person]
 

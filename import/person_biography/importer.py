@@ -39,7 +39,7 @@ def _choose_date(
             and current == metadata_span.start.isoformat()
             and (
                 incoming_span.start > metadata_span.start
-                or incoming_span.end < metadata_span.end
+                or (incoming_span.end or incoming_span.start) < metadata_span.end
             )
         ):
             return incoming_value

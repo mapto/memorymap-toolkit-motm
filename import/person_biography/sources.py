@@ -53,7 +53,7 @@ def _classify_biographical_event(row: Mapping[str, Any]) -> str | None:
 
 
 def _metadata_people(record: Mapping[str, Any], aliases: Mapping[str, str]):
-    people = {}
+    people: dict[str, dict[str, Any]] = {}
     main_person = record.get("person") or {}
     main_key = _identity_from_person_fields(main_person, aliases)
     if main_key:
@@ -84,7 +84,7 @@ def _metadata_people(record: Mapping[str, Any], aliases: Mapping[str, str]):
             )
             if part
         )
-        candidate = {
+        candidate: dict[str, Any] = {
             "name": name,
             "birth_span": _record_span(relative, "birth"),
             "birth_place": _clean_place(relative.get("birth_place")),

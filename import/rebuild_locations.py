@@ -120,10 +120,10 @@ def read_existing_workbook(path: Path) -> tuple[list[str], dict[str, dict]]:
 
 def _header_row(path: Path, sheet_name: str) -> int | None:
     preview = pd.read_excel(path, sheet_name=sheet_name, header=None, nrows=12)
-    for index, row in preview.iterrows():
+    for row_number, (_, row) in enumerate(preview.iterrows()):
         values = {clean_value(value) for value in row if pd.notna(value)}
         if "event_label" in values:
-            return int(index)
+            return row_number
     return None
 
 

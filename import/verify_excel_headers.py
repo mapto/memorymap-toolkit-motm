@@ -73,8 +73,8 @@ class FileResult:
     has_discrepancies: bool
     sheets_checked: int
     errors: list[VerificationError] = field(default_factory=list)
-    best_matching_version: str = None  # For chronotopoi files
-    version_scores: VersionScores = None  # For chronotopoi files
+    best_matching_version: str | None = None  # For chronotopoi files
+    version_scores: VersionScores | None = None  # For chronotopoi files
 
 
 @dataclass
@@ -87,7 +87,7 @@ class VerificationResult:
     total_sheets_checked: int
     sheets_with_discrepancies: int
     files: list[FileResult] = field(default_factory=list)
-    error: str = None  # Error message if verification failed
+    error: str | None = None  # Error message if verification failed
 
 
 # ============================================================================
@@ -101,7 +101,7 @@ prefix_to_template = {
 }
 
 
-def get_prefix(filename: str) -> str:
+def get_prefix(filename: str) -> str | None:
     """Extract prefix from filename (belege_, chronotopi/chronotopoi, metadati_)."""
     name = filename.lower()
 
@@ -130,7 +130,9 @@ def get_column_headers(wb: openpyxl.Workbook, header_row: int = 3) -> SheetHeade
     return headers
 
 
-def get_metadati_keys(wb: openpyxl.Workbook, sheet_name: str = None) -> SheetKeys:
+def get_metadati_keys(
+    wb: openpyxl.Workbook, sheet_name: str | None = None
+) -> SheetKeys:
     """
     Extract key-value pairs from first column starting at row 3.
     Used for metadati sheets which have key-value format instead of column headers.
@@ -186,7 +188,7 @@ def to_lowercase_set(items: list[str]) -> set:
     return set(item.lower() for item in items)
 
 
-def load_workbook(path: Path) -> openpyxl.Workbook:
+def load_workbook(path: Path) -> openpyxl.Workbook | None:
     """Load workbook from path."""
     try:
         return openpyxl.load_workbook(str(path), data_only=True)
@@ -478,11 +480,9 @@ def verify_chronotopoi_file(
 
     # Get reference columns from first non-hidden template sheet
     reference_cols = None
-    reference_sheet = None
     for sheet_name, columns in template_headers.items():
         if not sheet_name.startswith("_"):
             reference_cols = to_lowercase_set(columns)
-            reference_sheet = sheet_name
             break
 
     if reference_cols is None:

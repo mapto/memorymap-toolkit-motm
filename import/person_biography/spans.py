@@ -76,10 +76,11 @@ def _event_date_span(row: Mapping[str, Any]) -> Timespan | None:
 
     if (start_raw and start_span is None) or (end_raw and end_span is None):
         return label_span
-    if start_span or end_span:
-        start = (start_span or end_span).start
-        end_source = end_span or start_span
-        end = end_source.end or end_source.start
+    first = start_span or end_span
+    last = end_span or start_span
+    if first is not None and last is not None:
+        start = first.start
+        end = last.end or last.start
         if start and end and start <= end:
             # Some sheets prefill year-only dates as Jan 1 in both event date
             # columns while retaining the year-only precision in date_label.

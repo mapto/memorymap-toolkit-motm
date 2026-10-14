@@ -17,9 +17,13 @@ domains = ["geonames.org", "wikidata.org"]
 
 def _coordinate_pair(entry: dict) -> tuple[float, float] | None:
     """Return a finite ``(latitude, longitude)`` pair when both values exist."""
+    raw_latitude = entry.get("lat")
+    raw_longitude = entry.get("long")
+    if raw_latitude is None or raw_longitude is None:
+        return None
     try:
-        latitude = float(entry.get("lat"))
-        longitude = float(entry.get("long"))
+        latitude = float(raw_latitude)
+        longitude = float(raw_longitude)
     except (TypeError, ValueError):
         return None
     if not math.isfinite(latitude) or not math.isfinite(longitude):

@@ -39,17 +39,17 @@ def parse_mermaid_occurrences(path: str | Path) -> tuple[TaxonomyOccurrence, ...
         parent_index = stack[-1][1] if stack else None
         if parent_index is None:
             top_level = label
-            path = (label,)
+            occurrence_path = (label,)
         else:
             parent = occurrences[parent_index]
             top_level = parent.top_level
-            path = parent.path + (label,)
+            occurrence_path = parent.path + (label,)
         occurrences.append(
             TaxonomyOccurrence(
                 label=label,
                 parent_index=parent_index,
                 top_level=top_level,
-                path=path,
+                path=occurrence_path,
             )
         )
         stack.append((indent, len(occurrences) - 1))

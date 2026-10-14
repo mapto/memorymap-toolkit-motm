@@ -8,6 +8,7 @@ end-to-end tests against a running Memory Map Toolkit instance.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -64,7 +65,7 @@ def row_by_label(df, label, occurrence=0):
 @pytest.fixture
 def api_stub(monkeypatch):
     """Stub out every network-touching dependency of create_event_from_row."""
-    calls = {
+    calls: dict[str, Any] = {
         "locations": [],
         "location_kwargs": {},
         "timespans": [],

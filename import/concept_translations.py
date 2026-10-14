@@ -423,14 +423,18 @@ def reusable_translation_values(
             language: existing_catalogs.get(language, {}).get(concept_id)
             for language in LANGUAGES
         }
-        if any(
-            not entry or not entry.get("msgstr", "").strip()
-            for entry in entries.values()
-        ):
+        complete_entries = {
+            language: entry
+            for language, entry in entries.items()
+            if entry and entry.get("msgstr", "").strip()
+        }
+        if len(complete_entries) != len(entries):
             continue
-        if len({entry.get("msgid", "") for entry in entries.values()}) != 1:
+        if len({entry.get("msgid", "") for entry in complete_entries.values()}) != 1:
             continue
-        candidates.append(tuple(entry["msgstr"].strip() for entry in entries.values()))
+        candidates.append(
+            tuple(entry["msgstr"].strip() for entry in complete_entries.values())
+        )
 
     distinct_candidates = set(candidates)
     if len(distinct_candidates) != 1:

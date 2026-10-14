@@ -37,11 +37,13 @@ class PersonBiography:
 
     @property
     def birth_date(self) -> str | None:
-        return self.birth_span.start.isoformat() if self.birth_span else None
+        start = self.birth_span.start if self.birth_span else None
+        return start.isoformat() if start is not None else None
 
     @property
     def death_date(self) -> str | None:
-        return self.death_span.start.isoformat() if self.death_span else None
+        start = self.death_span.start if self.death_span else None
+        return start.isoformat() if start is not None else None
 
 
 @dataclass

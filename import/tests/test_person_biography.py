@@ -223,6 +223,7 @@ def test_event_date_columns_retain_partial_precision_from_date_label(
         }
     )
 
+    assert parsed is not None
     assert parsed.end == expected_end
 
 
@@ -345,3 +346,76 @@ def test_existing_person_conflict_is_rejected_before_patch(monkeypatch):
 
     with pytest.raises(biography.PersonBiographyConflictError, match="birth date"):
         biography.validate_existing_person_biographies(plan)
+
+
+def test_birth_and_death_dates_are_none_when_span_has_no_start():
+    record = biography.PersonBiography(
+        person_name="Ada Subject",
+        identity_key="ada subject",
+        birth_span=Timespan(),
+        death_span=Timespan(),
+    )
+
+    assert record.birth_date is None
+    assert record.death_date is None
+
+
+def test_birth_and_death_dates_use_span_start():
+    record = biography.PersonBiography(
+        person_name="Ada Subject",
+        identity_key="ada subject",
+        birth_span=Timespan(date(1924, 10, 30)),
+        death_span=Timespan(date(1947, 2, 19), date(1947, 3, 1)),
+    )
+
+    assert record.birth_date == "1924-10-30"
+    assert record.death_date == "1947-02-19"
+
+
+_METADATA_LIFESPAN = Timespan(date(1924, 1, 1), date(1924, 12, 31))
+
+
+@pytest.mark.parametrize(
+    ("incoming", "expected"),
+    [
+        # Starts before the metadata start and ends inside the metadata range.
+        (Timespan(date(1923, 6, 1), date(1924, 2, 1)), "1923-06-01"),
+        # Starts after the metadata start, so the planned start wins.
+        (Timespan(date(1924, 2, 1), date(1924, 3, 1)), "1924-02-01"),
+        # Covers the whole metadata range, so the metadata start is kept.
+        (Timespan(date(1923, 6, 1), date(1925, 1, 1)), "1924-01-01"),
+    ],
+)
+def test_choose_date_narrows_metadata_start_using_incoming_span(incoming, expected):
+    chosen = importer._choose_date(
+        "1924-01-01",
+        incoming,
+        _METADATA_LIFESPAN,
+        person_name="Ada Subject",
+        kind="birth",
+    )
+
+    assert chosen == expected
+
+
+def test_choose_date_keeps_existing_date_that_is_not_metadata_start():
+    chosen = importer._choose_date(
+        "1924-06-01",
+        Timespan(date(1924, 5, 1), date(1924, 7, 1)),
+        _METADATA_LIFESPAN,
+        person_name="Ada Subject",
+        kind="birth",
+    )
+
+    assert chosen == "1924-06-01"
+
+
+def test_choose_date_rejects_incoming_span_that_misses_existing_date():
+    with pytest.raises(biography.PersonBiographyConflictError, match="birth date"):
+        importer._choose_date(
+            "1924-01-01",
+            Timespan(date(1930, 1, 1), date(1930, 12, 31)),
+            _METADATA_LIFESPAN,
+            person_name="Ada Subject",
+            kind="birth",
+        )

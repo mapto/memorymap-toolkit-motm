@@ -1,6 +1,8 @@
 """Tests for merging metadata and chronotopi names into the Personae taxonomy."""
 
 import json
+from collections.abc import MutableMapping
+from typing import cast
 
 import pytest
 from openpyxl import Workbook
@@ -279,6 +281,7 @@ def test_people_are_grouped_by_source_file_not_name_spelling(tmp_path):
         for sheet_name in sheet_names:
             canonical = aliases[person_taxonomy_key(sheet_name)]
             person_node = by_label[canonical]
+            assert person_node.parent_key is not None
             assert nodes_by_key[person_node.parent_key].label == expected_family, (
                 workbook_name,
                 sheet_name,
@@ -390,10 +393,12 @@ def test_loaded_person_synonyms_are_read_only(tmp_path):
     synonyms = load_person_taxonomy_synonyms(synonyms_path)
 
     assert synonyms.aliases[person_taxonomy_key("Josef Stern")] == "Stern, Josef"
+    mutable_aliases = cast(MutableMapping[str, str], synonyms.aliases)
+    mutable_metadata = cast(MutableMapping[str, str], synonyms.metadata_by_chronotopi)
     with pytest.raises(TypeError):
-        synonyms.aliases["new name"] = "New, Name"
+        mutable_aliases["new name"] = "New, Name"
     with pytest.raises(TypeError):
-        synonyms.metadata_by_chronotopi["chronotopi_new.xlsx"] = "metadati_new.xlsx"
+        mutable_metadata["chronotopi_new.xlsx"] = "metadati_new.xlsx"
 
 
 def test_canonical_person_name_returns_none_when_unmapped(tmp_path, monkeypatch):
