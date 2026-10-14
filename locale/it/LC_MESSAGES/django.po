@@ -166,6 +166,10 @@ msgstr "Linea del tempo"
 msgid "Quotes"
 msgstr "Citazioni"
 
+#: templates/mmt_motm/person_detail.html:188
+msgid "Quotes about this person"
+msgstr "Citazioni su questa persona"
+
 #: templates/mmt_map/base.html:157
 msgid "About"
 msgstr "Informazioni"
@@ -378,8 +382,20 @@ msgid "Person mentioned:"
 msgstr "Persona menzionata:"
 
 #: templates/mmt_motm/extraction_detail.html:30
-msgid "Classification:"
-msgstr "Classificazione:"
+msgid "Priority:"
+msgstr "Priorità:"
+
+#: mmt_motm/models.py
+msgid "High"
+msgstr "Alta"
+
+#: mmt_motm/models.py
+msgid "Medium"
+msgstr "Media"
+
+#: mmt_motm/models.py
+msgid "Low"
+msgstr "Bassa"
 
 #: templates/mmt_motm/extraction_detail.html:39
 msgid "Event:"

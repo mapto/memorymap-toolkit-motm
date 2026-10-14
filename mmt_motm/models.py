@@ -451,8 +451,19 @@ class Extraction(TranslatableModel):
     # zitat
     quote = models.TextField(blank=True)
 
-    # markierung
-    classification = models.CharField(max_length=100, blank=True)
+    # markierung - imported as a priority rank (1=gelb/high, 2=cyan/medium,
+    # 3=ohne/low); the color-to-priority mapping happens at import time.
+    PRIORITY_HIGH = 1
+    PRIORITY_MEDIUM = 2
+    PRIORITY_LOW = 3
+    PRIORITY_CHOICES = (
+        (PRIORITY_HIGH, _("High")),
+        (PRIORITY_MEDIUM, _("Medium")),
+        (PRIORITY_LOW, _("Low")),
+    )
+    priority = models.PositiveSmallIntegerField(
+        choices=PRIORITY_CHOICES, null=True, blank=True
+    )
 
     event = models.ForeignKey(
         "Event",

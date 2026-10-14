@@ -166,6 +166,10 @@ msgstr "Zeitleiste"
 msgid "Quotes"
 msgstr "Zitate"
 
+#: templates/mmt_motm/person_detail.html:188
+msgid "Quotes about this person"
+msgstr "Zitate über diese Person"
+
 #: templates/mmt_map/base.html:157
 msgid "About"
 msgstr "Über"
@@ -378,8 +382,20 @@ msgid "Person mentioned:"
 msgstr "Erwähnte Person:"
 
 #: templates/mmt_motm/extraction_detail.html:30
-msgid "Classification:"
-msgstr "Klassifizierung:"
+msgid "Priority:"
+msgstr "Priorität:"
+
+#: mmt_motm/models.py
+msgid "High"
+msgstr "Hoch"
+
+#: mmt_motm/models.py
+msgid "Medium"
+msgstr "Mittel"
+
+#: mmt_motm/models.py
+msgid "Low"
+msgstr "Niedrig"
 
 #: templates/mmt_motm/extraction_detail.html:39
 msgid "Event:"

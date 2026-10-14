@@ -56,9 +56,14 @@ class LifeJourneyHeatmapView(ListView):
         stage_labels = {k: v["label"] for k, v in Event.LIFECYCLE_CONFIG.items()}
         stage_colors = {k: v["color"] for k, v in Event.LIFECYCLE_CONFIG.items()}
 
-        interviews = Interview.objects.filter(
-            interviewee__isnull=False
-        ).select_related("interviewee").order_by("archive_id")
+        interviewee_ids = (
+            Interview.objects.filter(interviewee__isnull=False)
+            .values_list("interviewee_id", flat=True)
+            .distinct()
+        )
+        people = Person.objects.filter(pk__in=interviewee_ids).order_by(
+            "family_name", "given_name", "pk"
+        )
 
         # Count events per (person_id, lifecycle) via the Event.persons M2M
         event_qs = Event.objects.values_list("persons__id", "lifecycle")
@@ -71,20 +76,17 @@ class LifeJourneyHeatmapView(ListView):
 
         max_count = max(person_counts.values()) if person_counts else 1
 
-        # Build grid: one row per interview, using interviewee's event counts
+        # Build grid: one row per interviewee, using their event counts
         grid = []
-        for interview in interviews:
-            pid = interview.interviewee_id
+        for person in people:
             cells = []
             row_total = 0
             for stage in stages:
-                count = person_counts.get((pid, stage), 0)
+                count = person_counts.get((person.id, stage), 0)
                 cells.append(count)
                 row_total += count
             if row_total > 0:
-                grid.append({"interview": interview, "cells": cells, "total": row_total})
-
-        grid.sort(key=lambda row: row["total"], reverse=True)
+                grid.append({"person": person, "cells": cells, "total": row_total})
 
         context["stages"] = stages
         context["stage_labels"] = stage_labels

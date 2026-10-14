@@ -157,7 +157,7 @@ class EventAdmin(TranslatableAdmin):
 
 @admin.register(Extraction)
 class ExtractionAdmin(TranslatableAdmin):
-    list_display = ("identifier", "people_mentioned", "classification", "interview", "language")
+    list_display = ("identifier", "people_mentioned", "priority", "interview", "language")
     search_fields = ("identifier", "quote", "translations__notes")
     ordering = ("identifier",)
 

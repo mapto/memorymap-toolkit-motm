@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.http import HttpResponsePermanentRedirect
 from django.urls import reverse
 from django.views.generic import DetailView, ListView
@@ -56,9 +56,26 @@ class PersonDetailView(DetailView):
         person = self.object
         context["interviews_as_interviewer"] = person.interviews_conducted.all()
         context["interviews_as_interviewee"] = person.interviews_received.all()
-        context["random_quotes"] = (
-            person.relates_to_person.exclude(quote="").order_by("?")[:3]
+
+        # Prefer quotes the person gave as an interviewee (highest priority
+        # first, i.e. gelb=1 before cyan=2 before ohne=3). Only fall back to
+        # quotes that merely mention the person when they authored none.
+        priority_order = F("priority").asc(nulls_last=True)
+        authored_quotes = list(
+            Extraction.objects.filter(interview__interviewee=person)
+            .exclude(quote="")
+            .order_by(priority_order, "pk")[:3]
         )
+        if authored_quotes:
+            context["quotes"] = authored_quotes
+            context["quotes_are_authored"] = True
+        else:
+            context["quotes"] = list(
+                person.relates_to_person.exclude(quote="")
+                .order_by(priority_order, "pk")[:3]
+            )
+            context["quotes_are_authored"] = False
+
         context["concepts"] = Concept.objects.filter(
             relates_to_concept__people_mentioned=person
         ).annotate(

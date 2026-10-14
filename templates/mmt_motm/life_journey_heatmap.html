@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <h1>{% trans "Life Journey" %} × {% trans "Sources" %}</h1>
+    <h1>{% trans "Life Journey" %} × {% trans "People" %}</h1>
     <div class="table-responsive">
     <table class="table table-bordered table-sm text-center" id="heatmap-table">
         <thead>
             <tr>
-                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">{% trans "Source" %}</th>
+                <th class="text-left" style="position:sticky;left:0;background:#fff;z-index:2;min-width:200px;">{% trans "Person" %}</th>
                 {% for h in stage_headers %}
                 <th style="white-space:nowrap;">
                     <span style="color:{{ h.color }}">
@@ -22,7 +22,7 @@
             {% for row in grid %}
             <tr>
                 <td class="text-left font-weight-bold" style="position:sticky;left:0;background:#fff;z-index:1;">
-                    <a href="{% url 'interview_detail' row.interview.pk %}">{{ row.interview.archive_id }}</a>
+                    <a href="{% url 'person_detail' row.person.pk %}">{{ row.person }}</a>
                 </td>
                 {% for count in row.cells %}
                 <td class="heatmap-cell" data-count="{{ count }}" data-col="{{ forloop.counter0 }}">

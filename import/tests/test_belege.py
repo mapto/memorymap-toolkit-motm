@@ -102,7 +102,7 @@ def test_import_belege_builds_interview_and_extraction_payloads(tmp_path, api_st
                 "00:12",
                 "Topic A, Topic B",
                 "A sufficiently long quote for testing language handling.",
-                "highlight",
+                "gelb",
                 "event-1",
                 "certain",
                 "A note",
@@ -126,14 +126,102 @@ def test_import_belege_builds_interview_and_extraction_payloads(tmp_path, api_st
             "identifier": "bel_001",
             "timecode": "00:12",
             "quote": "A sufficiently long quote for testing language handling.",
-            "classification": "highlight",
             "event_confidence": "certain",
             "notes": "A note",
+            "priority": 1,
             "people_mentioned": 11,
             "interview": 21,
             "concepts": ["concept:Topic A", "concept:Topic B"],
         }
     ]
+
+
+def test_resolve_people_mentioned_falls_back_to_interviewee_for_self_label():
+    row = {"interview_id": "I-001", "quelle": None}
+    person_map = {"P-MENTIONED": 11}
+    interviewee_map = {"I-001": 99}
+
+    assert (
+        belege.resolve_people_mentioned(
+            row, "I-001_self", person_map, interviewee_map
+        )
+        == 99
+    )
+    assert (
+        belege.resolve_people_mentioned(
+            row, "I-001_mother", person_map, interviewee_map
+        )
+        is None
+    )
+    assert (
+        belege.resolve_people_mentioned(
+            row, "P-MENTIONED", person_map, interviewee_map
+        )
+        == 11
+    )
+
+
+def test_import_belege_resolves_self_role_label_to_interviewee(tmp_path, monkeypatch):
+    workbook_path = tmp_path / "belege_test.xlsx"
+    write_workbook(
+        workbook_path,
+        [
+            [
+                "bel_001",
+                "source",
+                "I-001",
+                "01.01.2000",
+                "P-SPEAKER",
+                "I-001_self",
+                "00:12",
+                None,
+                "A quote spoken by the interviewee about themselves.",
+                "highlight",
+            ]
+        ],
+    )
+    calls = {"upserts": [], "interview_upserts": []}
+
+    def fake_api_get(endpoint, params=None):
+        if endpoint == "persons":
+            return [{"identifier": "P-SPEAKER", "id": 12}]
+        if endpoint == "interviews":
+            return [{"archive_id": "I-001", "id": 21, "interviewee": 12}]
+        return []
+
+    def fake_bulk_upsert(endpoint, items):
+        calls["upserts"].append((endpoint, items))
+        return {
+            "created_items": [{"id": 1000, **items[0]}],
+            "updated_items": [],
+            "errors": [],
+        }
+
+    monkeypatch.setattr(belege, "api_get", fake_api_get)
+    monkeypatch.setattr(
+        belege,
+        "upsert_interviews",
+        lambda items: (
+            {},
+            calls["interview_upserts"].append(("interviews", items)) or [],
+        ),
+    )
+    monkeypatch.setattr(belege, "api_bulk_upsert", fake_bulk_upsert)
+    monkeypatch.setattr(belege, "get_or_create_concept", lambda label: None)
+    monkeypatch.setattr(belege, "detect_language", lambda text: [])
+    monkeypatch.setattr(belege, "tqdm", lambda rows, **kwargs: rows)
+
+    assert belege.import_belege(workbook_path) == [1000]
+    assert calls["upserts"][0][1][0]["people_mentioned"] == 12
+
+
+def test_resolve_priority_maps_classification_colors_case_insensitively():
+    assert belege.resolve_priority("gelb") == 1
+    assert belege.resolve_priority("Cyan") == 2
+    assert belege.resolve_priority(" ohne ") == 3
+    assert belege.resolve_priority("unknown") is None
+    assert belege.resolve_priority(None) is None
+
 
 
 def test_import_belege_creates_and_links_interview_from_quelle(tmp_path, monkeypatch):

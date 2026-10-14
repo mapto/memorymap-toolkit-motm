@@ -46,7 +46,9 @@ class SourceCategoryHeatmapView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        interviews = Interview.objects.order_by("archive_id")
+        interviews = Interview.objects.select_related("interviewee").order_by(
+            "interviewee__family_name", "interviewee__given_name", "archive_id"
+        )
 
         # Build root-id lookup: concept_id → root concept id
         all_concepts = Concept.objects.values("id", "parent_id")

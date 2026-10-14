@@ -8,6 +8,17 @@ also name speakers, mentioned persons, and topics, which are resolved to
 database IDs. Interviews and Extractions are matched by archive ID and
 identifier, so rerunning an import updates existing records.
 
+A row's ``mentioned_persons`` cell usually names a Person by its
+``identifier``, but some sheets instead use a per-interview role label such as
+``IS_E_00002_self``. The ``_self`` label is resolved to the row's own
+Interview's interviewee; other role labels (mother, father, ...) have no
+Person record to link to and are left unresolved.
+
+The ``markierung`` (classification) cell names a highlight color, which is
+converted to an editorial priority rank at import time rather than stored as
+text: gelb=1 (high), cyan=2 (medium), ohne=3 (low). See
+``CLASSIFICATION_PRIORITY``/``resolve_priority``.
+
 ``import_belege`` is the entry point. ``belege.ipynb`` calls it for each
 ``belege_*.xlsx`` file under ``data/nuove schede``, and ``import.sh`` runs that
 notebook.
@@ -23,6 +34,7 @@ Usage::
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from fast_langdetect import detect as detect_language
@@ -39,6 +51,34 @@ from api_client import (
     upsert_interviews,
 )
 from utils import clean_str, is_empty
+
+# Some belege sheets name mentioned persons with a per-interview role label
+# (e.g. "IS_E_00002_self", "IS_E_00002_mother") instead of a Person.identifier.
+# Only the "_self" role unambiguously maps to a known Person: the interview's
+# own interviewee. Other roles (mother, father, ...) have no Person record to
+# link to and are left unresolved.
+SELF_MENTION_RE = re.compile(r"_self\s*$", re.IGNORECASE)
+
+# The ``markierung`` cell marks a quote's highlight color, which is imported
+# as an editorial priority rank instead of the raw color name: gelb (yellow
+# highlight) is most important, cyan is secondary, ohne (no highlight) is
+# least important. A value outside this map (including blank) has no priority.
+CLASSIFICATION_PRIORITY = {
+    "gelb": 1,
+    "cyan": 2,
+    "ohne": 3,
+}
+
+
+def resolve_priority(raw_classification) -> int | None:
+    """Map a sheet's raw ``markierung`` value to its editorial priority rank.
+
+    Comparison is case-insensitive and ignores surrounding whitespace. Values
+    outside ``CLASSIFICATION_PRIORITY`` (including blank cells) resolve to
+    ``None``, so the Extraction keeps no priority rather than an invented one.
+    """
+    classification = clean_str(raw_classification).lower()
+    return CLASSIFICATION_PRIORITY.get(classification)
 
 
 def read_belege_rows(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[dict]:
@@ -112,6 +152,21 @@ def load_interview_map() -> dict[str, int]:
     }
 
 
+def load_interview_interviewee_map() -> dict[str, int]:
+    """Map normalized archive IDs to their Interview's interviewee Person ID.
+
+    Makes one paginated ``interviews`` request and skips Interviews without an
+    ``archive_id`` or ``interviewee``. Used to resolve ``mentioned_persons``
+    tokens written as a role label (``<archive_id>_self``) rather than a
+    Person identifier.
+    """
+    return {
+        normalize_interview_id(interview["archive_id"]): interview["interviewee"]
+        for interview in api_get("interviews")
+        if interview.get("archive_id") and interview.get("interviewee")
+    }
+
+
 def archive_id_for_row(row: dict) -> str | None:
     """Resolve a row's explicit archive ID or derive it from ``quelle``.
 
@@ -162,17 +217,50 @@ def detect_quote_language(quote: str) -> str | None:
     return None
 
 
-def build_extraction_payload(row: dict, person_map: dict[str, int]) -> dict | None:
+def resolve_people_mentioned(
+    row: dict,
+    mentioned: str,
+    person_map: dict[str, int],
+    interviewee_map: dict[str, int],
+) -> int | None:
+    """Resolve the ``mentioned_persons`` cell to a single Person ID.
+
+    Takes the first identifier in the comma- or newline-separated cell, because
+    the model field holds a single person. When that first token is a known
+    Person identifier, it wins, matching older sheets that name people
+    directly. Otherwise, if any token in the cell is a per-interview "self"
+    role label (``<archive_id>_self``), it resolves to the row's own
+    Interview's interviewee via ``interviewee_map``. Other role labels
+    (mother, father, ...) have no Person record and are dropped.
+    """
+    tokens = [token.strip() for token in mentioned.replace("\n", ",").split(",") if token.strip()]
+    if not tokens:
+        return None
+    person_id = person_map.get(tokens[0])
+    if person_id:
+        return person_id
+    if any(SELF_MENTION_RE.search(token) for token in tokens):
+        archive_id = archive_id_for_row(row)
+        if archive_id:
+            return interviewee_map.get(normalize_interview_id(archive_id))
+    return None
+
+
+def build_extraction_payload(
+    row: dict,
+    person_map: dict[str, int],
+    interviewee_map: dict[str, int] | None = None,
+) -> dict | None:
     """Build one Extraction payload, excluding its Interview foreign key.
 
     Returns ``None`` when the row has no ``identifier`` (the ``beleg_id`` cell).
     ``language`` is added only when ``detect_quote_language`` finds one.
-    ``people_mentioned`` takes the first identifier in the comma- or
-    newline-separated ``mentioned_persons`` cell, because the model field holds a
-    single person. Other names and unknown identifiers are dropped. Each
-    comma-separated topic goes through ``get_or_create_concept``, which makes API
-    calls, and topics that resolve to no ID are omitted. The Interview foreign
-    key is added later by ``attach_interview_ids``.
+    ``people_mentioned`` is resolved by ``resolve_people_mentioned``.
+    ``priority`` is resolved by ``resolve_priority`` from the raw
+    ``classification`` cell and omitted when it doesn't map to a known rank.
+    Each comma-separated topic goes through ``get_or_create_concept``, which
+    makes API calls, and topics that resolve to no ID are omitted. The
+    Interview foreign key is added later by ``attach_interview_ids``.
     """
     identifier = clean_str(row["identifier"])
     if not identifier:
@@ -182,18 +270,21 @@ def build_extraction_payload(row: dict, person_map: dict[str, int]) -> dict | No
         "identifier": identifier,
         "timecode": clean_str(row["timecode"]),
         "quote": clean_str(row["quote"]),
-        "classification": clean_str(row["classification"]),
         "event_confidence": clean_str(row["event_confidence"]),
         "notes": clean_str(row["notes"]),
     }
+    priority = resolve_priority(row["classification"])
+    if priority:
+        payload["priority"] = priority
     language = detect_quote_language(payload["quote"])
     if language:
         payload["language"] = language
 
     mentioned = clean_str(row["mentioned_persons"])
     if mentioned:
-        first_identifier = mentioned.replace("\n", ",").split(",")[0].strip()
-        person_id = person_map.get(first_identifier)
+        person_id = resolve_people_mentioned(
+            row, mentioned, person_map, interviewee_map or {}
+        )
         if person_id:
             payload["people_mentioned"] = person_id
 
@@ -209,7 +300,9 @@ def build_extraction_payload(row: dict, person_map: dict[str, int]) -> dict | No
 
 
 def prepare_belege_payloads(
-    rows: list[dict], person_map: dict[str, int]
+    rows: list[dict],
+    person_map: dict[str, int],
+    interviewee_map: dict[str, int] | None = None,
 ) -> tuple[list[dict], list[tuple[str | None, dict]]]:
     """Prepare Interview payloads and citation payloads separately.
 
@@ -229,7 +322,7 @@ def prepare_belege_payloads(
         interview_payload = build_row_interview_payload(row, person_map)
         if interview_payload:
             interview_payloads.append(interview_payload)
-        extraction_payload = build_extraction_payload(row, person_map)
+        extraction_payload = build_extraction_payload(row, person_map, interviewee_map)
         if extraction_payload:
             extraction_payloads.append((archive_id_for_row(row), extraction_payload))
     return interview_payloads, extraction_payloads
@@ -303,12 +396,12 @@ def bulk_upsert_extractions(payloads: list[dict]) -> tuple[list[int], list[str]]
 def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int]:
     """Import Belege rows and link each citation to its Interview source.
 
-    The steps run in order: read the rows, load the Person and Interview maps
-    with two list requests, prepare the payloads (which resolves topics to concept
-    IDs), upsert the Interviews, link each citation, and upsert the citations in
-    batches. Interviews go first because each Extraction stores its Interview's
-    database ID. Rerunning the importer therefore also repairs existing citations
-    whose ``interview_id`` was empty.
+    The steps run in order: read the rows, load the Person, Interview, and
+    interviewee maps with three list requests, prepare the payloads (which
+    resolves topics to concept IDs), upsert the Interviews, link each citation,
+    and upsert the citations in batches. Interviews go first because each
+    Extraction stores its Interview's database ID. Rerunning the importer
+    therefore also repairs existing citations whose ``interview_id`` was empty.
 
     Errors from the bulk writes are collected and printed as a summary rather than
     raised. A missing file raises ``FileNotFoundError``, a missing sheet raises
@@ -319,7 +412,10 @@ def import_belege(xlsx_path: str | Path, sheet_name: str = "Belege") -> list[int
     rows = read_belege_rows(xlsx_path, sheet_name)
     person_map = load_person_map()
     interview_map = load_interview_map()
-    interview_payloads, prepared_payloads = prepare_belege_payloads(rows, person_map)
+    interviewee_map = load_interview_interviewee_map()
+    interview_payloads, prepared_payloads = prepare_belege_payloads(
+        rows, person_map, interviewee_map
+    )
 
     created_interviews, errors = upsert_interviews(interview_payloads)
     interview_map.update(created_interviews)

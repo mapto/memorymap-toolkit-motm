@@ -26,8 +26,8 @@
     </p>
     {% endif %}
 
-    {% if extraction.classification %}
-    <p><strong>{% trans "Classification:" %}</strong> {{ extraction.classification }}</p>
+    {% if extraction.priority %}
+    <p><strong>{% trans "Priority:" %}</strong> {{ extraction.get_priority_display }}</p>
     {% endif %}
 
     {% if extraction.quote %}

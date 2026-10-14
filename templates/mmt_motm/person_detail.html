@@ -182,9 +182,12 @@
     </ul>
     {% endif %}
 
-    {% if random_quotes %}
-    <h3>{% trans "Quotes" %} <small><a href="{% url 'extraction_list' %}?q={{ person.given_name|urlencode }}+{{ person.family_name|urlencode }}">{% trans "See all" %}</a></small></h3>
-        {% for extraction in random_quotes %}
+    {% if quotes %}
+    <h3>
+        {% if quotes_are_authored %}{% trans "Quotes" %}{% else %}{% trans "Quotes about this person" %}{% endif %}
+        <small><a href="{% url 'extraction_list' %}?q={{ person.given_name|urlencode }}+{{ person.family_name|urlencode }}">{% trans "See all" %}</a></small>
+    </h3>
+        {% for extraction in quotes %}
         <div class="mb-2">
           <blockquote class="list-unstyled">
             <em>&ldquo;{{ extraction.quote }}&rdquo;</em>
