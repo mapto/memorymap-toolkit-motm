@@ -1,11 +1,14 @@
 """Tests for location coordinate resolution and workbook backfilling."""
 
+import time
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 import pytest
+import requests
 
 import locations
+from locations import db, entities, geo
 
 
 HEADERS = [
@@ -23,7 +26,7 @@ HEADERS = [
 
 def test_prepare_location_metadata_uses_custom_normalizer(monkeypatch):
     monkeypatch.setattr(
-        locations,
+        entities,
         "resolve_location_coordinates",
         lambda entry: (50.0, 8.0),
     )
@@ -149,7 +152,7 @@ def test_load_locations_prefers_table_coordinates(tmp_path, monkeypatch):
     )
     locations._locations_db.clear()
     monkeypatch.setattr(
-        locations,
+        db,
         "resolve_location_coordinates",
         lambda url: (_ for _ in ()).throw(AssertionError("fallback should not run")),
     )
@@ -310,7 +313,7 @@ def test_cached_coordinates_skip_external_lookup_and_send_numeric_geonames_id(
     }
     posts = []
     monkeypatch.setattr(
-        locations,
+        entities,
         "resolve_location_coordinates",
         lambda entry: (_ for _ in ()).throw(AssertionError("lookup should not run")),
     )
@@ -353,12 +356,12 @@ def test_geonames_coordinates_fall_back_to_public_page(monkeypatch):
     def fake_get(url, **kwargs):
         calls.append(url)
         if "api.geonames.org" in url:
-            return Response(error=locations.requests.RequestException("unauthorized"))
+            return Response(error=requests.RequestException("unauthorized"))
         return Response(
             text='{"@type":"GeoCoordinates","latitude":52.52437,"longitude":13.41053}'
         )
 
-    monkeypatch.setattr(locations.requests, "get", fake_get)
+    monkeypatch.setattr(requests, "get", fake_get)
 
     assert locations.extract_geonames_coordinates(
         "https://www.geonames.org/2950159/berlin.html"
@@ -376,9 +379,9 @@ def test_query_geocoder_parses_whereami_coordinate_response(monkeypatch):
         def raise_for_status(self):
             return None
 
-    monkeypatch.setattr(locations.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
     monkeypatch.setattr(
-        locations.requests,
+        requests,
         "get",
         lambda url, **kwargs: Response(),
     )
@@ -409,9 +412,9 @@ def test_load_locations_falls_back_to_geonames_and_persists(tmp_path, monkeypatc
         calls.append("geonames")
         return {"lat": 50.59, "long": 8.67}
 
-    monkeypatch.setattr(locations, "extract_geonames_coordinates", geonames)
+    monkeypatch.setattr(geo, "extract_geonames_coordinates", geonames)
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_wikidata_coordinates",
         lambda url: (_ for _ in ()).throw(AssertionError("Wikidata should not run")),
     )
@@ -446,12 +449,12 @@ def test_load_locations_falls_back_to_wikidata_when_geonames_fails(
     calls = []
 
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_geonames_coordinates",
         lambda url: calls.append("geonames") or None,
     )
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_wikidata_coordinates",
         lambda url: calls.append("wikidata") or {"lat": 32.45, "long": 35.51},
     )
@@ -466,17 +469,17 @@ def test_load_locations_falls_back_to_wikidata_when_geonames_fails(
 
 def test_resolve_location_uses_name_geocoder_without_source_ids(monkeypatch):
     monkeypatch.setattr(
-        locations,
+        geo,
         "query_geocoder",
         lambda name: {"lat": 50.59, "long": 8.67},
     )
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_geonames_coordinates",
         lambda url: (_ for _ in ()).throw(AssertionError("no source ID fallback")),
     )
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_wikidata_coordinates",
         lambda url: (_ for _ in ()).throw(AssertionError("no source ID fallback")),
     )
@@ -488,10 +491,10 @@ def test_resolve_location_uses_name_geocoder_without_source_ids(monkeypatch):
 
 def test_resolve_location_does_not_name_geocode_when_source_id_exists(monkeypatch):
     called = []
-    monkeypatch.setattr(locations, "extract_geonames_coordinates", lambda url: None)
-    monkeypatch.setattr(locations, "extract_wikidata_coordinates", lambda url: None)
+    monkeypatch.setattr(geo, "extract_geonames_coordinates", lambda url: None)
+    monkeypatch.setattr(geo, "extract_wikidata_coordinates", lambda url: None)
     monkeypatch.setattr(
-        locations,
+        geo,
         "query_geocoder",
         lambda name: called.append(name) or {"lat": 50.59, "long": 8.67},
     )
@@ -506,7 +509,7 @@ def test_resolve_location_does_not_name_geocode_when_source_id_exists(monkeypatc
 
 
 def test_resolve_location_logs_failed_name_geocoder(monkeypatch, caplog):
-    monkeypatch.setattr(locations, "query_geocoder", lambda name: None)
+    monkeypatch.setattr(geo, "query_geocoder", lambda name: None)
 
     with caplog.at_level("WARNING", logger="locations"):
         assert locations.resolve_location_coordinates({"name": "Unknown place"}) is None
@@ -520,11 +523,11 @@ def test_coordinate_lookup_logs_failure_and_continues_to_next_source(
     monkeypatch, caplog
 ):
     def failed_geonames(url):
-        raise locations.requests.RequestException("GeoNames unavailable")
+        raise requests.RequestException("GeoNames unavailable")
 
-    monkeypatch.setattr(locations, "extract_geonames_coordinates", failed_geonames)
+    monkeypatch.setattr(geo, "extract_geonames_coordinates", failed_geonames)
     monkeypatch.setattr(
-        locations,
+        geo,
         "extract_wikidata_coordinates",
         lambda url: {"lat": 32.45, "long": 35.51},
     )
@@ -547,7 +550,7 @@ def test_location_api_failure_is_logged_and_returns_none(monkeypatch, caplog):
     monkeypatch.setattr(
         "api_client.api_get",
         lambda endpoint, params=None: (_ for _ in ()).throw(
-            locations.requests.RequestException("API unavailable")
+            requests.RequestException("API unavailable")
         ),
     )
 
@@ -739,7 +742,7 @@ def test_seed_location_entities_reuses_workbook_rows_and_resolves_concepts(monke
     )
     monkeypatch.setattr("api_client.api_patch", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        locations,
+        entities,
         "get_or_create_location",
         lambda name, **kwargs: calls.append((name, kwargs)) or len(calls),
     )

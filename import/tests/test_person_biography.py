@@ -8,6 +8,7 @@ import pytest
 from openpyxl import Workbook
 
 import person_biography as biography
+from person_biography import importer, validate
 from timespan import Timespan, parse_timespan
 
 
@@ -279,24 +280,24 @@ def test_api_import_sets_lifespan_and_birth_and_death_places(monkeypatch):
         )
     }
     patches = []
-    monkeypatch.setattr(biography, "get_person_id", lambda *_: 7)
+    monkeypatch.setattr(importer, "get_person_id", lambda *_: 7)
     monkeypatch.setattr(
-        biography,
+        importer,
         "api_get",
         lambda endpoint: {"id": 7, "lifespan": None} if endpoint == "persons/7" else {},
     )
     monkeypatch.setattr(
-        biography,
+        importer,
         "get_or_create_timespan",
         lambda start, end: ("timespan", start, end),
     )
     monkeypatch.setattr(
-        biography,
+        importer,
         "get_or_create_location",
         lambda place, **kwargs: f"location:{place}",
     )
     monkeypatch.setattr(
-        biography,
+        importer,
         "api_patch",
         lambda endpoint, obj_id, payload: patches.append((endpoint, obj_id, payload)),
     )
@@ -326,7 +327,7 @@ def test_existing_person_conflict_is_rejected_before_patch(monkeypatch):
         )
     }
     monkeypatch.setattr(
-        biography,
+        validate,
         "api_get",
         lambda endpoint: (
             [{"id": 7, "given_name": "Ada", "family_name": "Subject", "lifespan": 3}]
@@ -337,7 +338,7 @@ def test_existing_person_conflict_is_rejected_before_patch(monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        biography,
+        importer,
         "api_patch",
         lambda *args: pytest.fail("preflight must not write"),
     )

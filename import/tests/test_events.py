@@ -15,7 +15,7 @@ import pytest
 import events
 
 DATA_FILE = (
-    Path(__file__).parent.parent
+    Path(__file__).parents[2]
     / "data"
     / "nuove schede"
     / "chronotopoi_josef_stern_familie_v4a.xlsx"

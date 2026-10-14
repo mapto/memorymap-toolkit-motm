@@ -7,7 +7,11 @@ from openpyxl import Workbook
 
 import api_client
 import metadati
+import metadati.interviews
+import metadati.people
+import metadati.relationships
 import person_taxonomy
+import person_taxonomy.synonyms
 
 
 def test_clean_value_returns_none_for_empty_values():
@@ -112,7 +116,7 @@ def test_read_person_record_skips_empty_family_rows(tmp_path):
 def test_create_interview_uses_shared_normalized_upsert(monkeypatch):
     calls = []
     monkeypatch.setattr(
-        metadati,
+        metadati.interviews,
         "get_or_create_person",
         lambda data: 8,
     )
@@ -121,8 +125,8 @@ def test_create_interview_uses_shared_normalized_upsert(monkeypatch):
         calls.extend(payloads)
         return {"IS_E_00170": 17}, []
 
-    monkeypatch.setattr(metadati, "upsert_interviews", fake_upsert)
-    monkeypatch.setattr(metadati, "get_or_create_url", lambda value: 31)
+    monkeypatch.setattr(metadati.interviews, "upsert_interviews", fake_upsert)
+    monkeypatch.setattr(metadati.interviews, "get_or_create_url", lambda value: 31)
 
     interview_id = metadati.create_interview(
         7,
@@ -235,7 +239,7 @@ def test_read_person_record_extracts_person_metadata(tmp_path):
 
 def test_create_interview_skips_missing_archive_id(monkeypatch):
     monkeypatch.setattr(
-        metadati,
+        metadati.interviews,
         "upsert_interviews",
         lambda payloads: pytest.fail("should not upsert without archive ID"),
     )
@@ -247,8 +251,8 @@ def test_maybe_update_lifespan_keeps_existing_date_confirmed_by_partial_metadata
     monkeypatch,
 ):
     responses = {
-        f"{metadati.BASE_URL}/persons/7/": {"lifespan": 9},
-        f"{metadati.BASE_URL}/timespans/9/": {
+        f"{api_client.BASE_URL}/persons/7/": {"lifespan": 9},
+        f"{api_client.BASE_URL}/timespans/9/": {
             "start": "1924-10-30",
             "end": None,
         },
@@ -262,12 +266,12 @@ def test_maybe_update_lifespan_keeps_existing_date_confirmed_by_partial_metadata
             return self.payload
 
     monkeypatch.setattr(
-        metadati.SESSION,
+        api_client.SESSION,
         "get",
         lambda url: Response(responses[url]),
     )
     monkeypatch.setattr(
-        metadati.SESSION,
+        api_client.SESSION,
         "patch",
         lambda *args, **kwargs: pytest.fail("a compatible date should not be patched"),
     )
@@ -283,8 +287,8 @@ def test_maybe_update_lifespan_keeps_existing_date_confirmed_by_partial_metadata
 
 def test_maybe_update_lifespan_rejects_a_conflicting_existing_date(monkeypatch):
     responses = {
-        f"{metadati.BASE_URL}/persons/7/": {"lifespan": 9},
-        f"{metadati.BASE_URL}/timespans/9/": {
+        f"{api_client.BASE_URL}/persons/7/": {"lifespan": 9},
+        f"{api_client.BASE_URL}/timespans/9/": {
             "start": "1923-01-01",
             "end": None,
         },
@@ -298,7 +302,7 @@ def test_maybe_update_lifespan_rejects_a_conflicting_existing_date(monkeypatch):
             return self.payload
 
     monkeypatch.setattr(
-        metadati.SESSION,
+        api_client.SESSION,
         "get",
         lambda url: Response(responses[url]),
     )
@@ -334,13 +338,15 @@ def test_get_or_create_person_uses_reviewed_alias_resolution_with_identifier(
 
     monkeypatch.setattr(api_client, "get_person_id", fake_get_person_id)
     monkeypatch.setattr(
-        metadati,
+        metadati.people,
         "api_get",
         lambda endpoint, params=None: existing if endpoint == "persons/20" else [],
     )
-    monkeypatch.setattr(metadati, "api_patch", lambda *args: patches.append(args))
     monkeypatch.setattr(
-        metadati,
+        metadati.people, "api_patch", lambda *args: patches.append(args)
+    )
+    monkeypatch.setattr(
+        metadati.people,
         "_maybe_update_lifespan",
         lambda person_id, data: None,
     )
@@ -390,7 +396,9 @@ def test_create_relationship_links_unnamed_relative_and_merges_placeholder(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr(person_taxonomy, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path)
+    monkeypatch.setattr(
+        person_taxonomy.synonyms, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path
+    )
     persons = {
         14: {"id": 14, "identifier": None, "given_name": "?", "family_name": "?"},
         30: {
@@ -432,12 +440,16 @@ def test_create_relationship_links_unnamed_relative_and_merges_placeholder(
         calls.append(("person", data["given_name"], data["family_name"]))
         return 49
 
-    monkeypatch.setattr(metadati, "_relationship_cache", {})
-    monkeypatch.setattr(metadati, "get_or_create_person", fake_get_or_create_person)
-    monkeypatch.setattr(metadati, "get_or_create_relationship_type", lambda label: 7)
-    monkeypatch.setattr(metadati, "api_get", fake_get)
-    monkeypatch.setattr(metadati, "api_patch", fake_patch)
-    monkeypatch.setattr(metadati, "api_post", fake_post)
+    monkeypatch.setattr(metadati.relationships, "_relationship_cache", {})
+    monkeypatch.setattr(
+        metadati.relationships, "get_or_create_person", fake_get_or_create_person
+    )
+    monkeypatch.setattr(
+        metadati.relationships, "get_or_create_relationship_type", lambda label: 7
+    )
+    monkeypatch.setattr(metadati.relationships, "api_get", fake_get)
+    monkeypatch.setattr(metadati.relationships, "api_patch", fake_patch)
+    monkeypatch.setattr(metadati.relationships, "api_post", fake_post)
 
     relationship_id = metadati.create_relationship(
         5,
@@ -475,11 +487,17 @@ def test_create_relationship_keeps_unlinked_placeholder_unmerged(monkeypatch):
         calls.append(("post", endpoint, payload))
         return {"id": 21}
 
-    monkeypatch.setattr(metadati, "_relationship_cache", {})
-    monkeypatch.setattr(metadati, "get_or_create_person", fake_get_or_create_person)
-    monkeypatch.setattr(metadati, "get_or_create_relationship_type", lambda label: 7)
-    monkeypatch.setattr(metadati, "api_get", lambda endpoint, params=None: [])
-    monkeypatch.setattr(metadati, "api_post", fake_post)
+    monkeypatch.setattr(metadati.relationships, "_relationship_cache", {})
+    monkeypatch.setattr(
+        metadati.relationships, "get_or_create_person", fake_get_or_create_person
+    )
+    monkeypatch.setattr(
+        metadati.relationships, "get_or_create_relationship_type", lambda label: 7
+    )
+    monkeypatch.setattr(
+        metadati.relationships, "api_get", lambda endpoint, params=None: []
+    )
+    monkeypatch.setattr(metadati.relationships, "api_post", fake_post)
 
     relationship_id = metadati.create_relationship(
         5,

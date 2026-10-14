@@ -1,4 +1,4 @@
-"""Unit tests for taxonomy.py using MAXQDA_Code_System.mmd."""
+"""Unit tests for the taxonomy package using MAXQDA_Code_System.mmd."""
 
 import pytest
 from pathlib import Path
@@ -10,7 +10,7 @@ from timespan import Timespan
 @pytest.fixture
 def maxqda_taxonomy():
     """Load taxonomy from MAXQDA Code System."""
-    path = Path(__file__).parent.parent / "data" / "maxqda" / "MAXQDA_Code_System.mmd"
+    path = Path(__file__).parents[2] / "data" / "maxqda" / "MAXQDA_Code_System.mmd"
     return load_taxonomy(path)
 
 

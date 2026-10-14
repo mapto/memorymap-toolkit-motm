@@ -9,7 +9,7 @@ from api_client import normalize_interview_date
 import belege
 
 
-DATA_DIR = Path(__file__).parent.parent / "data" / "nuove schede"
+DATA_DIR = Path(__file__).parents[2] / "data" / "nuove schede"
 CURRENT_WORKBOOKS = tuple(
     path
     for path in sorted(DATA_DIR.glob("belege_*.xlsx"))

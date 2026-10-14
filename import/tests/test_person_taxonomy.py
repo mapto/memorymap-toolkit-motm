@@ -6,6 +6,7 @@ import pytest
 from openpyxl import Workbook
 
 import person_taxonomy
+import person_taxonomy.synonyms
 from person_taxonomy import (
     PersonName,
     PersonTaxonomyError,
@@ -345,7 +346,9 @@ def test_metadata_relative_links_are_scoped_to_their_workbook(tmp_path, monkeypa
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr(person_taxonomy, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path)
+    monkeypatch.setattr(
+        person_taxonomy.synonyms, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path
+    )
     relation = "Tante 1 (Schwester der Mutter)"
 
     assert metadata_relative_name(tmp_path / "metadati_brodsky.xlsx", relation) == (
@@ -398,7 +401,9 @@ def test_canonical_person_name_returns_none_when_unmapped(tmp_path, monkeypatch)
     synonyms_path.write_text(
         json.dumps({"aliases": {"Josef Stern": "Stern, Josef"}}), encoding="utf-8"
     )
-    monkeypatch.setattr(person_taxonomy, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path)
+    monkeypatch.setattr(
+        person_taxonomy.synonyms, "PERSON_TAXONOMY_SYNONYMS_PATH", synonyms_path
+    )
 
     assert canonical_person_name("Josef", "Stern") == PersonName(
         family_name="Stern", given_name="Josef"

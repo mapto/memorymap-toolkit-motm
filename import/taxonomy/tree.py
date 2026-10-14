@@ -1,194 +1,17 @@
-"""Parse and validate the MQDA coding taxonomy from a Mermaid mindmap file.
-
-This module owns the source-taxonomy side of the import boundary. It parses
-the Mermaid tree, normalizes labels, validates the rule that a label occurs at
-most once within a top-level category, and exposes an in-memory hierarchy.
-It deliberately does not call the Memory Map API or create database records;
-that keeps taxonomy interpretation deterministic and independently testable.
-The persistence and source-label-to-ID work belongs to :mod:`taxonomy_import`.
-
-Provides :func:`load_taxonomy` which reads ``docs/mqda_coding_taxonomy.mmd``
-and returns a :class:`Taxonomy` dataclass with the following fields::
-
-    categories: {key: {"label": ..., "icon": ...}}
-    sub_categories: {key: {"label": ..., "parent": ...}}
-    concept_to_category: {label: category_key}
-
-The three special categories (Zeitangaben, Personae, GO) are pre-extracted
-and removed from these structures, accessible via dedicated methods instead.
-
->>> tax = load_taxonomy()
->>> "Religion" in tax.categories
-True
->>> "GO" in tax.categories  # Special categories are removed
-False
-"""
+"""The Taxonomy class: validation, queries, and export helpers."""
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
-from pathlib import Path
 from timespan import Timespan, parse_timespan
-
-
-# Key used in the tree returned by parse_mermaid_mindmap() to list top-level
-# (root) node labels.
-ROOT_KEY = "__roots__"
-
-
-# Default icons for root categories.  Extend this dict to add icons for
-# categories that don't have an abbreviation prefix.
-ROOT_ICONS: dict[str, str] = {
-    "GO": "fa-map-marker-alt",
-    "TO": "fa-route",
-    "OZ": "fa-clock",
-    "SR": "fa-building",
-    "LL": "fa-road",
-    "AS": "fa-exclamation-triangle",
-    "VM": "fa-bus",
-    "F": "fa-people-arrows",
-    "EO": "fa-landmark",
-    "NR": "fa-tree",
-    "Zeitangaben": "fa-calendar",
-    "Personae": "fa-user",
-    "Kultureme": "fa-palette",
-    "Figuren": "fa-theater-masks",
-    "Religion": "fa-pray",
-    "Zionismus": "fa-star-of-david",
-    "Erinnerung": "fa-brain",
-    "Identität": "fa-id-badge",
-    "Jeckes": "fa-users",
-    "'Ostjuden'": "fa-users",
-    "code-switching": "fa-language",
-    "Sprache(n)": "fa-language",
-    "neue Heimat": "fa-house-flag",
-    "alte Heimat": "fa-home",
-    "Reise zurück": "fa-undo-alt",
-    "Dokumentation": "fa-file-alt",
-    "Generation": "fa-people-group",
-    "Hilfe/Unterstützung": "fa-hands-helping",
-    "Hilfe / Unterstützung": "fa-hands-helping",
-    "Bemühungen um Auswanderung": "fa-passport",
-    "Emotionen (Thematisierung)": "fa-heart",
-    "Spuk": "fa-ghost",
-    "Patriotismus (Vaterland)": "fa-flag",
-    "Patriotismus (deutsch)": "fa-shield",
-    "Erzählmodus": "fa-book",
-    "'Ostjuden' / 'Jeckes' (Diskurs)": "fa-people-group",
-    "Erinnerung (Diskurs)": "fa-comments",
-    "Dinge / Objekte": "fa-cube",
-    "Positionierung": "fa-compass",
-}
-
-
-class TaxonomyError(ValueError):
-    """Raised when the source taxonomy cannot provide stable concept IDs."""
-
-
-@dataclass(frozen=True)
-class TaxonomyNode:
-    """One taxonomy occurrence with a stable, top-level-scoped identity."""
-
-    key: tuple[str, ...]
-    label: str
-    parent_key: tuple[str, ...] | None
-    top_level: str
-    icon: str = ""
-
-
-@dataclass(frozen=True)
-class TaxonomyOccurrence:
-    """One source-tree occurrence, retaining its path and parent occurrence."""
-
-    label: str
-    parent_index: int | None
-    top_level: str
-    path: tuple[str, ...]
-
-
-_ABBREV_RE = re.compile(r"^([A-Z]{1,3})\s*[–\- ]\s*(?=[A-Za-zÄÖÜäöü])")
-
-
-def _extract_key(label: str) -> str:
-    """Extract a short key from a category label.
-
-    >>> _extract_key('GO – geographischer Ort')
-    'GO'
-    >>> _extract_key('Personae')
-    'Personae'
-    """
-    m = _ABBREV_RE.match(label)
-    return m.group(1) if m else label
-
-
-def parse_mermaid_occurrences(path: str | Path) -> tuple[TaxonomyOccurrence, ...]:
-    """Parse a Mermaid mindmap while preserving repeated-label occurrences."""
-    lines = Path(path).read_text().splitlines()
-    occurrences: list[TaxonomyOccurrence] = []
-    stack: list[tuple[int, int]] = []  # (indent_level, occurrence_index)
-
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped == "mindmap":
-            continue
-        if stripped.startswith("root("):
-            continue  # skip the root node itself
-
-        indent = len(line) - len(line.lstrip())
-        # Extract label from bracket notation ["..."] or backtick escaping.
-        label = stripped
-        m = re.search(r'\["(.+?)"\]', label)
-        if m:
-            label = m.group(1)
-        else:
-            label = label.strip("`").strip()
-        if not label:
-            continue
-
-        # Pop stack until we find the parent at a lower indent.
-        while stack and stack[-1][0] >= indent:
-            stack.pop()
-
-        parent_index = stack[-1][1] if stack else None
-        if parent_index is None:
-            top_level = label
-            path = (label,)
-        else:
-            parent = occurrences[parent_index]
-            top_level = parent.top_level
-            path = parent.path + (label,)
-        occurrences.append(
-            TaxonomyOccurrence(
-                label=label,
-                parent_index=parent_index,
-                top_level=top_level,
-                path=path,
-            )
-        )
-        stack.append((indent, len(occurrences) - 1))
-
-    return tuple(occurrences)
-
-
-def parse_mermaid_mindmap(path: str | Path) -> dict[str, list]:
-    """Parse a Mermaid mindmap file into a label-keyed compatibility tree.
-
-    The importer uses :func:`parse_mermaid_occurrences` so repeated labels in
-    different top-level categories retain distinct paths. This older dict
-    representation remains available for taxonomy helpers and compatibility.
-    """
-    occurrences = parse_mermaid_occurrences(path)
-    children: dict[str, list[str]] = {ROOT_KEY: []}
-    for occurrence in occurrences:
-        if occurrence.parent_index is None:
-            children[ROOT_KEY].append(occurrence.label)
-        else:
-            parent = occurrences[occurrence.parent_index]
-            children.setdefault(parent.label, []).append(occurrence.label)
-        children.setdefault(occurrence.label, [])
-
-    return children
+from taxonomy.keys import ROOT_KEY, _extract_key, _label_key
+from taxonomy.model import (
+    ROOT_ICONS,
+    TaxonomyError,
+    TaxonomyNode,
+    TaxonomyOccurrence,
+    _walk_leaves,
+)
 
 
 @dataclass(frozen=True)
@@ -303,6 +126,7 @@ class Taxonomy:
 
         Returns pre-extracted data.
 
+        >>> from taxonomy import load_taxonomy
         >>> tax = load_taxonomy()
         >>> timespans = tax.zeitangaben()
         >>> len(timespans) > 0
@@ -317,6 +141,7 @@ class Taxonomy:
 
         Returns pre-extracted data.
 
+        >>> from taxonomy import load_taxonomy
         >>> tax = load_taxonomy()
         >>> people = tax.personae()
         >>> 'Burgheim, Hedwig' in people
@@ -495,6 +320,7 @@ class Taxonomy:
 
         Returns pre-extracted data.
 
+        >>> from taxonomy import load_taxonomy
         >>> tax = load_taxonomy()
         >>> locations = tax.go()
         >>> len(locations) > 0
@@ -652,71 +478,3 @@ class Taxonomy:
                 return f"{parent_path}/{node}" if parent_path else node
 
         return node
-
-
-def load_taxonomy(
-    mmd_path: str | Path | None = None,
-) -> Taxonomy:
-    """Load taxonomy from a Mermaid mindmap file.
-
-    Parses the mindmap and returns a :class:`Taxonomy` dataclass with
-    ``hierarchy``, ``categories``, ``sub_categories``, and ``concept_to_category``
-    fields automatically constructed from the parsed tree.
-    """
-    if mmd_path is None:
-        mmd_path = (
-            Path(__file__).resolve().parent.parent / "docs" / "mqda_coding_taxonomy.mmd"
-        )
-    tree = parse_mermaid_mindmap(mmd_path)
-    occurrences = parse_mermaid_occurrences(mmd_path)
-    return Taxonomy(hierarchy=tree, occurrences=occurrences)
-
-
-def _label_key(label: str) -> str:
-    """Normalize labels for import-time identity matching."""
-    return " ".join(
-        label.strip().casefold().replace("-", " ").replace("_", " ").split()
-    )
-
-
-def _walk_leaves(tree: dict[str, list], node: str) -> list[str]:
-    """Recursively collect all leaf labels under *node*."""
-    children = tree.get(node, [])
-    if not children:
-        return [node]
-    leaves: list[str] = []
-    for child in children:
-        leaves.extend(_walk_leaves(tree, child))
-    return leaves
-
-
-def _walk_all_nodes(
-    tree: dict[str, list], node: str, root: str, out: dict[str, str]
-) -> None:
-    """Recursively map every descendant of *node* to *root*."""
-    for child in tree.get(node, []):
-        out[child] = root
-        _walk_all_nodes(tree, child, root, out)
-
-
-def parse_mmd_taxonomy(path: str | Path) -> dict[str, str]:
-    """Parse a Mermaid mindmap and return {label: top_level_label}.
-
-    Every node in the tree is mapped to its root-level ancestor's label.
-    This is a convenience wrapper around :func:`parse_mermaid_mindmap`.
-    """
-    tree = parse_mermaid_mindmap(path)
-    mapping: dict[str, str] = {}
-    for root_label in tree[ROOT_KEY]:
-        mapping[root_label] = root_label
-        _walk_all_nodes(tree, root_label, root_label, mapping)
-    return mapping
-
-
-if __name__ == "__main__":
-    tax = load_taxonomy()
-    print(f"Categories: {len(tax.categories)}")
-    for k, v in sorted(tax.categories.items()):
-        print(f"  {k}: {v['label']} (icon={v['icon']})")
-    print(f"Sub-categories: {len(tax.sub_categories)}")
-    print(f"Concept-to-category mappings: {tax.concept_to_category}")
