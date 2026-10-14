@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-r"""
-Excel Column Header Verification Script
+r"""Check the column headers and metadati keys of the source workbooks.
 
-Verifies that column titles in Excel files in data/nuove schede
-conform to templates in data/template based on file prefix.
+Workbooks in ``data/nuove schede`` with a known prefix are compared with the
+template for that prefix in ``data/template``. The prefixes are ``belege_``,
+``chronotopi`` or ``chronotopo``, and ``metadati_``. Imports read cells by
+column name, so a renamed or missing column can pass silently.
+``validate_data.py`` calls ``verify_files`` from its read-only report.
 
-POSIX-compliant: works with standard input and output.
+Usage::
 
-Usage:
-    verify_excel_headers.py                     # Check all files in data/nuove schede
-    verify_excel_headers.py <filepath>          # Check specific file (relative to CWD)
-    verify_excel_headers.py <glob_pattern>      # Check files matching glob pattern
+    verify_excel_headers.py                # all files in data/nuove schede
+    verify_excel_headers.py <filepath>     # one file, relative to the CWD
+    verify_excel_headers.py <glob_pattern> # files matching a glob pattern
 
-Examples:
+Examples::
+
     uv run verify_excel_headers.py
     uv run verify_excel_headers.py metadati_file.xlsx
     uv run verify_excel_headers.py metadati_*.xlsx
+
+``DATA_DIR`` and ``TEMPLATE_DIR`` override the default folders. The exit code is
+0 when no discrepancies are found, 1 when some are found or the run fails, and
+130 when the user interrupts it.
 """
 
 import sys
@@ -37,7 +43,15 @@ SheetKeys = dict[str, list[str]]  # sheet_name -> keys (for metadati)
 
 @dataclass
 class VerificationError:
-    """Represents a single verification discrepancy."""
+    """Represents a single verification discrepancy.
+
+    A verify function appends one error per affected sheet, and one each for
+    missing and extra metadati keys. ``main`` prints ``sheet`` and ``message``
+    for every error. ``error_type`` is one of ``column_mismatch``,
+    ``missing_keys``, ``extra_keys``, or ``missing_sheet_in_file``. ``missing``
+    and ``extra`` hold column names, and ``keys`` holds metadati key names. The
+    ``columns`` field is not filled in by the current checks.
+    """
 
     error_type: str  # 'column_mismatch', 'missing_keys', 'extra_keys', etc.
     sheet: str
@@ -65,7 +79,14 @@ class VersionScores:
 
 @dataclass
 class FileResult:
-    """Verification results for a single file."""
+    """Verification results for a single file.
+
+    ``verify_files`` creates one of these per checked workbook. ``main`` reads
+    ``name``, ``template``, ``has_discrepancies``, and ``errors`` to print it.
+    ``sheets_checked`` counts the sheets whose names do not start with an underscore.
+    ``best_matching_version`` and ``version_scores`` are meant for chronotopoi
+    version matching. ``verify_files`` never sets them, so they stay None.
+    """
 
     name: str
     prefix: str
@@ -79,7 +100,13 @@ class FileResult:
 
 @dataclass
 class VerificationResult:
-    """Complete verification results for all files."""
+    """Complete verification results for all files.
+
+    ``verify_files`` returns this. ``main`` checks ``error`` first, then prints
+    the counters and ``files``. ``error`` is set only when the data or template
+    directory is missing. In that case the counters are zero and ``files`` is
+    empty.
+    """
 
     discrepancies_found: bool
     files_checked: int
@@ -102,7 +129,20 @@ prefix_to_template = {
 
 
 def get_prefix(filename: str) -> str | None:
-    """Extract prefix from filename (belege_, chronotopi/chronotopoi, metadati_)."""
+    """Extract prefix from filename (belege_, chronotopi/chronotopoi, metadati_).
+
+    ``verify_files`` calls this for each workbook to choose its template. The
+    match is case-insensitive and looks only at the start of the name, so both
+    ``chronotopi`` and ``chronotopo`` names map to ``chronotopoi``. Returns None
+    for any other name, and ``verify_files`` then skips the file.
+
+    >>> get_prefix("Belege_2020.xlsx")
+    'belege'
+    >>> get_prefix("chronotopo_v4.xlsx")
+    'chronotopoi'
+    >>> get_prefix("notes.xlsx") is None
+    True
+    """
     name = filename.lower()
 
     if name.startswith("belege_"):
@@ -115,7 +155,14 @@ def get_prefix(filename: str) -> str | None:
 
 
 def get_column_headers(wb: openpyxl.Workbook, header_row: int = 3) -> SheetHeaders:
-    """Extract column headers from all sheets in workbook (row 3)."""
+    """Extract column headers from all sheets in workbook (row 3).
+
+    ``load_templates`` and ``verify_files`` call this for every workbook and
+    template. Sheets whose names start with an underscore are skipped as helper
+    sheets. Cells with no value are dropped, so each sheet maps to a list of
+    names rather than to positions. ``header_row`` is 1-based and defaults to 3,
+    the row after two title rows.
+    """
     headers: SheetHeaders = {}
     for sheet_name in wb.sheetnames:
         if sheet_name.startswith("_"):
@@ -133,16 +180,20 @@ def get_column_headers(wb: openpyxl.Workbook, header_row: int = 3) -> SheetHeade
 def get_metadati_keys(
     wb: openpyxl.Workbook, sheet_name: str | None = None
 ) -> SheetKeys:
-    """
-    Extract key-value pairs from first column starting at row 3.
-    Used for metadati sheets which have key-value format instead of column headers.
+    """Extract the keys in column A of a metadati sheet, from row 3 down.
+
+    Metadati sheets list one key per row instead of using column headers. Only
+    the key text is read, and the values beside it are ignored. Empty cells are
+    skipped. ``load_templates`` and ``verify_metadati_file`` call this for the
+    template and for each metadati workbook. A sheet name that is not in the
+    workbook is skipped.
 
     Args:
-        wb: Workbook to extract keys from
-        sheet_name: Specific sheet to extract from (default: first sheet)
+        wb: Workbook to read.
+        sheet_name: Sheet to read. Defaults to the first sheet.
 
     Returns:
-        Dictionary mapping sheet names to list of keys
+        Mapping of sheet name to its keys, in row order.
     """
     keys: SheetKeys = {}
     sheets_to_process = [sheet_name] if sheet_name else [wb.sheetnames[0]]
@@ -164,10 +215,17 @@ def get_metadati_keys(
 
 
 def normalize_metadati_keys(keys: list[str]) -> set:
-    """
-    Normalize metadati keys for comparison.
-    Treats "Quelle *" patterns and "L*" patterns as groups.
-    Case-insensitive comparison.
+    """Normalize metadati keys for comparison.
+
+    ``verify_metadati_file`` calls this for the template keys and the file keys
+    before it takes their difference. Keys are lowercased. Every key that starts
+    with ``Quelle`` followed by a space becomes ``quelle *``, and every key that
+    starts with ``l`` becomes ``l*``. A group counts as present when any of its
+    keys is present, so a missing ``L2`` is reported only when the file has no
+    ``L`` key. The same applies to the ``Quelle`` keys.
+
+    >>> sorted(normalize_metadati_keys(["Quelle 1", "Quelle 2", "L1", "L2", "Titel"]))
+    ['l*', 'quelle *', 'titel']
     """
     normalized = set()
     for key in keys:
@@ -189,7 +247,13 @@ def to_lowercase_set(items: list[str]) -> set:
 
 
 def load_workbook(path: Path) -> openpyxl.Workbook | None:
-    """Load workbook from path."""
+    """Load workbook from path.
+
+    Formula cells are read as their last saved value (``data_only=True``), not as
+    formula text. Any exception is printed to stderr as an error. ``load_templates``
+    and ``verify_files`` call this, and they skip any file or template that comes
+    back as None.
+    """
     try:
         return openpyxl.load_workbook(str(path), data_only=True)
     except Exception as e:
@@ -198,19 +262,21 @@ def load_workbook(path: Path) -> openpyxl.Workbook | None:
 
 
 def load_templates(template_dir: Path) -> tuple[dict, dict[str, SheetKeys]]:
-    """
-    Load all templates from template directory.
+    """Load all templates from template directory.
 
-    Loads templates for each prefix defined in prefix_to_template.
-    Chronotopoi now uses a single consolidated template (v4).
+    ``verify_files`` calls this once per run, so each template is read a single
+    time. Chronotopoi uses only the consolidated v4 template. A missing template
+    is reported as a warning on stderr, and an unreadable one as an error. Either
+    way it is left out, so files with its prefix are skipped. The metadati keys
+    come from the first sheet of the metadati template.
 
     Args:
-        template_dir: Path to directory containing template files
+        template_dir: Directory that holds the template workbooks.
 
     Returns:
-        Tuple of (templates dict, template_keys dict for metadati)
-        templates structure:
-        - For each prefix: {'prefix': {'sheet': [headers]}}
+        A tuple ``(templates, template_keys)``. ``templates`` maps each prefix to
+        ``{sheet_name: [headers]}``. ``template_keys`` maps ``"metadati"`` to
+        ``{first_sheet_name: [keys]}``.
     """
     templates = {}
     template_keys: dict[str, SheetKeys] = {}
@@ -231,18 +297,24 @@ def load_templates(template_dir: Path) -> tuple[dict, dict[str, SheetKeys]]:
 
 
 def get_files_to_verify(data_dir: Path, file_to_check=None) -> list[Path]:
-    """
-    Get list of Excel files to verify.
+    """Get list of Excel files to verify.
+
+    ``main`` passes the command-line arguments here. A single string is tried as
+    a glob pattern first and then as a literal path. Several arguments arrive as a
+    list, because the shell has already expanded any glob. With no argument, every
+    ``*.xlsx`` file in ``data_dir`` is returned. Results are sorted, and paths
+    from the command line are resolved against the current directory.
 
     Args:
-        data_dir: Directory containing data files
-        file_to_check: Optional file path or pattern to limit verification
+        data_dir: Directory searched when no file is given.
+        file_to_check: A glob pattern, a literal path, a list of paths, or None.
 
     Returns:
-        List of file paths to verify
+        Sorted list of workbook paths. Only a literal path is checked for
+        existence.
 
     Raises:
-        SystemExit: If file_to_check is provided but not found
+        SystemExit: If file_to_check is a literal path that does not exist.
     """
     if file_to_check:
         if isinstance(file_to_check, list):
@@ -279,20 +351,25 @@ def verify_metadati_file(
     template_headers: SheetHeaders,
     template_keys_dict: SheetKeys,
 ) -> list[VerificationError]:
-    """
-    Verify a metadati file structure.
+    """Verify a metadati file structure.
 
-    For metadati files, the first sheet contains key-value pairs (verified against template keys),
-    and additional sheets contain column headers (verified as normal).
+    The first sheet lists keys in column A. Those keys are compared with the
+    template keys, which are looked up under the file's first sheet name. Each
+    later sheet whose name does not start with an underscore is compared by its
+    column headers. Sheets that exist only in the file or only in the template
+    are not reported here. ``verify_files`` calls this for each metadati workbook
+    once its template has loaded.
 
     Args:
-        wb: Workbook to verify
-        file_headers: Column headers extracted from file sheets
-        template_headers: Column headers from template
-        template_keys_dict: Keys from template's first sheet
+        wb: Workbook to verify.
+        file_headers: Column headers of each sheet, from ``get_column_headers``.
+        template_headers: Column headers of each template sheet.
+        template_keys_dict: Template keys keyed by sheet name, from
+            ``load_templates``.
 
     Returns:
-        List of VerificationError objects describing discrepancies
+        One error for missing keys, one for extra keys, and one per sheet with
+        column differences. The list is empty when the file conforms.
     """
     errors: list[VerificationError] = []
 
@@ -374,19 +451,20 @@ def verify_metadati_file(
 def calculate_template_match_score(
     file_headers: SheetHeaders, template_headers: SheetHeaders
 ) -> VersionScore:
-    """
-    Calculate how well a file matches a template version.
+    """Calculate how well a file matches a template version.
 
-    Score is based on column matches across sheets:
-    - Perfect match: 100%
-    - Missing columns reduce score proportionally
+    The score is the percentage of template columns that the file has, from 0 to
+    100. A template with no columns scores 100. Missing sheets, column
+    differences, and extra sheets each add a ``VerificationError``. Nothing in
+    this module calls this function, so ``verify_files`` does not use the score.
 
     Args:
-        file_headers: Column headers extracted from file sheets
-        template_headers: Column headers from template version
+        file_headers: Column headers of the file, keyed by sheet name.
+        template_headers: Column headers of one template version, keyed by sheet
+            name.
 
     Returns:
-        VersionScore with match_score (0-100) and error_list
+        A ``VersionScore`` with the ``score`` percentage and the ``errors`` list.
     """
     errors: list[VerificationError] = []
     total_columns = 0
@@ -467,7 +545,8 @@ def verify_chronotopoi_file(
     Verify a chronotopoi file structure against the template (v4).
 
     Chronotopoi files may have different sheet names but all sheets must conform
-    to the same column structure. Uses the first non-hidden template sheet as reference.
+    to the same column structure. Uses the first template sheet whose name does
+    not start with an underscore as the reference.
 
     Args:
         file_headers: Column headers extracted from file sheets
@@ -525,17 +604,14 @@ def verify_chronotopoi_file(
 def verify_other_prefix_file(
     file_headers: SheetHeaders, template_headers: SheetHeaders
 ) -> list[VerificationError]:
-    """
-    Verify a file with prefix like 'belege' (non-metadati, non-chronotopoi).
+    """Verify a file with prefix like 'belege' (non-metadati, non-chronotopoi).
 
-    Checks each sheet against its corresponding template sheet by name.
-
-    Args:
-        file_headers: Column headers extracted from file sheets
-        template_headers: Column headers from template
-
-    Returns:
-        List of VerificationError objects describing discrepancies
+    ``verify_files`` calls this for every known prefix other than metadati and
+    chronotopoi. Each file sheet whose name does not start with an underscore is
+    compared with the template sheet of the same name, and column names are
+    compared case-insensitively. A file sheet with no template sheet of that name
+    is skipped. A template sheet that the file lacks is reported as
+    ``missing_sheet_in_file``.
     """
     errors: list[VerificationError] = []
 
@@ -593,19 +669,27 @@ def verify_other_prefix_file(
 def verify_files(
     data_dir: Path, template_dir: Path, file_to_check=None
 ) -> VerificationResult:
-    """
-    Verify Excel files in data_dir against templates in template_dir.
+    """Verify Excel files in data_dir against templates in template_dir.
 
-    Orchestrates the verification process by loading templates, getting files to check,
-    and calling appropriate verification methods for each file type (metadati, chronotopoi, belege).
+    ``main`` and ``validate_data.py`` both call this. It loads the templates once,
+    selects the workbooks with ``get_files_to_verify``, and runs the check for
+    each file: ``verify_metadati_file`` for metadati, ``verify_chronotopoi_file``
+    for chronotopoi, and ``verify_other_prefix_file`` for the rest. Files without
+    a known prefix or template are skipped and not counted. A workbook that cannot
+    be loaded is still counted in ``files_checked``. It writes no files. Load
+    problems go to stderr. A missing ``data_dir`` or ``template_dir`` is returned
+    as ``error`` rather than raised, but a missing literal file path ends the
+    process through ``get_files_to_verify``.
 
     Args:
-        data_dir: Directory containing data files to verify
-        template_dir: Directory containing template files
-        file_to_check: If provided, only check this specific file/pattern, or a list of files
+        data_dir: Directory that holds the workbooks to check.
+        template_dir: Directory that holds the template workbooks.
+        file_to_check: A glob pattern, a literal path, a list of paths, or None
+            to check every ``*.xlsx`` file in ``data_dir``.
 
     Returns:
-        VerificationResult containing all verification statistics and per-file results
+        Counts and per-file results. ``discrepancies_found`` is True when any
+        file has one or more discrepancies.
     """
 
     # Check directories exist
@@ -706,7 +790,15 @@ def verify_files(
 
 
 def main():
-    """Main entry point. Handles CLI interaction and report formatting."""
+    """Run the check from the command line and print the report.
+
+    The arguments after the script name are passed to ``get_files_to_verify``.
+    The default folders are ``data/nuove schede`` and ``data/template`` under the
+    repository root, unless ``DATA_DIR`` or ``TEMPLATE_DIR`` is set. The report
+    lists each file as OK or DISCREPANCIES with its errors, then a summary. The
+    process exits with 0 when nothing is found, 1 when there are discrepancies or
+    the run fails, and 130 on Ctrl-C.
+    """
     # Parse command-line arguments
     file_to_check = None
     if len(sys.argv) > 1:

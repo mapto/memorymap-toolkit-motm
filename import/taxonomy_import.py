@@ -7,6 +7,14 @@ labels used by people, locations, time periods, and events. Keeping this
 separate from :mod:`taxonomy` means parsing and validation can run without
 network access, while API matching and persistence remain explicit and easy
 to mock in importer tests.
+
+The chronotopi notebook calls :func:`import_taxonomy` once, after
+``rebuild_location_workbook`` and before the location, biography, and event
+imports. It passes ``get_or_create_concept`` from :mod:`api_client` as the
+concept creator and then uses the returned :class:`TaxonomyImport`.
+``validate_data.py`` runs the same function with a counter that hands out fake
+IDs, so resolution can be checked without writes. This module makes no HTTP
+calls itself; every write happens inside the injected concept creator.
 """
 
 from __future__ import annotations
@@ -30,11 +38,20 @@ ConceptCreator = Callable[..., int | None]
 
 @dataclass
 class TaxonomyImport:
-    """ID mapping produced after one taxonomy has been persisted.
+    """Hold the ID mapping produced after one taxonomy has been persisted.
 
     The object is deliberately separate from :class:`taxonomy.Taxonomy`:
     the latter describes source structure, while this class describes the
     corresponding remote records and provides resolvers for import clients.
+
+    Normally created by :func:`import_taxonomy`. ``ids_by_key`` maps each
+    taxonomy path to its API concept ID, and ``nodes_by_key`` holds the
+    matching nodes, including supplemental location nodes. ``aliases`` maps
+    normalized source vocabulary to taxonomy paths, and ``person_aliases`` maps
+    normalized person spellings to canonical Personae labels. The
+    ``create_concept`` callable is kept for supplemental locations. Only
+    ``ensure_location_concept`` creates concepts; the ``resolve_*`` methods
+    return None for unknown labels.
     """
 
     taxonomy: Taxonomy
@@ -47,9 +64,14 @@ class TaxonomyImport:
     def resolve_concept(self, label: str, top_level: str | None = None) -> int | None:
         """Resolve a source label to its taxonomy concept ID.
 
-        A top-level selector is required when the source label is intentionally
-        repeated across categories. Unknown event vocabulary is ignored so an
-        import cannot create unparented concepts outside the taxonomy.
+        Matching uses the normalized label key. With ``top_level`` set, only
+        nodes under that category, such as ``"Zeitangaben"``, are considered.
+        Without it, reviewed aliases are checked first, and a label that occurs
+        in more than one category raises ``TaxonomyError``, so repeated labels
+        need a top-level selector. An unknown label returns None and is never
+        created. Event import uses this as its category resolver and drops None
+        results, so no unparented concepts are created. The chronotopi notebook
+        reports labels that resolve to None.
         """
         key = _label_key(label)
         if not key:
@@ -89,7 +111,18 @@ class TaxonomyImport:
         addresses or ``KZ Buchenwald``. Exact labels and reviewed synonyms are
         tried first; otherwise the longest canonical GO label embedded in the
         source name is used. Reviewed exclusions, including Koblenz, remain
-        deliberately unmapped.
+        deliberately unmapped. Import code calls ``resolve_location_exact``,
+        which turns embedded matching off so that an address does not take the
+        concept of its city.
+
+        Args:
+            label: Source location name.
+            allow_aliases: Whether reviewed synonyms are tried.
+            allow_embedded: Whether a GO label embedded in the name may match.
+
+        Returns:
+            The concept ID of the matched GO node, or None when the name is
+            excluded or nothing matches.
         """
         if taxonomy_match_excluded(label):
             return None
@@ -122,15 +155,23 @@ class TaxonomyImport:
         return self.ids_by_key[candidates[0][1].key]
 
     def resolve_time_period(self, label: str) -> int | None:
-        """Resolve a time-period label under the Zeitangaben category."""
+        """Resolve a time-period label under the Zeitangaben category.
+
+        Only nodes under ``Zeitangaben`` are considered, and reviewed aliases
+        are not applied. Returns None for an unknown label. Event import passes
+        each row's ``date_label`` here and attaches any ID it gets to the event.
+        """
         return self.resolve_concept(label, "Zeitangaben")
 
     def resolve_location_exact(self, label: str) -> int | None:
         """Resolve only an exact or reviewed-alias GO location label.
 
-        Address and descriptive variants must not claim the unique concept ID
-        of their containing city; the locations taxonomy handles that visual
-        containment separately.
+        Address and descriptive variants must not claim the concept of their
+        containing city, so embedded matching is off. Their containment is kept
+        in the location workbook instead, in ``wider_region`` and
+        ``super_region``. Returns None for any other label. The biography and
+        event imports receive this method as their location resolver, and
+        ``validate_data.py`` calls it directly.
         """
         return self.resolve_location(
             label,
@@ -139,13 +180,28 @@ class TaxonomyImport:
         )
 
     def ensure_location_concept(self, label: str) -> int | None:
-        """Resolve or create a supplemental GO node with its configured parent chain."""
+        """Resolve or create a supplemental GO node with its configured parent chain.
+
+        This is the only resolver that writes. A location missing from the GO
+        taxonomy gets a concept under its reviewed parent hint, and missing
+        ancestors are created first. ``seed_location_entities`` raises when a
+        canonical location has no GO concept, so the notebook passes this
+        method to it. Returns None for reviewed exclusions. Raises
+        ``TaxonomyError`` for a missing parent hint, cyclic hints, an
+        unavailable parent, or a creation that returns no ID.
+        """
         return self._ensure_location_concept(label, resolving=set())
 
     def _ensure_location_concept(
         self, label: str, *, resolving: set[str]
     ) -> int | None:
-        """Create a missing location and any missing configured ancestors."""
+        """Create a missing location and any missing configured ancestors.
+
+        ``resolving`` holds the keys of the parent chain being created. Meeting
+        one of them again means the parent hints form a cycle, which raises
+        ``TaxonomyError``. Created locations are recorded in ``ids_by_key`` under
+        the identity ``("go", "supplemental", key)``, so later calls reuse them.
+        """
         if taxonomy_match_excluded(label):
             return None
         resolved = self.resolve_location_exact(label)
@@ -209,7 +265,14 @@ class TaxonomyImport:
         return concept_id
 
     def resolve_person(self, label: str) -> int | None:
-        """Resolve a source spelling to a person concept under Personae."""
+        """Resolve a source spelling to a person concept under Personae.
+
+        The spelling is normalized with ``person_taxonomy_key`` and mapped
+        through the reviewed ``person_aliases`` when one exists. Returns None
+        for blank names and names that are not Personae concepts. Event import
+        passes each protagonist here, and ``validate_data.py`` uses it to check
+        that each person sheet resolves.
+        """
         key = person_taxonomy_key(label)
         if not key:
             return None
@@ -225,10 +288,30 @@ def import_taxonomy(
 ) -> TaxonomyImport:
     """Persist taxonomy nodes parent-first and return their resolved IDs.
 
-    ``taxonomy`` supplies validated structure only. ``create_concept`` is the
-    injected API adapter, which keeps this module independent of HTTP details
-    and lets tests verify ordering, parent IDs, and duplicate-label behavior
-    without a live server.
+    One concept is created for each node, parents before children, and each
+    child receives its parent's ID. ``create_concept`` is the only write path.
+    The chronotopi notebook passes ``get_or_create_concept``, and the dry run in
+    ``validate_data.py`` passes a counter. Person aliases are checked before the
+    first call, so an invalid alias creates nothing. The injected creator keeps
+    this module free of HTTP details and lets tests check ordering and parent
+    IDs without a server.
+
+    Args:
+        taxonomy: Parsed source taxonomy whose validated nodes are imported.
+        create_concept: Called with the label, ``parent_id`` and ``identity``
+            keywords, and ``icon`` for taxonomy nodes. Returns the concept ID
+            or None.
+        person_aliases: Source spelling to canonical Personae label, usually
+            ``augment_personae_taxonomy(...).aliases``. Conflicting entries,
+            unknown targets, and non-leaf targets are rejected.
+
+    Returns:
+        A :class:`TaxonomyImport` holding the ID of every node and the
+        resolvers.
+
+    Raises:
+        TaxonomyError: For duplicate labels within a top-level category, invalid
+            person aliases, or a ``create_concept`` call that returns None.
     """
     nodes = taxonomy.concept_nodes()
     ids_by_key: dict[tuple[str, ...], int] = {}

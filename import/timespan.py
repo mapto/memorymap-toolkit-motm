@@ -39,9 +39,11 @@ class Timespan:
 
     Attributes:
         start: The start date (or the only known date).
-        end: The end date. When ``is_point`` is True, coincides with start.
-        is_point: True when the span represents a single moment in time
-                  (start and end are known to coincide).
+        end: The end date. Defaults to start when the constructor omits it.
+        is_point: True for a single date or a single expression. The constructor
+                  sets it to whether start and end coincide when it is omitted.
+                  ``parse_timespan`` sets it True for every single expression, so
+                  ``1923`` has ``is_point`` True and an end on 31 December.
         certainty: Optional string indicating confidence level.
                    Values: ``"estimated"`` (set by ``parse_timespan``),
                    ``"certain"``, ``"probable"``, ``"uncertain"``, and
@@ -525,7 +527,8 @@ def parse_date(raw: Any) -> str | None:
     ``metadati/sheets.py`` call it for such cells. For a range such as
     ``1928-1932`` the end is dropped; use ``parse_date_range`` to keep it. A bare
     year returns 1 January, and ``Ende 1942`` returns ``1942-12-31``. Returns None
-    when there is no start, which includes blank and unparseable input.
+    when there is no start, which includes blank and unparseable input. An
+    impossible calendar date raises ``ValueError``, as in ``parse_timespan``.
 
     >>> parse_date("19.06.1922")
     '1922-06-19'
@@ -557,7 +560,7 @@ def parse_date_range(raw: Any) -> tuple[str | None, str | None]:
     the second, passed through ``_range_start_iso`` (see there for when an end is
     moved to the first day of its period). A single date returns ``(start, None)``
     because no second date is implied. Returns ``(None, None)`` when the input
-    cannot be parsed.
+    cannot be parsed. An impossible calendar date raises ``ValueError``.
 
     >>> parse_date_range("28.1.1890–1942")
     ('1890-01-28', '1942-01-01')
