@@ -1,0 +1,109 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: motm\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-07 00:00+0000\n"
+"PO-Revision-Date: 2026-10-22 12:56\n"
+"Last-Translator: \n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: motm\n"
+"X-Crowdin-Project-ID: 925547\n"
+"X-Crowdin-Language: it\n"
+"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/languages.po\n"
+"X-Crowdin-File-ID: 26\n"
+
+msgid "German"
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "French"
+msgstr ""
+
+msgid "Italian"
+msgstr ""
+
+msgid "Spanish"
+msgstr ""
+
+msgid "Portuguese"
+msgstr ""
+
+msgid "Dutch"
+msgstr ""
+
+msgid "Polish"
+msgstr ""
+
+msgid "Czech"
+msgstr ""
+
+msgid "Russian"
+msgstr ""
+
+msgid "Ukrainian"
+msgstr ""
+
+msgid "Hebrew"
+msgstr ""
+
+msgid "Yiddish"
+msgstr ""
+
+msgid "Arabic"
+msgstr ""
+
+msgid "Turkish"
+msgstr ""
+
+msgid "Hungarian"
+msgstr ""
+
+msgid "Romanian"
+msgstr ""
+
+msgid "Bulgarian"
+msgstr ""
+
+msgid "Croatian"
+msgstr ""
+
+msgid "Serbian"
+msgstr ""
+
+msgid "Slovak"
+msgstr ""
+
+msgid "Slovenian"
+msgstr ""
+
+msgid "Greek"
+msgstr ""
+
+msgid "Danish"
+msgstr ""
+
+msgid "Swedish"
+msgstr ""
+
+msgid "Norwegian"
+msgstr ""
+
+msgid "Finnish"
+msgstr ""
+
+msgid "Japanese"
+msgstr ""
+
+msgid "Chinese"
+msgstr ""
+
+msgid "Korean"
+msgstr ""
+
