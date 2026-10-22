@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: motm\n"
-"PO-Revision-Date: 2026-10-22 12:56\n"
+"PO-Revision-Date: 2026-10-22 13:47\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -17,41 +17,41 @@ msgstr ""
 
 msgctxt "prosecuted-group"
 msgid "Deutsche Jude und Jüdinnen"
-msgstr ""
+msgstr "Ebrei tedeschi"
 
 msgctxt "person:education"
 msgid "nichtjüdische, Privatschule: Herder-Schule; Realgymnasium an der Aue; Rabbinerseminar Breslau; Geschichtsstudium; Promotion;"
-msgstr ""
+msgstr "non ebrea, scuola privata: Herder-Schule; Realgymnasium an der Aue; seminario rabbinico di Breslavia; studi di storia; dottorato;"
 
 msgctxt "person:education"
 msgid "Heinrich von Kleist Lyzeum; Ben Schemen: Jugenddorf; Jerusalem: Gymnasium, Hebräische Universität (Literatur und Judaistik), Musikakademie (Musikerziehung und Musikwissenschaft)"
-msgstr ""
+msgstr "Liceo Heinrich von Kleist; Ben Shemen: villaggio giovanile; Gerusalemme: ginnasio, Università Ebraica (letteratura e studi ebraici), accademia di musica (pedagogia musicale e musicologia)"
 
 msgctxt "person:education"
 msgid "Realgymnasium Gießen (kein Abschluss, Zwangsabgang 1935); Hachschara (Schlesien) 1935; Jeschiwa Frankfurt 1936"
-msgstr ""
+msgstr "Realgymnasium Gießen (nessun diploma, allontanamento forzato 1935); Hachshara (Slesia) 1935; yeshiva di Francoforte 1936"
 
 msgctxt "person:occupation_at_emigration"
 msgid "Student"
-msgstr ""
+msgstr "studente"
 
 msgctxt "person:occupation_at_emigration"
 msgid "Schülerin am Gymnasium"
-msgstr ""
+msgstr "studentessa al ginnasio"
 
 msgctxt "person:occupation_at_emigration"
 msgid "Schüler"
-msgstr ""
+msgstr "studente"
 
 msgctxt "person:occupation_at_source"
 msgid "Ehemaliger Staatsarchivar, dann Leiter des Staatsarchivs; Professor; Historiker; zur Zeit Mitglied/Vorsitzer von verschiedenen wissenschaftlichen Kommissionen im Rhamen von Forschungs- und Dokumentationseinrichtungen; vielfältige ehrenamtliche Führungstätigkeiten (u.a. für den Irgun Olej Merkas Europa)"
-msgstr ""
+msgstr "Ex archivista di stato, poi direttore dell'archivio di stato; professore; storico; attualmente membro/presidente di varie commissioni scientifiche presso istituzioni di ricerca e documentazione; diverse attività di direzione volontaria (tra cui per l'Irgun Olej Merkas Europa)"
 
 msgctxt "person:occupation_at_source"
 msgid "Publikation von Übersetzungen von Liedern und Texten verschiedener bekannter Vokalkompositionen; Übersetzungen und Monographie über Rilke"
-msgstr ""
+msgstr "Pubblicazione di traduzioni di canzoni e testi di varie note composizioni vocali; traduzioni e una monografia su Rilke"
 
 msgctxt "person:occupation_at_source"
 msgid "Bibliothekar, Universitätsbibliothek Haifa (em., 1966–1986)"
-msgstr ""
+msgstr "Bibliotecario, Biblioteca dell'Università di Haifa (emerito, 1966–1986)"
 
