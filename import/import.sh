@@ -29,4 +29,8 @@ echo "Importing chronotopi..."
 uv run jupyter nbconvert --execute --to markdown --stdout chronotopi.ipynb
 # uv run papermill chronotopi.ipynb /tmp/executed.ipynb && uv run jupyter nbconvert --to markdown --stdout /tmp/executed.ipynb && rm /tmp/executed.ipynb
 
+echo "Synchronizing data translation catalogs..."
+docker compose exec -T -u root memorymaptoolkit python import/sync_translation_catalogs.py
+docker compose exec -T -u root memorymaptoolkit python manage.py compilemessages
+
 echo "Import complete."
