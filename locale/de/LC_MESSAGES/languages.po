@@ -1,102 +1,109 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: memorymap-toolkit-language-names\n"
+"Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-07 00:00+0000\n"
-"PO-Revision-Date: 2026-10-07 00:00+0000\n"
+"PO-Revision-Date: 2026-10-22 12:56\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: motm\n"
+"X-Crowdin-Project-ID: 925547\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/languages.po\n"
+"X-Crowdin-File-ID: 26\n"
 
 msgid "German"
-msgstr "Deutsch"
+msgstr ""
 
 msgid "English"
-msgstr "Englisch"
+msgstr ""
 
 msgid "French"
-msgstr "Französisch"
+msgstr ""
 
 msgid "Italian"
-msgstr "Italienisch"
+msgstr ""
 
 msgid "Spanish"
-msgstr "Spanisch"
+msgstr ""
 
 msgid "Portuguese"
-msgstr "Portugiesisch"
+msgstr ""
 
 msgid "Dutch"
-msgstr "Niederländisch"
+msgstr ""
 
 msgid "Polish"
-msgstr "Polnisch"
+msgstr ""
 
 msgid "Czech"
-msgstr "Tschechisch"
+msgstr ""
 
 msgid "Russian"
-msgstr "Russisch"
+msgstr ""
 
 msgid "Ukrainian"
-msgstr "Ukrainisch"
+msgstr ""
 
 msgid "Hebrew"
-msgstr "Hebräisch"
+msgstr ""
 
 msgid "Yiddish"
-msgstr "Jiddisch"
+msgstr ""
 
 msgid "Arabic"
-msgstr "Arabisch"
+msgstr ""
 
 msgid "Turkish"
-msgstr "Türkisch"
+msgstr ""
 
 msgid "Hungarian"
-msgstr "Ungarisch"
+msgstr ""
 
 msgid "Romanian"
-msgstr "Rumänisch"
+msgstr ""
 
 msgid "Bulgarian"
-msgstr "Bulgarisch"
+msgstr ""
 
 msgid "Croatian"
-msgstr "Kroatisch"
+msgstr ""
 
 msgid "Serbian"
-msgstr "Serbisch"
+msgstr ""
 
 msgid "Slovak"
-msgstr "Slowakisch"
+msgstr ""
 
 msgid "Slovenian"
-msgstr "Slowenisch"
+msgstr ""
 
 msgid "Greek"
-msgstr "Griechisch"
+msgstr ""
 
 msgid "Danish"
-msgstr "Dänisch"
+msgstr ""
 
 msgid "Swedish"
-msgstr "Schwedisch"
+msgstr ""
 
 msgid "Norwegian"
-msgstr "Norwegisch"
+msgstr ""
 
 msgid "Finnish"
-msgstr "Finnisch"
+msgstr ""
 
 msgid "Japanese"
-msgstr "Japanisch"
+msgstr ""
 
 msgid "Chinese"
-msgstr "Chinesisch"
+msgstr ""
 
 msgid "Korean"
-msgstr "Koreanisch"
+msgstr ""
+
