@@ -2,14 +2,10 @@ FROM python:3.11-slim-bookworm AS build
 
 # Install Python and build tools 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    python3-dev \
     gcc libxml2-dev libxslt1-dev \
     libpq-dev \
     gdal-bin \
     libgdal-dev \
-    gettext \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip & setuptools

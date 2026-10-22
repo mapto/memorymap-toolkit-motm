@@ -1,99 +1,1008 @@
-"""Compatibility exports for the app's feature-specific view modules.
+import json
+import re
+from functools import lru_cache
+from pathlib import Path
 
-URL routing and existing imports can continue to use ``mmt_motm.views`` while
-the implementations live in smaller domain-focused modules.
-"""
+from django.conf import settings
+from django.db.models import Q, Count, Subquery, OuterRef
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils import translation
+from django.views.generic import ListView, DetailView
 
-from .api_views import (
-    ConceptViewSet,
-    EventViewSet,
-    ExtractionViewSet,
-    InterviewViewSet,
-    LocationPointViewSet,
-    LocationRegionViewSet,
-    PersonViewSet,
-    RelationshipTypeViewSet,
-    RelationshipViewSet,
-    TimespanViewSet,
-    URLViewSet,
-)
-from .bulk_actions import BulkMixin
-from .concept_views import ConceptDetailView, ConceptListView, ConceptTaxonomyView
-from .event_views import EventDetailView, EventListView, LifeJourneyHeatmapView
-from .extraction_views import ExtractionDetailView, ExtractionListView
-from .interview_views import (
-    InterviewDetailView,
-    InterviewListView,
-    SourceCategoryHeatmapView,
-)
-from .location_views import (
-    LocationDetailView,
-    LocationListView,
-    LocationMapView,
-    LocationTaxonomyView,
-)
-from .person_views import PersonDetailView, PersonListView
-from .search_views import (
-    concept_search,
-    event_search,
-    extraction_search,
-    global_search,
-    interview_search,
-    person_search,
-)
-from .taxonomy import (
-    _build_concept_taxonomy_tree,
-    _location_point_for_concept,
-    _person_for_concept,
-    _location_taxonomy_alias,
-    _location_taxonomy_key,
-    _location_taxonomy_match_excluded,
-    _location_taxonomy_synonym_data,
-    _match_location_to_go_concept,
-)
+from rest_framework import viewsets, filters, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-__all__ = [
-    "BulkMixin",
-    "ConceptDetailView",
-    "ConceptListView",
-    "ConceptTaxonomyView",
-    "ConceptViewSet",
-    "EventDetailView",
-    "EventListView",
-    "EventViewSet",
-    "ExtractionDetailView",
-    "ExtractionListView",
-    "ExtractionViewSet",
-    "InterviewDetailView",
-    "InterviewListView",
-    "InterviewViewSet",
-    "LifeJourneyHeatmapView",
-    "LocationDetailView",
-    "LocationListView",
-    "LocationMapView",
-    "LocationPointViewSet",
-    "LocationRegionViewSet",
-    "LocationTaxonomyView",
-    "PersonDetailView",
-    "PersonListView",
-    "PersonViewSet",
-    "RelationshipTypeViewSet",
-    "RelationshipViewSet",
-    "SourceCategoryHeatmapView",
-    "TimespanViewSet",
-    "URLViewSet",
-    "concept_search",
-    "event_search",
-    "extraction_search",
-    "global_search",
-    "interview_search",
-    "person_search",
-    "_build_concept_taxonomy_tree",
-    "_location_point_for_concept",
-    "_person_for_concept",
-    "_location_taxonomy_alias",
-    "_location_taxonomy_key",
-    "_location_taxonomy_match_excluded",
-    "_location_taxonomy_synonym_data",
-    "_match_location_to_go_concept",
-]
+from django.db import transaction
+
+from .models import (
+    Person, LocationPoint, LocationRegion,
+    RelationshipType, Relationship, Interview, Event,
+    Extraction, Concept, Timespan, URL,
+)
+from .serializers import (
+    PersonSerializer, LocationPointSerializer, LocationRegionSerializer,
+    RelationshipTypeSerializer, RelationshipSerializer,
+    InterviewSerializer, EventSerializer,
+    ExtractionSerializer, ConceptSerializer, TimespanSerializer,
+    URLSerializer,
+)
+from memorymap_toolkit.catalogs import localized_concept_label, localized_event_description
+
+
+class PersonListView(ListView):
+    model = Person
+    template_name = "mmt_motm/person_list.html"
+    context_object_name = "persons"
+
+    def get_queryset(self):
+        return Person.objects.annotate(
+            interview_count=Count('interviews_received', distinct=True)
+        ).order_by('family_name', 'given_name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for person in context['persons']:
+            person.top_concepts = list(
+                Concept.objects.filter(relates_to_concept__people_mentioned=person)
+                .annotate(cnt=Count('relates_to_concept',
+                                    filter=Q(relates_to_concept__people_mentioned=person)))
+                .order_by('-cnt')[:3]
+            )
+        return context
+
+
+class PersonDetailView(DetailView):
+    model = Person
+    template_name = "mmt_motm/person_detail.html"
+    context_object_name = "person"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        person = self.object
+        context["interviews_as_interviewer"] = person.interviews_conducted.all()
+        context["interviews_as_interviewee"] = person.interviews_received.all()
+        context["random_quotes"] = (
+            person.relates_to_person.exclude(quote="").order_by("?")[:3]
+        )
+        context["concepts"] = Concept.objects.filter(
+            relates_to_concept__people_mentioned=person
+        ).annotate(
+            mention_count=Count(
+                'relates_to_concept',
+                filter=Q(relates_to_concept__people_mentioned=person),
+            )
+        ).order_by('-mention_count')[:20]
+        context["events"] = (
+            person.events.select_related(
+                'timespan', 'start_location', 'end_location'
+            ).order_by('timespan__start')
+        )
+        lang_counts = (
+            Extraction.objects.filter(people_mentioned=person)
+            .exclude(language="")
+            .values("language")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+        context["language_summary"] = [
+            {"code": lc["language"], "label": Extraction(language=lc["language"]).language_label, "count": lc["count"]}
+            for lc in lang_counts
+        ]
+        return context
+
+
+class InterviewListView(ListView):
+    model = Interview
+    template_name = "mmt_motm/interview_list.html"
+    context_object_name = "interviews"
+    ordering = ["archive_id"]
+
+
+class InterviewDetailView(DetailView):
+    model = Interview
+    template_name = "mmt_motm/interview_detail.html"
+    context_object_name = "interview"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        interview = self.object
+        lang_counts = (
+            interview.extracted_from
+            .exclude(language="")
+            .values("language")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+        context["language_summary"] = [
+            {"code": lc["language"], "label": Extraction(language=lc["language"]).language_label, "count": lc["count"]}
+            for lc in lang_counts
+        ]
+        return context
+
+
+class EventDetailView(DetailView):
+    model = Event
+    template_name = "mmt_motm/event_detail.html"
+    context_object_name = "event"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        event = self.object
+        context["extractions"] = event.relates_to_event.prefetch_related('concepts').all()
+        context["dominant_icon"] = event.lifecycle_icon
+        return context
+
+
+class EventListView(ListView):
+    model = Event
+    template_name = "mmt_motm/event_list.html"
+    context_object_name = "events"
+
+    def get_queryset(self):
+        return Event.objects.select_related(
+            'timespan', 'start_location', 'end_location'
+        ).order_by('timespan__start')
+
+
+class LocationListView(ListView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_list.html"
+    context_object_name = "locations"
+
+    def get_queryset(self):
+        # Subquery: dominant icon from events departing this location
+        dominant_icon = Concept.objects.filter(
+            events__start_location=OuterRef('pk'),
+            icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').values('icon')[:1]
+
+        return LocationPoint.objects.select_related('region').annotate(
+            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True),
+            dominant_icon=Subquery(dominant_icon)
+        ).order_by('-event_count', 'current_name')
+
+
+class LocationMapView(ListView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_map.html"
+    context_object_name = "locations"
+
+    def get_queryset(self):
+        dominant_icon = Concept.objects.filter(
+            events__start_location=OuterRef('pk'),
+            icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').values('icon')[:1]
+
+        return LocationPoint.objects.annotate(
+            event_count=Count('events_started', distinct=True) + Count('events_ended', distinct=True),
+            dominant_icon=Subquery(dominant_icon)
+        ).exclude(location__isnull=True).order_by('current_name')
+
+
+class LocationDetailView(DetailView):
+    model = LocationPoint
+    template_name = "mmt_motm/location_detail.html"
+    context_object_name = "location"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        loc = self.object
+        events = Event.objects.filter(
+            Q(start_location=loc) | Q(end_location=loc)
+        ).select_related(
+            'timespan', 'start_location', 'end_location'
+        ).annotate(
+            dominant_icon=Subquery(
+                Concept.objects.filter(
+                    events=OuterRef('pk')
+                ).exclude(icon='').values('icon').annotate(
+                    cnt=Count('id')
+                ).order_by('-cnt').values('icon')[:1]
+            )
+        ).order_by('timespan__start')
+        context["events"] = events
+        context["persons_born_here"] = loc.people_born_here.all()
+        context["persons_died_here"] = loc.people_died_here.all()
+
+        # Dominant concept icon from departing events
+        dominant = Concept.objects.filter(
+            events__start_location=loc, icon__gt=''
+        ).values('icon').annotate(cnt=Count('id')).order_by('-cnt').first()
+        context["dominant_icon"] = dominant['icon'] if dominant else ''
+
+        # Breadcrumb: region hierarchy + concept hierarchy merged
+        breadcrumb_items = []
+        if loc.region:
+            region_chain = []
+            node = loc.region
+            while node:
+                region_chain.append(node)
+                node = node.part_of
+            region_chain.reverse()
+            for r in region_chain:
+                breadcrumb_items.append({"label": r.name, "url": None, "icon": "fa-globe"})
+        if loc.concept:
+            concept_chain = []
+            node = loc.concept.parent
+            while node:
+                concept_chain.append(node)
+                node = node.parent
+            concept_chain.reverse()
+            for c in concept_chain:
+                breadcrumb_items.append({
+                    "label": c.label,
+                    "url": reverse("concept_detail", args=[c.pk]),
+                    "icon": c.icon or None,
+                })
+        context["breadcrumb_items"] = breadcrumb_items
+
+        return context
+
+
+def _build_concept_taxonomy_tree(language_code):
+    """Build one shared concept/location tree for both taxonomy pages.
+
+    Every concept has ``taxonomy_children``; GO concepts additionally have
+    their attached or safely matched LocationPoints. Using one builder keeps
+    the GO branch on the concept taxonomy page identical to the locations
+    taxonomy page.
+    """
+    concepts = list(
+        Concept.objects.active_translations(language_code)
+        .order_by("id")
+    )
+    concepts_by_parent = {}
+    for concept in concepts:
+        concepts_by_parent.setdefault(concept.parent_id, []).append(concept)
+        concept.taxonomy_children = []
+        concept.location_points = []
+        concept.location_link = None
+    for concept in concepts:
+        concept.taxonomy_children = concepts_by_parent.get(concept.pk, [])
+
+    roots = concepts_by_parent.get(None, [])
+    go_root = next(
+        (
+            concept
+            for concept in roots
+            if _location_taxonomy_key(concept.label)
+            == _location_taxonomy_key("GO – geographischer Ort")
+        ),
+        None,
+    )
+    if go_root is None:
+        return roots, None, set()
+
+    go_ids = set()
+    pending = [go_root.pk]
+    while pending:
+        parent_id = pending.pop()
+        if parent_id in go_ids:
+            continue
+        go_ids.add(parent_id)
+        pending.extend(
+            child.pk for child in concepts_by_parent.get(parent_id, [])
+        )
+    go_nodes = [concept for concept in concepts if concept.pk in go_ids]
+
+    points_by_concept = {}
+    for point in LocationPoint.objects.filter(
+        concept_id__in=go_ids
+    ).order_by("current_name"):
+        points_by_concept.setdefault(point.concept_id, []).append(point)
+
+    matchable_nodes = sorted(
+        (concept for concept in go_nodes if concept.pk != go_root.pk),
+        key=lambda concept: len(_location_taxonomy_key(concept.label)),
+        reverse=True,
+    )
+    matched_orphans = set()
+    for point in (
+        LocationPoint.objects.filter(concept__isnull=True)
+        .select_related("region")
+        .order_by("current_name")
+    ):
+        match = _match_location_to_go_concept(point, matchable_nodes)
+        if match:
+            points_by_concept.setdefault(match.pk, []).append(point)
+            matched_orphans.add(point.pk)
+
+    go_nodes_by_id = {concept.pk: concept for concept in go_nodes}
+    for concept_id, points in points_by_concept.items():
+        concept = go_nodes_by_id.get(concept_id)
+        if concept is None:
+            continue
+        concept.location_points = sorted(
+            points,
+            key=lambda point: point.current_name.casefold(),
+        )
+        concept.location_link = next(
+            (
+                point
+                for point in concept.location_points
+                if _location_taxonomy_key(point.current_name)
+                == _location_taxonomy_key(concept.label)
+            ),
+            None,
+        )
+    return roots, go_root, matched_orphans
+
+
+class LocationTaxonomyView(ListView):
+    model = Concept
+    template_name = "mmt_motm/location_taxonomy.html"
+    context_object_name = "roots"
+
+    def get_queryset(self):
+        language_code = translation.get_language() or "en"
+        _, go_root, matched_orphans = _build_concept_taxonomy_tree(
+            language_code
+        )
+        self._location_unassigned_ids = matched_orphans
+        return go_root.taxonomy_children if go_root else []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["unassigned"] = LocationPoint.objects.filter(
+            concept__isnull=True
+        ).exclude(
+            pk__in=getattr(self, "_location_unassigned_ids", set())
+        ).order_by("current_name")
+        return context
+
+
+def _location_taxonomy_key(value):
+    """Normalize location labels for safe GO-tree matching."""
+    return " ".join(re.sub(r"[^\w\s]", " ", str(value or "").casefold()).split())
+
+
+@lru_cache(maxsize=1)
+def _location_taxonomy_synonym_data():
+    path = Path(str(settings.BASE_DIR)) / "data" / "location_taxonomy_synonyms.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["aliases"] = {
+        _location_taxonomy_key(source): target
+        for source, target in data.get("aliases", {}).items()
+    }
+    data["excluded_contains"] = [
+        _location_taxonomy_key(value)
+        for value in data.get("excluded_contains", [])
+    ]
+    return data
+
+
+def _location_taxonomy_alias(value):
+    key = _location_taxonomy_key(value)
+    return _location_taxonomy_synonym_data()["aliases"].get(key, value)
+
+
+def _location_taxonomy_match_excluded(value):
+    key = _location_taxonomy_key(value)
+    return any(
+        term in key
+        for term in _location_taxonomy_synonym_data()["excluded_contains"]
+    )
+
+
+def _location_point_for_concept(concept):
+    location = LocationPoint.objects.filter(concept=concept).first()
+    if location:
+        return location
+
+    root = concept
+    while root.parent_id is not None:
+        root = root.parent
+    if _location_taxonomy_key(root.label) != _location_taxonomy_key(
+        "GO – geographischer Ort"
+    ):
+        return None
+
+    label_key = _location_taxonomy_key(concept.label)
+    if not label_key or _location_taxonomy_match_excluded(label_key):
+        return None
+    return next(
+        (
+            point
+            for point in LocationPoint.objects.filter(concept__isnull=True)
+            .only("pk", "current_name")
+            .order_by("current_name", "pk")
+            if _location_taxonomy_key(point.current_name) == label_key
+        ),
+        None,
+    )
+
+
+def _match_location_to_go_concept(point, candidates):
+    """Find the most specific GO concept matching an orphan location point."""
+    if _location_taxonomy_match_excluded(point.current_name):
+        return None
+    names = [
+        _location_taxonomy_key(point.current_name),
+        _location_taxonomy_key(_location_taxonomy_alias(point.current_name)),
+    ]
+    if point.region_id and point.region:
+        names.append(_location_taxonomy_key(point.region.name))
+    for candidate in candidates:
+        label = _location_taxonomy_key(candidate.label)
+        if not label:
+            continue
+        if any(
+            name == label or re.search(rf"(?:^| ){re.escape(label)}(?: |$)", name)
+            for name in names
+        ):
+            return candidate
+    return None
+
+
+def person_search(request):
+    """Return matching persons as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    persons = Person.objects.filter(
+        Q(given_name__icontains=query) | Q(family_name__icontains=query)
+    ).order_by("family_name", "given_name")[:10]
+    results = [
+        {"id": p.pk, "name": f"{p.family_name}, {p.given_name}"}
+        for p in persons
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def extraction_search(request):
+    """Return matching extractions as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    extractions = Extraction.objects.filter(
+        Q(identifier__icontains=query) | Q(quote__icontains=query)
+        | Q(concepts__translations__label__icontains=query)
+    ).distinct().order_by("identifier")[:10]
+    results = [
+        {"id": e.pk, "label": e.identifier or "(no ID)", "quote": (e.quote[:60] + "…") if len(e.quote) > 60 else e.quote}
+        for e in extractions
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def interview_search(request):
+    """Return matching interviews as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    interviews = Interview.objects.filter(
+        Q(archive_id__icontains=query) | Q(extracted_from__quote__icontains=query)
+    ).distinct().order_by("archive_id")[:10]
+    results = [
+        {"id": i.pk, "label": i.archive_id or "(no ID)"}
+        for i in interviews
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def concept_search(request):
+    """Return matching concepts as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    concepts = Concept.objects.filter(
+        translations__label__icontains=query
+    ).order_by("translations__label")[:10]
+    results = [
+        {"id": c.pk, "label": c.label or "(no label)"}
+        for c in concepts
+    ]
+    return JsonResponse(results, safe=False)
+
+
+def event_search(request):
+    """Return matching events as JSON for the navbar search."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    events = Event.objects.filter(
+        Q(description__icontains=query)
+        | Q(start_location__current_name__icontains=query)
+        | Q(end_location__current_name__icontains=query)
+    ).select_related('timespan', 'start_location', 'end_location'
+    ).distinct().order_by('timespan__start')[:10]
+    results = []
+    for e in events:
+        label = e.description[:40]
+        if e.timespan:
+            label = f"{e.timespan} — {label}"
+        results.append({"id": e.pk, "label": label})
+    return JsonResponse(results, safe=False)
+
+
+def global_search(request):
+    """Return localized map-search suggestions and their map filter metadata."""
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({"concepts": [], "places": [], "people": [], "events": []})
+
+    language_code = translation.get_language() or request.LANGUAGE_CODE or "en"
+    query_folded = query.casefold()
+
+    concept_results = []
+    for concept in Concept.objects.all().order_by("id"):
+        label = localized_concept_label(concept, language_code)
+        if query_folded in label.casefold():
+            concept_results.append({
+                "id": concept.pk,
+                "label": label,
+                "url": reverse("concept_detail", args=[concept.pk]),
+                "type": "concept",
+            })
+        if len(concept_results) == 10:
+            break
+
+    places = LocationPoint.objects.filter(
+        Q(current_name__icontains=query) | Q(alternate_names__icontains=query)
+    ).order_by("current_name")[:10]
+    place_results = [
+        {
+            "id": place.pk,
+            "label": place.current_name,
+            "url": reverse("location_detail", args=[place.pk]),
+            "type": "place",
+        }
+        for place in places
+    ]
+
+    people = Person.objects.filter(
+        Q(given_name__icontains=query) | Q(family_name__icontains=query)
+    ).order_by("family_name", "given_name")[:10]
+    person_results = []
+    for person in people:
+        event_data = list(
+            Event.objects.filter(
+                persons=person,
+                start_location__location__isnull=False,
+                end_location__location__isnull=False,
+            )
+            .values("id", "start_location_id", "end_location_id")
+        )
+        person_results.append({
+            "id": person.pk,
+            "label": f"{person.family_name}, {person.given_name}",
+            "url": reverse("person_detail", args=[person.pk]),
+            "type": "person",
+            "event_ids": [item["id"] for item in event_data],
+            "location_ids": sorted({
+                location_id
+                for item in event_data
+                for location_id in (item["start_location_id"], item["end_location_id"])
+            }),
+        })
+
+    event_results = []
+    events = Event.objects.select_related("timespan", "start_location", "end_location").order_by("id")
+    for event in events:
+        label = localized_event_description(event, language_code)
+        if query_folded not in label.casefold():
+            continue
+        location_ids = [
+            location_id for location_id in (event.start_location_id, event.end_location_id)
+            if location_id is not None
+        ]
+        event_results.append({
+            "id": event.pk,
+            "label": label,
+            "url": reverse("event_detail", args=[event.pk]),
+            "type": "event",
+            "location_ids": location_ids,
+        })
+        if len(event_results) == 10:
+            break
+
+    return JsonResponse({
+        "concepts": concept_results,
+        "places": place_results,
+        "people": person_results,
+        "events": event_results,
+    })
+
+
+# ---- DRF API ViewSets ----
+
+class BulkMixin:
+    """Mixin adding ``bulk_upsert`` and ``bulk_update`` actions to ViewSets.
+
+    Subclasses must define ``bulk_lookup_field`` — the model field used to
+    match existing records during upsert (e.g. ``"label"`` for Concept).
+    """
+    bulk_lookup_field: str = ""
+
+    @action(detail=False, methods=["post"], url_path="bulk_upsert")
+    def bulk_upsert(self, request):
+        """Create or update many objects in one request.
+
+        Accepts ``{"items": [{...}, ...]}`` where each item has the fields
+        accepted by the serializer.  Existing records are matched by
+        ``bulk_lookup_field``; matched records are updated, others are created.
+        """
+        items = request.data.get("items", [])
+        if not items or not isinstance(items, list):
+            return Response(
+                {"detail": "'items' must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        lookup = self.bulk_lookup_field
+        model = self.get_queryset().model
+        serializer_cls = self.get_serializer_class()
+
+        created, updated, errors = [], [], []
+        with transaction.atomic():
+            for idx, item in enumerate(items):
+                try:
+                    lookup_val = item.get(lookup)
+                    existing = None
+                    if lookup and lookup_val:
+                        existing = model.objects.filter(
+                            **{f"{lookup}__iexact": lookup_val}
+                        ).first()
+                    if existing:
+                        ser = serializer_cls(existing, data=item, partial=True)
+                        ser.is_valid(raise_exception=True)
+                        ser.save()
+                        updated.append(ser.data)
+                    else:
+                        ser = serializer_cls(data=item)
+                        ser.is_valid(raise_exception=True)
+                        ser.save()
+                        created.append(ser.data)
+                except Exception as exc:
+                    errors.append({"index": idx, "error": str(exc)})
+        return Response(
+            {"created": len(created), "updated": len(updated), "errors": errors,
+             "created_items": created, "updated_items": updated},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["patch"], url_path="bulk_update")
+    def bulk_update(self, request):
+        """Update many objects by ID.
+
+        Accepts ``{"items": [{"id": 1, ...}, ...]}`` — each item must include
+        an ``id`` field and any fields to update.
+        """
+        items = request.data.get("items", [])
+        if not items or not isinstance(items, list):
+            return Response(
+                {"detail": "'items' must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        model = self.get_queryset().model
+        serializer_cls = self.get_serializer_class()
+
+        updated, errors = [], []
+        with transaction.atomic():
+            for idx, item in enumerate(items):
+                obj_id = item.pop("id", None)
+                if not obj_id:
+                    errors.append({"index": idx, "error": "Missing 'id'"})
+                    continue
+                try:
+                    obj = model.objects.get(pk=obj_id)
+                    ser = serializer_cls(obj, data=item, partial=True)
+                    ser.is_valid(raise_exception=True)
+                    ser.save()
+                    updated.append(ser.data)
+                except model.DoesNotExist:
+                    errors.append({"index": idx, "error": f"ID {obj_id} not found"})
+                except Exception as exc:
+                    errors.append({"index": idx, "error": str(exc)})
+        return Response(
+            {"updated": len(updated), "errors": errors, "updated_items": updated},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["post"], url_path="bulk_create")
+    def bulk_create(self, request):
+        """Create many objects in one request (no matching/upsert).
+
+        Accepts ``{"items": [{...}, ...]}`` — each item is created as-is.
+        Returns the created items with IDs in order.
+        """
+        items = request.data.get("items", [])
+        if not items or not isinstance(items, list):
+            return Response(
+                {"detail": "'items' must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer_cls = self.get_serializer_class()
+        created, errors = [], []
+        with transaction.atomic():
+            for idx, item in enumerate(items):
+                try:
+                    ser = serializer_cls(data=item)
+                    ser.is_valid(raise_exception=True)
+                    ser.save()
+                    created.append(ser.data)
+                except Exception as exc:
+                    errors.append({"index": idx, "error": str(exc)})
+        return Response(
+            {"created": len(created), "errors": errors, "items": created},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PersonViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Person.objects.all()
+    serializer_class = PersonSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["given_name", "family_name", "identifier"]
+    bulk_lookup_field = "identifier"
+
+
+class LocationPointViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = LocationPoint.objects.all()
+    serializer_class = LocationPointSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["current_name"]
+    bulk_lookup_field = "current_name"
+
+
+class LocationRegionViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = LocationRegion.objects.all()
+    serializer_class = LocationRegionSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+    bulk_lookup_field = "name"
+
+
+class RelationshipTypeViewSet(viewsets.ModelViewSet):
+    queryset = RelationshipType.objects.all()
+    serializer_class = RelationshipTypeSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["translations__name"]
+
+
+class RelationshipViewSet(viewsets.ModelViewSet):
+    queryset = Relationship.objects.all()
+    serializer_class = RelationshipSerializer
+
+
+class InterviewViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Interview.objects.all()
+    serializer_class = InterviewSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["archive_id", "extracted_from__quote"]
+    bulk_lookup_field = "archive_id"
+
+
+class EventViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    bulk_lookup_field = "description"
+
+
+class ExtractionListView(ListView):
+    model = Extraction
+    template_name = "mmt_motm/extraction_list.html"
+    context_object_name = "extractions"
+
+    def get_queryset(self):
+        return (
+            Extraction.objects.select_related(
+                "people_mentioned",
+                "interview",
+                "interview__interviewee",
+            )
+            .prefetch_related("concepts", "interview__urls")
+            .order_by("identifier")
+        )
+
+
+class ExtractionDetailView(DetailView):
+    model = Extraction
+    template_name = "mmt_motm/extraction_detail.html"
+    context_object_name = "extraction"
+
+
+class SourceCategoryHeatmapView(ListView):
+    model = Interview
+    template_name = "mmt_motm/source_category_heatmap.html"
+    context_object_name = "interviews"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        interviews = Interview.objects.order_by('archive_id')
+
+        # Build root-id lookup: concept_id → root category id
+        all_concepts = Concept.objects.values('id', 'parent_id')
+        parent_map = {c['id']: c['parent_id'] for c in all_concepts}
+
+        def find_root(cid):
+            visited = set()
+            while cid and cid not in visited:
+                visited.add(cid)
+                pid = parent_map.get(cid)
+                if pid is None:
+                    return cid
+                cid = pid
+            return cid
+
+        # Count extractions per (interview_id, root_category_id)
+        extractions = (
+            Extraction.objects.filter(interview__isnull=False)
+            .values_list('interview_id', 'concepts__id')
+        )
+        counts = {}  # (interview_id, root_id) → count
+        for interview_id, concept_id in extractions:
+            if concept_id is None:
+                continue
+            root_id = find_root(concept_id)
+            key = (interview_id, root_id)
+            counts[key] = counts.get(key, 0) + 1
+
+        # Only show root categories that occur in at least one interview.
+        used_root_ids = {root_id for _, root_id in counts if root_id is not None}
+        categories = Concept.objects.filter(
+            parent__isnull=True,
+            id__in=used_root_ids,
+        ).order_by('translations__label')
+
+        max_count = max(counts.values()) if counts else 1
+
+        # Build grid: one row per category, one cell per interview
+        grid = []
+        for cat in categories:
+            row_total = sum(counts.get((iv.id, cat.id), 0) for iv in interviews)
+            cells = []
+            for interview in interviews:
+                cells.append(counts.get((interview.id, cat.id), 0))
+            grid.append({"category": cat, "cells": cells, "total": row_total})
+
+        # Sort by total count, most frequent first
+        grid.sort(key=lambda row: row["total"], reverse=True)
+
+        context["categories"] = categories
+        context["interviews"] = interviews
+        context["grid"] = grid
+        context["max_count"] = max_count
+        return context
+
+
+class LifeJourneyHeatmapView(ListView):
+    model = Event
+    template_name = "mmt_motm/life_journey_heatmap.html"
+    context_object_name = "events"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        stages = list(Event.LIFECYCLE_CONFIG.keys())
+        stage_labels = {k: v["label"] for k, v in Event.LIFECYCLE_CONFIG.items()}
+        stage_colors = {k: v["color"] for k, v in Event.LIFECYCLE_CONFIG.items()}
+
+        interviews = Interview.objects.filter(
+            interviewee__isnull=False
+        ).select_related("interviewee").order_by("archive_id")
+
+        # Count events per (person_id, lifecycle) via the Event.persons M2M
+        event_qs = Event.objects.values_list("persons__id", "lifecycle")
+        person_counts = {}
+        for person_id, lifecycle in event_qs:
+            if person_id is None:
+                continue
+            key = (person_id, lifecycle or Event.LIFECYCLE_DEFAULT)
+            person_counts[key] = person_counts.get(key, 0) + 1
+
+        max_count = max(person_counts.values()) if person_counts else 1
+
+        # Build grid: one row per interview, using interviewee's event counts
+        grid = []
+        for interview in interviews:
+            pid = interview.interviewee_id
+            cells = []
+            row_total = 0
+            for stage in stages:
+                c = person_counts.get((pid, stage), 0)
+                cells.append(c)
+                row_total += c
+            if row_total > 0:
+                grid.append({"interview": interview, "cells": cells, "total": row_total})
+
+        grid.sort(key=lambda row: row["total"], reverse=True)
+
+        context["stages"] = stages
+        context["stage_labels"] = stage_labels
+        context["stage_colors"] = stage_colors
+        context["grid"] = grid
+        context["max_count"] = max_count
+        context["stages_json"] = json.dumps(stages)
+        context["stage_colors_json"] = json.dumps(stage_colors)
+        context["stage_headers"] = [
+            {"label": stage_labels[s], "color": stage_colors[s], "icon": Event.LIFECYCLE_CONFIG[s]["icon"]} for s in stages
+        ]
+        return context
+
+
+class ExtractionViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Extraction.objects.all()
+    serializer_class = ExtractionSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["identifier", "quote"]
+    bulk_lookup_field = "identifier"
+
+
+class ConceptViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Concept.objects.all()
+    serializer_class = ConceptSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["translations__label"]
+    bulk_lookup_field = "label"
+
+
+class TimespanViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = Timespan.objects.all()
+    serializer_class = TimespanSerializer
+    bulk_lookup_field = "start"
+
+
+class URLViewSet(BulkMixin, viewsets.ModelViewSet):
+    queryset = URL.objects.all()
+    serializer_class = URLSerializer
+    bulk_lookup_field = "url"
+
+
+class ConceptListView(ListView):
+    model = Concept
+    template_name = "mmt_motm/concept_list.html"
+    context_object_name = "concepts"
+
+    def get_queryset(self):
+        return Concept.objects.annotate(
+            quote_count=Count('relates_to_concept')
+        ).order_by('-quote_count')
+
+
+class ConceptDetailView(DetailView):
+    model = Concept
+    template_name = "mmt_motm/concept_detail.html"
+    context_object_name = "concept"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        location = _location_point_for_concept(self.object)
+        if location:
+            return redirect("location_detail", pk=location.pk)
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        concept = self.object
+        quotes = concept.relates_to_concept.exclude(quote="")
+        context["quotes"] = quotes.prefetch_related("concepts")
+        context["persons"] = Person.objects.filter(
+            relates_to_person__concepts=concept
+        ).distinct()
+        # Build ancestor breadcrumb (excluding self)
+        breadcrumb_items = []
+        node = concept.parent
+        while node:
+            breadcrumb_items.append({
+                "label": node.label,
+                "url": reverse("concept_detail", args=[node.pk]),
+                "icon": node.icon or None,
+            })
+            node = node.parent
+        breadcrumb_items.reverse()
+        context["breadcrumb_items"] = breadcrumb_items
+        return context
+
+
+class ConceptTaxonomyView(ListView):
+    model = Concept
+    template_name = "mmt_motm/concept_taxonomy.html"
+    context_object_name = "roots"
+
+    def get_queryset(self):
+        language_code = translation.get_language() or "en"
+        roots, _, _ = _build_concept_taxonomy_tree(language_code)
+        return roots

@@ -45,6 +45,7 @@ def index(request):
 	# JSON-encode numeric values to prevent locale-specific decimal separator issues
 	context = {
 		'themes': themes, 
+		'hide_theme_menu': True,
 		'bounds': json.dumps(bounds) if bounds else None,
 		'tag_lists': tag_lists,
 		'year_min': year_min, 

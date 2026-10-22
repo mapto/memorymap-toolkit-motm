@@ -1,88 +1,40 @@
-{% load i18n %}
-{% if node.taxonomy_children or node.taxonomy_personae_root or node.location_points and not node.location_link or node.location_points|length > 1 %}
+{% if node.taxonomy_children or node.location_points and not node.location_link or node.location_points|length > 1 %}
 <li class="tree-item">
     <details class="taxonomy-branch">
         <summary>
             <span class="tree-label">
-                {% if node.taxonomy_people|length == 1 %}
-                    {% with person=node.taxonomy_people.0 %}
-                        <a href="{% url 'person_detail' person.pk %}">
-                            {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
-                            {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
-                            {{ node.label }}
-                        </a>
-                    {% endwith %}
-                {% else %}
-                    <a href="{% url 'concept_detail' node.pk %}">
-                        {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
-                        {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
-                        {{ node.label }}
-                    </a>
-                {% endif %}
-                {% if not node.taxonomy_personae_root %}
-                    {% if node.taxonomy_people|length != 1 %}
-                        {% for person in node.taxonomy_people %}
-                            <a class="taxonomy-person-detail-link" href="{% url 'person_detail' person.pk %}" title="{% trans 'View person' %}" aria-label="{% trans 'View person' %}: {{ person.family_name }}{% if person.family_name and person.given_name %}, {% endif %}{{ person.given_name }}"><i class="fas fa-user" aria-hidden="true"></i></a>
-                        {% endfor %}
-                    {% endif %}
-                {% endif %}
-                {% if node.taxonomy_personae_root %}
-                    <span class="taxonomy-person-list-link">&middot; <a href="{% url 'person_list' %}">{% trans "People" %}</a></span>
-                {% endif %}
+                <a href="{% url 'concept_detail' node.pk %}">
+                    {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
+                    {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
+                    {{ node.label }}
+                </a>
             </span>
         </summary>
         <ul class="tree-list">
-            {% if node.taxonomy_personae_root %}
-                {% for child in node.taxonomy_children %}
-                    {% include "mmt_motm/_taxonomy_node.html" with node=child %}
-                {% endfor %}
-                {% for person in node.taxonomy_people %}
-                <li class="tree-item taxonomy-person">
+            {% for child in node.taxonomy_children %}
+                {% include "mmt_motm/_taxonomy_node.html" with node=child %}
+            {% endfor %}
+            {% for location in node.location_points %}
+                {% if not node.location_link or location.pk != node.location_link.pk %}
+                <li class="tree-item">
                     <span class="tree-label">
-                        <i class="fas fa-user" aria-hidden="true"></i>
-                        <a href="{% url 'person_detail' person.pk %}">{{ person.family_name }}{% if person.family_name and person.given_name %}, {% endif %}{{ person.given_name }}</a>
+                        <i class="fas fa-map-pin" aria-hidden="true"></i>
+                        <a href="{% url 'location_detail' location.pk %}">{{ location.current_name }}</a>
                     </span>
                 </li>
-                {% endfor %}
-            {% else %}
-                {% for child in node.taxonomy_children %}
-                    {% include "mmt_motm/_taxonomy_node.html" with node=child %}
-                {% endfor %}
-                {% for location in node.location_points %}
-                    {% if not node.location_link or location.pk != node.location_link.pk %}
-                    <li class="tree-item">
-                        <span class="tree-label">
-                            <i class="fas fa-map-pin" aria-hidden="true"></i>
-                            <a href="{% url 'location_detail' location.pk %}">{{ location.current_name }}</a>
-                        </span>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+                {% endif %}
+            {% endfor %}
         </ul>
     </details>
 </li>
 {% else %}
 <li class="tree-item">
     <span class="tree-label">
-        {% if node.taxonomy_people|length == 1 %}
-            {% with person=node.taxonomy_people.0 %}
-                <a href="{% url 'person_detail' person.pk %}">
-                    {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
-                    {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
-                    {{ node.label }}
-                </a>
-            {% endwith %}
-        {% else %}
-            <a href="{% url 'concept_detail' node.pk %}">
-                {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
-                {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
-                {{ node.label }}
-            </a>
-            {% for person in node.taxonomy_people %}
-                <a class="taxonomy-person-detail-link" href="{% url 'person_detail' person.pk %}" title="{% trans 'View person' %}" aria-label="{% trans 'View person' %}: {{ person.family_name }}{% if person.family_name and person.given_name %}, {% endif %}{{ person.given_name }}"><i class="fas fa-user" aria-hidden="true"></i></a>
-            {% endfor %}
-        {% endif %}
+        <a href="{% url 'concept_detail' node.pk %}">
+            {% if node.icon %}<i class="fas {{ node.icon }}" aria-hidden="true"></i> {% endif %}
+            {% if node.location_link %}<i class="fas fa-map-pin" aria-hidden="true"></i> {% endif %}
+            {{ node.label }}
+        </a>
     </span>
 </li>
 {% endif %}

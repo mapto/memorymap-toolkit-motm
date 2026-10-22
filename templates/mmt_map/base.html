@@ -163,7 +163,7 @@
 								<a class="dropdown-item" href="https://prinminorsonthemove.wordpress.com/" target="_blank" rel="noopener">{% trans "Research Project" %}</a>
 							</div>
 						</li>
-						{% if themes %}
+						{% if themes and not hide_theme_menu %}
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#"
 								id="navbarDropdown" role="button"
