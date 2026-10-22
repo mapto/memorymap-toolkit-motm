@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-21 14:55\n"
+"PO-Revision-Date: 2026-10-22 13:23\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
 "Language: en_US\n"
@@ -49,6 +49,10 @@ msgstr ""
 
 #: mmt_motm/models.py:10
 msgid "Estimated"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "Unknown"
 msgstr ""
 
 #: mmt_motm/models.py:11
@@ -148,6 +152,11 @@ msgstr ""
 msgid "Heatmap"
 msgstr ""
 
+#: templates/mmt_map/base.html:134 templates/mmt_motm/event_list.html:6
+#: templates/mmt_motm/text_only.html:23
+msgid "Timeline"
+msgstr ""
+
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
 #: templates/mmt_motm/extraction_list.html:6
@@ -155,6 +164,10 @@ msgstr ""
 #: templates/mmt_motm/person_detail.html:170
 #: templates/mmt_motm/text_only.html:75
 msgid "Quotes"
+msgstr ""
+
+#: templates/mmt_motm/person_detail.html:188
+msgid "Quotes about this person"
 msgstr ""
 
 #: templates/mmt_map/base.html:157
@@ -369,7 +382,19 @@ msgid "Person mentioned:"
 msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:30
-msgid "Classification:"
+msgid "Priority:"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "High"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "Medium"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "Low"
 msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:39
@@ -390,6 +415,10 @@ msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:8
 msgid "Search by quote, concept or person…"
+msgstr ""
+
+#: templates/mmt_motm/extraction_list.html
+msgid "citations"
 msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:12
@@ -476,10 +505,6 @@ msgstr ""
 msgid "No sources found."
 msgstr ""
 
-#: templates/mmt_motm/life_journey_heatmap.html:6
-msgid "Life Journey × Sources"
-msgstr ""
-
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
 msgstr ""
@@ -558,8 +583,8 @@ msgid "Died:"
 msgstr "Died:"
 
 #: templates/mmt_motm/person_detail.html:60
-msgid "Biography"
-msgstr "Biography"
+msgid "Persecuted group"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
@@ -633,15 +658,6 @@ msgstr ""
 msgid "No people found."
 msgstr ""
 
-#: templates/mmt_motm/source_category_heatmap.html:6
-#: templates/mmt_motm/text_only.html:83
-msgid "Sources × Categories"
-msgstr ""
-
-#: templates/mmt_motm/source_category_heatmap.html:11
-msgid "Category \\ Source"
-msgstr ""
-
 #: templates/mmt_motm/text_only.html:6
 msgid "Site Overview"
 msgstr ""
@@ -654,16 +670,8 @@ msgstr ""
 msgid "Searchable table of all events"
 msgstr ""
 
-#: templates/mmt_motm/text_only.html:31
-msgid "Persons × Life Journey Heatmap"
-msgstr ""
-
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
-msgstr ""
-
-#: templates/mmt_motm/text_only.html:46
-msgid "Concepts & Themes"
 msgstr ""
 
 #: templates/mmt_motm/text_only.html:53
@@ -672,10 +680,6 @@ msgstr ""
 
 #: templates/mmt_motm/text_only.html:57
 msgid "Hierarchy"
-msgstr ""
-
-#: templates/mmt_motm/text_only.html:63
-msgid "Sources & Quotes"
 msgstr ""
 
 #: templates/mmt_motm/text_only.html:69
@@ -694,10 +698,6 @@ msgstr ""
 msgid "Interactive Map"
 msgstr ""
 
-#: templates/mmt_motm/text_only.html:96
-msgid "Places & events"
-msgstr ""
-
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"
 msgstr "Places Map"
@@ -705,4 +705,24 @@ msgstr "Places Map"
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
 msgstr "Map view"
+
+#: templates/mmt_motm/person_detail.html:170
+msgid "See all"
+msgstr ""
+
+#: templates/mmt_map/index.html
+msgid "Selected map items"
+msgstr ""
+
+msgid "Education / qualification:"
+msgstr ""
+
+msgid "Occupation at emigration:"
+msgstr ""
+
+msgid "Occupation at source:"
+msgstr ""
+
+msgid "Residence at source:"
+msgstr ""
 
