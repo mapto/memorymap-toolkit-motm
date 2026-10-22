@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-07 00:00+0000\n"
-"PO-Revision-Date: 2026-10-22 13:23\n"
+"PO-Revision-Date: 2026-10-22 13:47\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -35,7 +35,7 @@ msgstr ""
 
 msgctxt "concept:5"
 msgid "Milieu"
-msgstr ""
+msgstr "ambiente"
 
 msgctxt "concept:6"
 msgid "Ancestors"
@@ -148,7 +148,7 @@ msgstr ""
 
 msgctxt "concept:34"
 msgid "'Ostjuden' / 'Jeckes'"
-msgstr ""
+msgstr "'Ebrei orientali' / 'Jeckes'"
 
 msgctxt "concept:35"
 msgid "Social stigma"
@@ -180,7 +180,7 @@ msgstr ""
 
 msgctxt "concept:42"
 msgid "Religion"
-msgstr ""
+msgstr "Religione"
 
 msgctxt "concept:43"
 msgid "Rabbinical seminar"
@@ -248,7 +248,7 @@ msgstr ""
 
 msgctxt "concept:59"
 msgid "Jewish Agency"
-msgstr ""
+msgstr "Agenzia ebraica"
 
 msgctxt "concept:60"
 msgid "Emotions"
@@ -319,7 +319,7 @@ msgstr ""
 
 msgctxt "concept:76"
 msgid "code-switching"
-msgstr ""
+msgstr "La commutazione di codice"
 
 msgctxt "concept:77"
 msgid "Structure of the country"
@@ -347,7 +347,7 @@ msgstr ""
 
 msgctxt "concept:83"
 msgid "Generation"
-msgstr ""
+msgstr "Generazione"
 
 msgctxt "concept:84"
 msgid "ironic allusion to the military situation in Palestine and Israel"
@@ -420,7 +420,7 @@ msgstr ""
 
 msgctxt "concept:101"
 msgid "English"
-msgstr ""
+msgstr "Inglese"
 
 msgctxt "concept:102"
 msgid "Municipality"
@@ -428,7 +428,7 @@ msgstr ""
 
 msgctxt "concept:103"
 msgid "code switching"
-msgstr ""
+msgstr "La commutazione di codice"
 
 msgctxt "concept:104"
 msgid "Home:"
@@ -496,7 +496,7 @@ msgstr ""
 
 msgctxt "concept:120"
 msgid "Emigration"
-msgstr ""
+msgstr "emigrazione"
 
 msgctxt "concept:121"
 msgid "Parents"
