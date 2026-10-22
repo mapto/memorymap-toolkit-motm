@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-09-07 08:23\n"
+"PO-Revision-Date: 2026-10-22 13:23\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de_DE\n"
@@ -14,8 +14,8 @@ msgstr ""
 "X-Crowdin-Project: motm\n"
 "X-Crowdin-Project-ID: 925547\n"
 "X-Crowdin-Language: de\n"
-"X-Crowdin-File: /alignment/locale/en/LC_MESSAGES/django.po\n"
-"X-Crowdin-File-ID: 14\n"
+"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/django.po\n"
+"X-Crowdin-File-ID: 20\n"
 
 #: mmt_map/forms.py:16 mmt_map/forms.py:30 mmt_map/forms.py:46
 #: mmt_map/forms.py:60
@@ -37,7 +37,7 @@ msgstr "Punkte"
 
 #: mmt_map/forms.py:50
 msgid "Polygon"
-msgstr "Polygon"
+msgstr ""
 
 #: mmt_map/forms.py:64
 msgid "Line"
@@ -50,6 +50,10 @@ msgstr "Sicher"
 #: mmt_motm/models.py:10
 msgid "Estimated"
 msgstr "Geschätzt"
+
+#: mmt_motm/models.py
+msgid "Unknown"
+msgstr ""
 
 #: mmt_motm/models.py:11
 msgid "Probable"
@@ -81,15 +85,15 @@ msgstr "Umstrittenes Datum"
 
 #: mmt_motm/models.py:140
 msgid "Alte Heimat"
-msgstr "Alte Heimat"
+msgstr ""
 
 #: mmt_motm/models.py:141
 msgid "Auswanderung"
-msgstr "Auswanderung"
+msgstr ""
 
 #: mmt_motm/models.py:142
 msgid "Neue Heimat"
-msgstr "Neue Heimat"
+msgstr ""
 
 #: mmt_motm/models.py:143
 msgid "Reise zurück"
@@ -146,7 +150,12 @@ msgstr "Liste"
 #: templates/mmt_map/base.html:134 templates/mmt_map/base.html:147
 #: templates/mmt_motm/text_only.html:82
 msgid "Heatmap"
-msgstr "Heatmap"
+msgstr ""
+
+#: templates/mmt_map/base.html:134 templates/mmt_motm/event_list.html:6
+#: templates/mmt_motm/text_only.html:23
+msgid "Timeline"
+msgstr ""
 
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
@@ -156,6 +165,10 @@ msgstr "Heatmap"
 #: templates/mmt_motm/text_only.html:75
 msgid "Quotes"
 msgstr "Zitate"
+
+#: templates/mmt_motm/person_detail.html:188
+msgid "Quotes about this person"
+msgstr ""
 
 #: templates/mmt_map/base.html:157
 msgid "About"
@@ -216,7 +229,7 @@ msgstr "Ortsverzeichnis"
 #: templates/mmt_map/index.html:18 templates/mmt_motm/event_list.html:14
 #: templates/mmt_motm/text_only.html:30
 msgid "Life Journey"
-msgstr "Lebenslauf"
+msgstr "Lebensweg"
 
 #: templates/mmt_motm/_breadcrumb.html:13
 msgid "breadcrumb"
@@ -275,7 +288,7 @@ msgstr "Zurück"
 
 #: templates/mmt_motm/event_detail.html:11
 msgid "Details"
-msgstr "Details"
+msgstr ""
 
 #: templates/mmt_motm/event_detail.html:15
 msgid "Life Journey:"
@@ -369,8 +382,20 @@ msgid "Person mentioned:"
 msgstr "Erwähnte Person:"
 
 #: templates/mmt_motm/extraction_detail.html:30
-msgid "Classification:"
-msgstr "Klassifizierung:"
+msgid "Priority:"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "High"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "Medium"
+msgstr ""
+
+#: mmt_motm/models.py
+msgid "Low"
+msgstr ""
 
 #: templates/mmt_motm/extraction_detail.html:39
 msgid "Event:"
@@ -392,9 +417,13 @@ msgstr "Notizen"
 msgid "Search by quote, concept or person…"
 msgstr "Suche nach Zitat, Konzept oder Person…"
 
+#: templates/mmt_motm/extraction_list.html
+msgid "citations"
+msgstr ""
+
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
-msgstr "Person"
+msgstr ""
 
 #: templates/mmt_motm/extraction_list.html:13
 #: templates/mmt_motm/interview_detail.html:57
@@ -476,10 +505,6 @@ msgstr "Interviewer:in"
 msgid "No sources found."
 msgstr "Keine Quellen gefunden."
 
-#: templates/mmt_motm/life_journey_heatmap.html:6
-msgid "Life Journey × Sources"
-msgstr "Lebenslauf × Quellen"
-
 #: templates/mmt_motm/location_detail.html:13
 msgid "Alternate names:"
 msgstr "Alternative Namen:"
@@ -490,7 +515,7 @@ msgstr "Adresse:"
 
 #: templates/mmt_motm/location_detail.html:27
 msgid "Wikidata:"
-msgstr "Wikidata:"
+msgstr ""
 
 #: templates/mmt_motm/location_detail.html:33
 msgid "GeoNames:"
@@ -551,15 +576,15 @@ msgstr "Geboren:"
 #: templates/mmt_motm/person_detail.html:32
 #: templates/mmt_motm/person_detail.html:47
 msgid "in"
-msgstr "in"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:39
 msgid "Died:"
 msgstr "Gestorben:"
 
 #: templates/mmt_motm/person_detail.html:60
-msgid "Biography"
-msgstr "Biografie"
+msgid "Persecuted group"
+msgstr ""
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
@@ -579,7 +604,7 @@ msgstr "von"
 
 #: templates/mmt_motm/person_detail.html:144
 msgid "Sources conducted"
-msgstr "Durchgeführte Quellen"
+msgstr "Ausgewertete Quellen"
 
 #: templates/mmt_motm/person_detail.html:150
 msgid "with"
@@ -633,15 +658,6 @@ msgstr "Top-Konzepte"
 msgid "No people found."
 msgstr "Keine Personen gefunden."
 
-#: templates/mmt_motm/source_category_heatmap.html:6
-#: templates/mmt_motm/text_only.html:83
-msgid "Sources × Categories"
-msgstr "Quellen × Kategorien"
-
-#: templates/mmt_motm/source_category_heatmap.html:11
-msgid "Category \\ Source"
-msgstr "Kategorie \\ Quelle"
-
 #: templates/mmt_motm/text_only.html:6
 msgid "Site Overview"
 msgstr "Seitenübersicht"
@@ -654,17 +670,9 @@ msgstr "Durchsuchbare und durchstöberbare Tabelle"
 msgid "Searchable table of all events"
 msgstr "Durchsuchbare Tabelle aller Ereignisse"
 
-#: templates/mmt_motm/text_only.html:31
-msgid "Persons × Life Journey Heatmap"
-msgstr "Personen × Lebenslauf-Heatmap"
-
 #: templates/mmt_motm/text_only.html:38
 msgid "All places as a list"
 msgstr "Alle Orte als Liste"
-
-#: templates/mmt_motm/text_only.html:46
-msgid "Concepts & Themes"
-msgstr "Konzepte & Themen"
 
 #: templates/mmt_motm/text_only.html:53
 msgid "Word cloud"
@@ -673,10 +681,6 @@ msgstr "Wortwolke"
 #: templates/mmt_motm/text_only.html:57
 msgid "Hierarchy"
 msgstr "Hierarchie"
-
-#: templates/mmt_motm/text_only.html:63
-msgid "Sources & Quotes"
-msgstr "Quellen & Zitate"
 
 #: templates/mmt_motm/text_only.html:69
 msgid "Recorded"
@@ -694,10 +698,6 @@ msgstr "Kartenbasierte Seiten"
 msgid "Interactive Map"
 msgstr "Interaktive Karte"
 
-#: templates/mmt_motm/text_only.html:96
-msgid "Places & events"
-msgstr "Orte & Ereignisse"
-
 #: templates/mmt_motm/text_only.html:102
 msgid "Places Map"
 msgstr "Ortskarte"
@@ -705,3 +705,24 @@ msgstr "Ortskarte"
 #: templates/mmt_motm/text_only.html:103
 msgid "Map view"
 msgstr "Kartenansicht"
+
+#: templates/mmt_motm/person_detail.html:170
+msgid "See all"
+msgstr ""
+
+#: templates/mmt_map/index.html
+msgid "Selected map items"
+msgstr ""
+
+msgid "Education / qualification:"
+msgstr ""
+
+msgid "Occupation at emigration:"
+msgstr ""
+
+msgid "Occupation at source:"
+msgstr ""
+
+msgid "Residence at source:"
+msgstr ""
+
