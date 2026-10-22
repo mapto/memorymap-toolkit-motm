@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-07 00:00+0000\n"
-"PO-Revision-Date: 2026-10-22 12:56\n"
+"PO-Revision-Date: 2026-10-22 13:23\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -18,103 +18,99 @@ msgstr ""
 "X-Crowdin-File-ID: 22\n"
 
 msgctxt "concept:1"
-msgid "Home:"
-msgstr ""
-
-msgctxt "concept:2"
 msgid "Family"
 msgstr ""
 
-msgctxt "concept:3"
+msgctxt "concept:2"
 msgid "Father"
 msgstr ""
 
-msgctxt "concept:4"
-msgid "Cultural role of Ada's family in the Jewish community"
-msgstr ""
-
-msgctxt "concept:5"
+msgctxt "concept:3"
 msgid "Mother"
 msgstr ""
 
+msgctxt "concept:4"
+msgid "Judaism"
+msgstr ""
+
+msgctxt "concept:5"
+msgid "Milieu"
+msgstr ""
+
 msgctxt "concept:6"
-msgid "Brother"
+msgid "Ancestors"
 msgstr ""
 
 msgctxt "concept:7"
-msgid "Reminder"
+msgid "Identity"
 msgstr ""
 
 msgctxt "concept:8"
-msgid "Old homeland"
+msgid "Zionism"
 msgstr ""
 
 msgctxt "concept:9"
-msgid "(Themed) objects"
+msgid "Preparations for the emigration of the children"
 msgstr ""
 
 msgctxt "concept:10"
-msgid "School"
+msgid "Siblings"
 msgstr ""
 
 msgctxt "concept:11"
-msgid "racism;"
+msgid "Early school leaving"
 msgstr ""
 
 msgctxt "concept:12"
-msgid "Anti-Semitism"
+msgid "Awareness (as opposed to haunted)"
 msgstr ""
 
 msgctxt "concept:13"
-msgid "Youth Movement ('Comrades') and Zionism"
+msgid "Objects (house of birth"
 msgstr ""
 
 msgctxt "concept:14"
-msgid "Youth movements"
+msgid "Book Case Furniture"
 msgstr ""
 
 msgctxt "concept:15"
-msgid "The Farewell"
+msgid "Books"
 msgstr ""
 
 msgctxt "concept:16"
-msgid "Migration of many inhabitants from Frankfurt an der Oder"
+msgid "School"
 msgstr ""
 
 msgctxt "concept:17"
-msgid "Hakhshara"
-msgstr ""
-
-msgctxt "concept:18"
-msgid "Longing"
+msgid "Education"
 msgstr ""
 
 msgctxt "concept:19"
-msgid "Children's Village"
+msgid "Reminder"
 msgstr ""
 
 msgctxt "concept:20"
-msgid "Hugen-Aljia"
+msgid "Bar/Bat  Mitzvah"
 msgstr ""
 
 msgctxt "concept:21"
-msgid "Division of the youth village near Ben Schemen"
+msgid "jewish community in the old homeland"
 msgstr ""
 
 msgctxt "concept:22"
-msgid "Living together of Alija children and local children in Ben Shema"
+msgid "Judaism"
 msgstr ""
 
 msgctxt "concept:23"
-msgid "Immigration"
+msgid "Languages"
 msgstr ""
 
 msgctxt "concept:24"
-msgid "Emigration"
+msgid "Iwrit"
 msgstr ""
 
 msgctxt "concept:25"
-msgid "Parents"
+msgid "Break"
 msgstr ""
 
 msgctxt "concept:26"
@@ -122,1451 +118,1523 @@ msgid "Reflection in narrative presence"
 msgstr ""
 
 msgctxt "concept:27"
-msgid "Father's attitude towards Zionism"
-msgstr ""
-
-msgctxt "concept:28"
-msgid "Parents' Attitude to Zionism"
-msgstr ""
-
-msgctxt "concept:29"
-msgid "Crystal Night"
-msgstr ""
-
-msgctxt "concept:30"
-msgid "The concentration camp"
-msgstr ""
-
-msgctxt "concept:31"
-msgid "Departure certificate for Ada's father"
-msgstr ""
-
-msgctxt "concept:32"
-msgid "Help from family"
-msgstr ""
-
-msgctxt "concept:33"
-msgid "Story of the Liberation of Ada's Father"
-msgstr ""
-
-msgctxt "concept:34"
-msgid "Living in the new country"
-msgstr ""
-
-msgctxt "concept:35"
-msgid "Languages"
-msgstr ""
-
-msgctxt "concept:36"
-msgid "Iwrit"
-msgstr ""
-
-msgctxt "concept:37"
-msgid "English"
-msgstr ""
-
-msgctxt "concept:38"
-msgid "code-switching"
-msgstr ""
-
-msgctxt "concept:39"
-msgid "Languages and \"mastery\" of reality"
-msgstr ""
-
-msgctxt "concept:40"
-msgid "Identity"
-msgstr ""
-
-msgctxt "concept:41"
-msgid "Language and Fracture"
-msgstr ""
-
-msgctxt "concept:42"
-msgid "Relationship with Iwrit"
-msgstr ""
-
-msgctxt "concept:43"
-msgid "Education"
-msgstr ""
-
-msgctxt "concept:44"
-msgid "code switching"
-msgstr ""
-
-msgctxt "concept:45"
-msgid "related to the anniversary of the father's death"
-msgstr ""
-
-msgctxt "concept:46"
-msgid "Internment camps for Jews in Cyprus"
-msgstr ""
-
-msgctxt "concept:47"
-msgid "Various professions in the field of music education and musicology"
-msgstr ""
-
-msgctxt "concept:48"
-msgid "Contribution to music education in radio broadcasts"
-msgstr ""
-
-msgctxt "concept:49"
-msgid "Series about Bach and Beethoven"
-msgstr ""
-
-msgctxt "concept:50"
-msgid "Rilke"
-msgstr ""
-
-msgctxt "concept:51"
-msgid "Translation problems when recomposing lyrics"
-msgstr ""
-
-msgctxt "concept:52"
-msgid "Relationship with the German language"
-msgstr ""
-
-msgctxt "concept:53"
-msgid "Speech with brother"
-msgstr ""
-
-msgctxt "concept:54"
-msgid "Ada's attitude towards her work as a contribution to cultural life in Israel"
-msgstr ""
-
-msgctxt "concept:55"
-msgid "Enjoyment of their work"
-msgstr ""
-
-msgctxt "concept:56"
-msgid "Generation"
-msgstr ""
-
-msgctxt "concept:57"
-msgid "Continuity"
-msgstr ""
-
-msgctxt "concept:58"
-msgid "Continuity (passing on the culture"
-msgstr ""
-
-msgctxt "concept:59"
-msgid "Memories and experiences of the daughters)"
-msgstr ""
-
-msgctxt "concept:60"
-msgid "Negative feelings and experiences during visits to Germany"
-msgstr ""
-
-msgctxt "concept:61"
-msgid "Break"
-msgstr ""
-
-msgctxt "concept:62"
-msgid "Languages"
-msgstr ""
-
-msgctxt "concept:63"
-msgid "Culture"
-msgstr ""
-
-msgctxt "concept:64"
-msgid "Complex and conflicting perceptions of emigration as a young girl"
-msgstr ""
-
-msgctxt "concept:65"
-msgid "Flight"
-msgstr ""
-
-msgctxt "concept:66"
-msgid "Emigration"
-msgstr ""
-
-msgctxt "concept:67"
-msgid "My New Home"
-msgstr ""
-
-msgctxt "concept:68"
-msgid "Offspring"
-msgstr ""
-
-msgctxt "concept:69"
-msgid "Casting anti-Semitism"
-msgstr ""
-
-msgctxt "concept:70"
-msgid "Step mother"
-msgstr ""
-
-msgctxt "concept:71"
-msgid "Gießen"
-msgstr ""
-
-msgctxt "concept:72"
-msgid "Palestine State"
-msgstr ""
-
-msgctxt "concept:73"
-msgid "Structure of the country"
-msgstr ""
-
-msgctxt "concept:74"
-msgid "Germany"
-msgstr ""
-
-msgctxt "concept:75"
-msgid "1938"
-msgstr ""
-
-msgctxt "concept:76"
-msgid "'Kristallnacht‘"
-msgstr ""
-
-msgctxt "concept:77"
-msgid "Synagogues"
-msgstr ""
-
-msgctxt "concept:78"
-msgid "Shoah"
-msgstr ""
-
-msgctxt "concept:79"
-msgid "The journey back"
-msgstr ""
-
-msgctxt "concept:80"
-msgid "Jewish Brigade"
-msgstr ""
-
-msgctxt "concept:81"
-msgid "Grand Father"
-msgstr ""
-
-msgctxt "concept:82"
-msgid "Isaak Stern"
-msgstr ""
-
-msgctxt "concept:83"
-msgid "Religion"
-msgstr ""
-
-msgctxt "concept:84"
-msgid "Fanatacism"
-msgstr ""
-
-msgctxt "concept:85"
-msgid "1918"
-msgstr ""
-
-msgctxt "concept:86"
-msgid "Kibbutz"
-msgstr ""
-
-msgctxt "concept:87"
-msgid "Gießen School"
-msgstr ""
-
-msgctxt "concept:88"
-msgid "1933 – 1936"
-msgstr ""
-
-msgctxt "concept:89"
-msgid "Zionism"
-msgstr ""
-
-msgctxt "concept:90"
-msgid "Patriotism"
-msgstr ""
-
-msgctxt "concept:91"
-msgid "Scouting"
-msgstr ""
-
-msgctxt "concept:92"
-msgid "Jewish Youth Group"
-msgstr ""
-
-msgctxt "concept:93"
-msgid "german classics"
-msgstr ""
-
-msgctxt "concept:94"
-msgid "IPD, among other materials"
-msgstr ""
-
-msgctxt "concept:95"
-msgid "B'nai Akiba"
-msgstr ""
-
-msgctxt "concept:96"
-msgid "Bachad (Brith chaluzim datiim)"
-msgstr ""
-
-msgctxt "concept:97"
-msgid "STEPSISTER"
-msgstr ""
-
-msgctxt "concept:98"
-msgid "Ancient Home'Haunted‘"
-msgstr ""
-
-msgctxt "concept:99"
-msgid "2. Mother old homeland"
-msgstr ""
-
-msgctxt "concept:100"
-msgid "Efforts to emigrate"
-msgstr ""
-
-msgctxt "concept:101"
-msgid "Stuttgart"
-msgstr ""
-
-msgctxt "concept:102"
-msgid "Letters"
-msgstr ""
-
-msgctxt "concept:103"
-msgid "Sonneborn's relatives"
-msgstr ""
-
-msgctxt "concept:104"
-msgid "Support"
-msgstr ""
-
-msgctxt "concept:105"
-msgid "Related"
-msgstr ""
-
-msgctxt "concept:106"
-msgid "Youth Aliya"
-msgstr ""
-
-msgctxt "concept:107"
-msgid "Help, support,"
-msgstr ""
-
-msgctxt "concept:108"
-msgid "Henrietta Szold"
-msgstr ""
-
-msgctxt "concept:109"
-msgid "Siblings (Sister Sonja)"
-msgstr ""
-
-msgctxt "concept:110"
-msgid "Emotions (theming)"
-msgstr ""
-
-msgctxt "concept:111"
-msgid "Sister"
-msgstr ""
-
-msgctxt "concept:112"
-msgid "1935"
-msgstr ""
-
-msgctxt "concept:113"
-msgid "== Works =="
-msgstr ""
-
-msgctxt "concept:114"
-msgid "Berlin"
-msgstr ""
-
-msgctxt "concept:115"
-msgid "Frankfurt/MYESHIVA"
-msgstr ""
-
-msgctxt "concept:116"
-msgid "Youth aliyah"
-msgstr ""
-
-msgctxt "concept:117"
-msgid "Means of transport"
-msgstr ""
-
-msgctxt "concept:118"
-msgid "Place of transit"
-msgstr ""
-
-msgctxt "concept:119"
-msgid "Zug"
-msgstr ""
-
-msgctxt "concept:120"
-msgid "Boat"
-msgstr ""
-
-msgctxt "concept:121"
-msgid "Palestine Office"
-msgstr ""
-
-msgctxt "concept:122"
-msgid "Marseille"
-msgstr ""
-
-msgctxt "concept:123"
-msgid "Frankfurt"
-msgstr ""
-
-msgctxt "concept:124"
-msgid "Train Station"
-msgstr ""
-
-msgctxt "concept:125"
-msgid "Abschied von den Eltern\"."
-msgstr ""
-
-msgctxt "concept:126"
-msgid "Compartment"
-msgstr ""
-
-msgctxt "concept:127"
-msgid "Kehl"
-msgstr ""
-
-msgctxt "concept:128"
-msgid "Transit point border"
-msgstr ""
-
-msgctxt "concept:129"
-msgid "France"
-msgstr ""
-
-msgctxt "concept:130"
-msgid "Transit point Germany"
-msgstr ""
-
-msgctxt "concept:131"
-msgid "Rheinha"
-msgstr ""
-
-msgctxt "concept:132"
-msgid "Tikwa Emotions"
-msgstr ""
-
-msgctxt "concept:133"
-msgid "Pardesim"
-msgstr ""
-
-msgctxt "concept:134"
-msgid "Social stigma"
-msgstr ""
-
-msgctxt "concept:135"
-msgid "Jecke"
-msgstr ""
-
-msgctxt "concept:136"
-msgid "Corner'Ostjuden‘"
-msgstr ""
-
-msgctxt "concept:137"
-msgid "Yiddish language"
-msgstr ""
-
-msgctxt "concept:138"
-msgid "Grandfather m'Ostjuden‘ World War I"
-msgstr ""
-
-msgctxt "concept:139"
-msgid "German culture"
-msgstr ""
-
-msgctxt "concept:140"
-msgid "Kvutzat Rodges"
-msgstr ""
-
-msgctxt "concept:141"
-msgid "Journey through the country"
-msgstr ""
-
-msgctxt "concept:142"
-msgid "Emek"
-msgstr ""
-
-msgctxt "concept:143"
-msgid "Emotions"
-msgstr ""
-
-msgctxt "concept:144"
-msgid "Alte Heimat Schule"
-msgstr ""
-
-msgctxt "concept:145"
-msgid "German language"
-msgstr ""
-
-msgctxt "concept:146"
-msgid "Cultural"
-msgstr ""
-
-msgctxt "concept:147"
-msgid "Faust"
-msgstr ""
-
-msgctxt "concept:148"
-msgid "Rischon le"
-msgstr ""
-
-msgctxt "concept:149"
-msgid "Zion making guest appearances."
-msgstr ""
-
-msgctxt "concept:150"
-msgid "Factory i/ near Haifa"
-msgstr ""
-
-msgctxt "concept:151"
-msgid "Soldier"
-msgstr ""
-
-msgctxt "concept:152"
-msgid "Haifa"
-msgstr ""
-
-msgctxt "concept:153"
-msgid "Tirat Zvi"
-msgstr ""
-
-msgctxt "concept:154"
-msgid "Jewish Brigade Lost Family"
-msgstr ""
-
-msgctxt "concept:155"
-msgid "Tirat Tzvi"
-msgstr ""
-
-msgctxt "concept:156"
-msgid "German, English"
-msgstr ""
-
-msgctxt "concept:157"
-msgid "Jewish Brigade Soldier"
-msgstr ""
-
-msgctxt "concept:158"
-msgid "Haganah"
-msgstr ""
-
-msgctxt "concept:159"
-msgid "Ms"
-msgstr ""
-
-msgctxt "concept:160"
-msgid "Haifa University Haifa"
-msgstr ""
-
-msgctxt "concept:161"
-msgid "1936"
-msgstr ""
-
-msgctxt "concept:162"
-msgid "Arrival"
-msgstr ""
-
-msgctxt "concept:163"
-msgid "German; Hebrew"
-msgstr ""
-
-msgctxt "concept:164"
-msgid "Documentation"
-msgstr ""
-
-msgctxt "concept:165"
-msgid "1975"
-msgstr ""
-
-msgctxt "concept:166"
-msgid "World War II"
-msgstr ""
-
-msgctxt "concept:167"
-msgid "1944"
-msgstr ""
-
-msgctxt "concept:168"
-msgid "Belgium"
-msgstr ""
-
-msgctxt "concept:169"
-msgid "Netherlands"
-msgstr ""
-
-msgctxt "concept:170"
-msgid "Birthplace"
-msgstr ""
-
-msgctxt "concept:171"
-msgid "Frankfurt-Gießen trip"
-msgstr ""
-
-msgctxt "concept:172"
-msgid "Kleinlinden"
-msgstr ""
-
-msgctxt "concept:173"
-msgid "Großen-Linden"
-msgstr ""
-
-msgctxt "concept:174"
-msgid "New home from the club of the former Giesseners"
-msgstr ""
-
-msgctxt "concept:175"
-msgid "German"
-msgstr ""
-
-msgctxt "concept:176"
-msgid "last generation"
-msgstr ""
-
-msgctxt "concept:177"
-msgid "Grandpa"
-msgstr ""
-
-msgctxt "concept:178"
-msgid "Breidenbach"
-msgstr ""
-
-msgctxt "concept:179"
-msgid "Grandparents m"
-msgstr ""
-
-msgctxt "concept:180"
-msgid "Migration"
-msgstr ""
-
-msgctxt "concept:181"
-msgid "Fate of the family"
-msgstr ""
-
-msgctxt "concept:182"
-msgid "Primary school"
-msgstr ""
-
-msgctxt "concept:183"
-msgid "Realgymnasium (Scientific grammar school)"
-msgstr ""
-
-msgctxt "concept:184"
-msgid "Development"
-msgstr ""
-
-msgctxt "concept:185"
-msgid "Grandparents v"
-msgstr ""
-
-msgctxt "concept:186"
-msgid "Summer holiday"
-msgstr ""
-
-msgctxt "concept:187"
-msgid "Sennfeld"
-msgstr ""
-
-msgctxt "concept:188"
-msgid "1945"
-msgstr ""
-
-msgctxt "concept:189"
-msgid "Relative Aunt"
-msgstr ""
-
-msgctxt "concept:190"
-msgid "Soldier in the Jewish Brigade"
-msgstr ""
-
-msgctxt "concept:191"
-msgid "Mother"
-msgstr ""
-
-msgctxt "concept:192"
-msgid "Jugendalijja"
-msgstr ""
-
-msgctxt "concept:193"
-msgid "Palestine Office Berlin"
-msgstr ""
-
-msgctxt "concept:194"
-msgid "Departure"
-msgstr ""
-
-msgctxt "concept:195"
-msgid "Frankfurt train station"
-msgstr ""
-
-msgctxt "concept:196"
-msgid "Kehl (am Rhein)"
-msgstr ""
-
-msgctxt "concept:197"
-msgid "Petah Tikva"
-msgstr ""
-
-msgctxt "concept:198"
-msgid "9 November"
-msgstr ""
-
-msgctxt "concept:199"
-msgid "Cousins"
-msgstr ""
-
-msgctxt "concept:200"
-msgid "Displacing the Shoah?"
-msgstr ""
-
-msgctxt "concept:201"
-msgid "Jeckes"
-msgstr ""
-
-msgctxt "concept:202"
-msgid "Stigmatisation of the 'East Jews‘ of the Weimar Republic"
-msgstr ""
-
-msgctxt "concept:203"
-msgid "1998"
-msgstr ""
-
-msgctxt "concept:204"
-msgid "Kibbutz Ha 'Ogen"
-msgstr ""
-
-msgctxt "concept:205"
-msgid "Jecke's 'East Jew‘ Apology"
-msgstr ""
-
-msgctxt "concept:206"
 msgid "Teen"
 msgstr ""
 
-msgctxt "concept:207"
-msgid "Kibbutz Rodges"
-msgstr ""
-
-msgctxt "concept:208"
-msgid "Meliorization"
-msgstr ""
-
-msgctxt "concept:209"
-msgid "Emigration Gießen"
-msgstr ""
-
-msgctxt "concept:210"
-msgid "Apartment Löberstraße 20"
-msgstr ""
-
-msgctxt "concept:211"
-msgid "Synagogue"
-msgstr ""
-
-msgctxt "concept:212"
-msgid "Mother's Cemetery/Grave"
-msgstr ""
-
-msgctxt "concept:213"
-msgid "Items"
-msgstr ""
-
-msgctxt "concept:214"
-msgid "Streamer"
-msgstr ""
-
-msgctxt "concept:215"
-msgid "Case"
-msgstr ""
-
-msgctxt "concept:216"
-msgid "Mother's book"
-msgstr ""
-
-msgctxt "concept:217"
-msgid "Painter Kaulbach"
-msgstr ""
-
-msgctxt "concept:218"
-msgid "Friends"
-msgstr ""
-
-msgctxt "concept:219"
-msgid "Family Religion"
-msgstr ""
-
-msgctxt "concept:220"
-msgid "JPD Jüdischer Pfadfinderbund Deutschland"
-msgstr ""
-
-msgctxt "concept:221"
-msgid "Else Brumlik"
-msgstr ""
-
-msgctxt "concept:222"
-msgid "Horst Brumlik"
-msgstr ""
-
-msgctxt "concept:223"
-msgid "Crossing of powers"
-msgstr ""
-
-msgctxt "concept:224"
-msgid "1933"
-msgstr ""
-
-msgctxt "concept:225"
-msgid "\"Moses Mendelssohn\"."
-msgstr ""
-
-msgctxt "concept:226"
-msgid "Be Jewish"
-msgstr ""
-
-msgctxt "concept:227"
-msgid "Family Brumlik"
-msgstr ""
-
-msgctxt "concept:228"
-msgid "Switzerland"
-msgstr ""
-
-msgctxt "concept:229"
-msgid "Uncle:"
-msgstr ""
-
-msgctxt "concept:230"
-msgid "1923"
-msgstr ""
-
-msgctxt "concept:231"
-msgid "Blue/white"
-msgstr ""
-
-msgctxt "concept:232"
-msgid "jewish Youth Group Religious Jungedbund"
-msgstr ""
-
-msgctxt "concept:233"
-msgid "Bachad"
-msgstr ""
-
-msgctxt "concept:234"
-msgid "Bund Bnei Akiva"
-msgstr ""
-
-msgctxt "concept:235"
-msgid "Gießenjüdische Jugendgruppen"
-msgstr ""
-
-msgctxt "concept:236"
-msgid "judaism-2"
-msgstr ""
-
-msgctxt "concept:237"
-msgid "Sonnenborns"
-msgstr ""
-
-msgctxt "concept:238"
-msgid "Family Reunion"
-msgstr ""
-
-msgctxt "concept:239"
-msgid "Kibbutz near Akko"
-msgstr ""
-
-msgctxt "concept:240"
-msgid "Ideal."
-msgstr ""
-
-msgctxt "concept:241"
-msgid "Rodgeszentrale Hakhshara Office of the Religious Workers' Party"
-msgstr ""
-
-msgctxt "concept:242"
-msgid "Kibbutz Tirat Zvi"
-msgstr ""
-
-msgctxt "concept:243"
-msgid "Prayer belts"
-msgstr ""
-
-msgctxt "concept:244"
-msgid "Season"
-msgstr ""
-
-msgctxt "concept:245"
-msgid "Infancy"
-msgstr ""
-
-msgctxt "concept:246"
-msgid "SHABBAT"
-msgstr ""
-
-msgctxt "concept:247"
-msgid "Jewish-German customs"
-msgstr ""
-
-msgctxt "concept:248"
-msgid "Heine"
-msgstr ""
-
-msgctxt "concept:249"
-msgid "Hanukah"
-msgstr ""
-
-msgctxt "concept:250"
-msgid "Item"
-msgstr ""
-
-msgctxt "concept:251"
-msgid "Gift? Bicycle"
-msgstr ""
-
-msgctxt "concept:252"
-msgid "1934"
-msgstr ""
-
-msgctxt "concept:253"
-msgid "Bar Mitzvah"
-msgstr ""
-
-msgctxt "concept:254"
-msgid "193419351936"
-msgstr ""
-
-msgctxt "concept:255"
-msgid "Realgymnasium Antisemitism"
-msgstr ""
-
-msgctxt "concept:256"
-msgid "Music; Fist"
-msgstr ""
-
-msgctxt "concept:257"
-msgid "gramophone records."
-msgstr ""
-
-msgctxt "concept:258"
-msgid "Haifa Bay"
-msgstr ""
-
-msgctxt "concept:259"
-msgid "Kiryat Bialik"
-msgstr ""
-
-msgctxt "concept:260"
-msgid "Beit Katz"
-msgstr ""
-
-msgctxt "concept:261"
-msgid "Parents-in-law"
-msgstr ""
-
-msgctxt "concept:262"
-msgid "Gramophone"
-msgstr ""
-
-msgctxt "concept:263"
-msgid "Adulting"
-msgstr ""
-
-msgctxt "concept:264"
-msgid "Jecke's stigma"
-msgstr ""
-
-msgctxt "concept:265"
-msgid "Response to the Shoah"
-msgstr ""
-
-msgctxt "concept:266"
-msgid "Grandchildren"
-msgstr ""
-
-msgctxt "concept:267"
-msgid "Hapoel Ha"
-msgstr ""
-
-msgctxt "concept:268"
-msgid "Mizrachi"
-msgstr ""
-
-msgctxt "concept:269"
-msgid "Bnei Akiva"
-msgstr ""
-
-msgctxt "concept:270"
-msgid "Head Yth Dev"
-msgstr ""
-
-msgctxt "concept:271"
-msgid "Fatherland"
-msgstr ""
-
-msgctxt "concept:272"
-msgid "Erwin Knausß"
-msgstr ""
-
-msgctxt "concept:273"
-msgid "Kindergarten"
-msgstr ""
-
-msgctxt "concept:274"
-msgid "Hedwig Burgheim"
-msgstr ""
-
-msgctxt "concept:275"
-msgid "Auschwitz:"
-msgstr ""
-
-msgctxt "concept:276"
-msgid "Shoah"
-msgstr ""
-
-msgctxt "concept:277"
-msgid "Hedwig-Burgheim"
-msgstr ""
-
-msgctxt "concept:278"
-msgid "Hedwig Burgheim Medal"
-msgstr ""
-
-msgctxt "concept:279"
-msgid "Adam Scheurer"
-msgstr ""
-
-msgctxt "concept:280"
-msgid "Theresienstadt."
-msgstr ""
-
-msgctxt "concept:281"
-msgid "Milieu"
-msgstr ""
-
-msgctxt "concept:282"
-msgid "Ancestors"
-msgstr ""
-
-msgctxt "concept:283"
-msgid "Preparations for the emigration of the children"
-msgstr ""
-
-msgctxt "concept:284"
-msgid "Siblings"
-msgstr ""
-
-msgctxt "concept:285"
-msgid "Early school leaving"
-msgstr ""
-
-msgctxt "concept:286"
-msgid "Awareness (as opposed to haunted)"
-msgstr ""
-
-msgctxt "concept:287"
-msgid "Objects (house of birth"
-msgstr ""
-
-msgctxt "concept:288"
-msgid "Book Case Furniture"
-msgstr ""
-
-msgctxt "concept:289"
-msgid "Books"
-msgstr ""
-
-msgctxt "concept:290"
-msgid "Vter"
-msgstr ""
-
-msgctxt "concept:291"
-msgid "Bar/Bat  Mitzvah"
-msgstr ""
-
-msgctxt "concept:292"
-msgid "jewish community in the old homeland"
-msgstr ""
-
-msgctxt "concept:293"
-msgid "Judaism"
-msgstr ""
-
-msgctxt "concept:294"
+msgctxt "concept:28"
 msgid "Reflection\n"
 "on Judaism"
 msgstr ""
 
-msgctxt "concept:295"
+msgctxt "concept:29"
 msgid "German Reich in National Socialism"
 msgstr ""
 
-msgctxt "concept:296"
+msgctxt "concept:30"
 msgid "Responsibility"
 msgstr ""
 
-msgctxt "concept:297"
+msgctxt "concept:31"
 msgid "EXEMPLARITY"
 msgstr ""
 
-msgctxt "concept:298"
+msgctxt "concept:32"
+msgid "Youth movements"
+msgstr ""
+
+msgctxt "concept:33"
 msgid "IPD (Jewish Scout Germany)"
 msgstr ""
 
-msgctxt "concept:299"
+msgctxt "concept:34"
 msgid "'Ostjuden' / 'Jeckes'"
 msgstr ""
 
-msgctxt "concept:300"
+msgctxt "concept:35"
+msgid "Social stigma"
+msgstr ""
+
+msgctxt "concept:36"
 msgid "Brit Ha-Olim"
 msgstr ""
 
-msgctxt "concept:301"
+msgctxt "concept:37"
 msgid "Eastern Jews' / 'Jeckes'"
 msgstr ""
 
-msgctxt "concept:302"
+msgctxt "concept:38"
 msgid "Profession"
 msgstr ""
 
-msgctxt "concept:303"
+msgctxt "concept:39"
 msgid "Father's death"
 msgstr ""
 
-msgctxt "concept:304"
+msgctxt "concept:40"
 msgid "General qualification for university entrance (Abitur)"
 msgstr ""
 
-msgctxt "concept:305"
+msgctxt "concept:41"
 msgid "job prospects"
 msgstr ""
 
-msgctxt "concept:306"
+msgctxt "concept:42"
+msgid "Religion"
+msgstr ""
+
+msgctxt "concept:43"
 msgid "Rabbinical seminar"
 msgstr ""
 
-msgctxt "concept:307"
-msgid "Pogromort"
+msgctxt "concept:44"
+msgid "Pogrom site"
 msgstr ""
 
-msgctxt "concept:308"
+msgctxt "concept:45"
 msgid "Poland"
 msgstr ""
 
-msgctxt "concept:309"
+msgctxt "concept:46"
 msgid "Arrested"
 msgstr ""
 
-msgctxt "concept:310"
+msgctxt "concept:47"
 msgid "Encounter with future wife"
 msgstr ""
 
-msgctxt "concept:311"
+msgctxt "concept:48"
 msgid "Time indication"
 msgstr ""
 
-msgctxt "concept:312"
+msgctxt "concept:49"
 msgid "Curriculum Vitae Break"
 msgstr ""
 
-msgctxt "concept:313"
+msgctxt "concept:50"
 msgid "Reich Pogrom Night 9/10 November 1938 (also: November Pogrom"
 msgstr ""
 
-msgctxt "concept:314"
+msgctxt "concept:51"
 msgid "\"Kristallnacht\")"
 msgstr ""
 
-msgctxt "concept:315"
+msgctxt "concept:52"
+msgid "The concentration camp"
+msgstr ""
+
+msgctxt "concept:53"
 msgid "Buchenwald"
 msgstr ""
 
-msgctxt "concept:316"
+msgctxt "concept:54"
 msgid "Narrative mode"
 msgstr ""
 
-msgctxt "concept:317"
+msgctxt "concept:55"
 msgid "Self-experience (1st hand)"
 msgstr ""
 
-msgctxt "concept:318"
+msgctxt "concept:56"
 msgid "Gestapo Office"
 msgstr ""
 
-msgctxt "concept:319"
+msgctxt "concept:57"
 msgid "Efforts"
 msgstr ""
 
-msgctxt "concept:320"
+msgctxt "concept:58"
 msgid "Palestine Office (Meinekestraße 10)"
 msgstr ""
 
-msgctxt "concept:321"
+msgctxt "concept:59"
 msgid "Jewish Agency"
 msgstr ""
 
-msgctxt "concept:322"
+msgctxt "concept:60"
+msgid "Emotions"
+msgstr ""
+
+msgctxt "concept:61"
 msgid "Narration from 2nd hand"
 msgstr ""
 
-msgctxt "concept:323"
+msgctxt "concept:62"
 msgid "Remembrance (Discourse)"
 msgstr ""
 
-msgctxt "concept:324"
+msgctxt "concept:63"
 msgid "Sickness"
 msgstr ""
 
-msgctxt "concept:325"
+msgctxt "concept:64"
+msgid "Immigration"
+msgstr ""
+
+msgctxt "concept:65"
 msgid "+ Das Leben in der neuen Heimat"
 msgstr ""
 
-msgctxt "concept:326"
+msgctxt "concept:66"
 msgid "Conscious (re-)appropriation of Judaism"
 msgstr ""
 
-msgctxt "concept:327"
+msgctxt "concept:67"
 msgid "ORTHODOXY"
 msgstr ""
 
-msgctxt "concept:328"
+msgctxt "concept:68"
+msgid "SHABBAT"
+msgstr ""
+
+msgctxt "concept:69"
+msgid "Continuity"
+msgstr ""
+
+msgctxt "concept:70"
 msgid "Community"
 msgstr ""
 
-msgctxt "concept:329"
+msgctxt "concept:71"
 msgid "Relationship between religion and the continued existence of the Jewish community"
 msgstr ""
 
-msgctxt "concept:330"
+msgctxt "concept:72"
 msgid "Continuity\n"
 "Generation\n"
 "Zionism\n"
 "Identity"
 msgstr ""
 
-msgctxt "concept:331"
+msgctxt "concept:73"
 msgid "University Studies"
 msgstr ""
 
-msgctxt "concept:332"
+msgctxt "concept:74"
+msgid "Relationship with Iwrit"
+msgstr ""
+
+msgctxt "concept:75"
 msgid "Difficulties with linguistic integration"
 msgstr ""
 
-msgctxt "concept:333"
+msgctxt "concept:76"
+msgid "code-switching"
+msgstr ""
+
+msgctxt "concept:77"
+msgid "Structure of the country"
+msgstr ""
+
+msgctxt "concept:78"
 msgid "Ostjuden' / 'Jeckes' (Discourse)"
 msgstr ""
 
-msgctxt "concept:334"
+msgctxt "concept:79"
 msgid "Hebrew (liturgical)"
 msgstr ""
 
-msgctxt "concept:335"
+msgctxt "concept:80"
 msgid "Work"
 msgstr ""
 
-msgctxt "concept:336"
+msgctxt "concept:81"
 msgid "Parent trip"
 msgstr ""
 
-msgctxt "concept:337"
+msgctxt "concept:82"
 msgid "Children's transport via Tehran"
 msgstr ""
 
-msgctxt "concept:338"
+msgctxt "concept:83"
+msgid "Generation"
+msgstr ""
+
+msgctxt "concept:84"
 msgid "ironic allusion to the military situation in Palestine and Israel"
 msgstr ""
 
-msgctxt "concept:339"
+msgctxt "concept:85"
 msgid "Future"
 msgstr ""
 
-msgctxt "concept:340"
+msgctxt "concept:86"
 msgid "today /narrative presence"
 msgstr ""
 
-msgctxt "concept:341"
+msgctxt "concept:87"
 msgid "PhD"
 msgstr ""
 
-msgctxt "concept:342"
+msgctxt "concept:88"
 msgid "Journey back"
 msgstr ""
 
-msgctxt "concept:343"
+msgctxt "concept:89"
 msgid "Yad Vashem."
 msgstr ""
 
-msgctxt "concept:344"
+msgctxt "concept:90"
 msgid "The methodology"
 msgstr ""
 
-msgctxt "concept:345"
+msgctxt "concept:91"
 msgid "Relationship with Zionist and right-wing organizations"
 msgstr ""
 
-msgctxt "concept:346"
+msgctxt "concept:92"
 msgid "Care for elderly people of the German Alija"
 msgstr ""
 
-msgctxt "concept:347"
+msgctxt "concept:93"
 msgid "Irgun Olej Merkaz Europe"
 msgstr ""
 
-msgctxt "concept:348"
+msgctxt "concept:94"
 msgid "Assessment of the (relatively short and minor) cultural and intellectual contribution of German Jewry to\n"
 "Israel"
 msgstr ""
 
-msgctxt "concept:349"
+msgctxt "concept:95"
 msgid "Documentation (Alsberg's statements are based on a professional background as an archivist and historian)"
 msgstr ""
 
-msgctxt "concept:350"
+msgctxt "concept:96"
+msgid "Cultural"
+msgstr ""
+
+msgctxt "concept:97"
 msgid "The role of individuality in preserving cultural and community roots"
 msgstr ""
 
-msgctxt "concept:351"
+msgctxt "concept:98"
+msgid "German"
+msgstr ""
+
+msgctxt "concept:99"
 msgid "Hebrew Iwrit"
 msgstr ""
 
-msgctxt "concept:352"
+msgctxt "concept:100"
 msgid "german alija"
 msgstr ""
 
-msgctxt "concept:353"
+msgctxt "concept:101"
+msgid "English"
+msgstr ""
+
+msgctxt "concept:102"
 msgid "Municipality"
 msgstr ""
 
-msgctxt "concept:354"
-msgid "administrative"
+msgctxt "concept:103"
+msgid "code switching"
 msgstr ""
 
-msgctxt "concept:355"
+msgctxt "concept:104"
+msgid "Home:"
+msgstr ""
+
+msgctxt "concept:105"
+msgid "Cultural role of Ada's family in the Jewish community"
+msgstr ""
+
+msgctxt "concept:106"
+msgid "Brother"
+msgstr ""
+
+msgctxt "concept:107"
 msgid "Old homeland"
 msgstr ""
 
-msgctxt "concept:356"
-msgid "Arrest"
+msgctxt "concept:108"
+msgid "(Themed) objects"
 msgstr ""
 
-msgctxt "concept:357"
-msgid "Birth"
+msgctxt "concept:109"
+msgid "racism;"
 msgstr ""
 
-msgctxt "concept:358"
-msgid "Death"
+msgctxt "concept:110"
+msgid "Anti-Semitism"
 msgstr ""
 
-msgctxt "concept:359"
-msgid "Deportation"
+msgctxt "concept:111"
+msgid "Youth Movement ('Comrades') and Zionism"
 msgstr ""
 
-msgctxt "concept:360"
-msgid "Education"
+msgctxt "concept:112"
+msgid "The Farewell"
 msgstr ""
 
-msgctxt "concept:361"
-msgid "Emigration transit"
+msgctxt "concept:113"
+msgid "Migration of many inhabitants from Frankfurt an der Oder"
 msgstr ""
 
-msgctxt "concept:362"
-msgid "Place of Remembrance"
+msgctxt "concept:114"
+msgid "Hakhshara"
 msgstr ""
 
-msgctxt "concept:363"
-msgid "Farewell"
+msgctxt "concept:115"
+msgid "Longing"
 msgstr ""
 
-msgctxt "concept:364"
-msgid "Forced designation"
+msgctxt "concept:116"
+msgid "Children's Village"
 msgstr ""
 
-msgctxt "concept:365"
-msgid "Forced eviction"
+msgctxt "concept:117"
+msgid "Hugen-Aljia"
 msgstr ""
 
-msgctxt "concept:366"
-msgid "Immigration"
+msgctxt "concept:118"
+msgid "Division of the youth village near Ben Schemen"
 msgstr ""
 
-msgctxt "concept:367"
-msgid "Marriage"
+msgctxt "concept:119"
+msgid "Living together of Alija children and local children in Ben Shema"
 msgstr ""
 
-msgctxt "concept:368"
-msgid "Memorial Gedenkbuch Berlin"
+msgctxt "concept:120"
+msgid "Emigration"
 msgstr ""
 
-msgctxt "concept:369"
-msgid "Memorial Gedenkbuch Bundesarchiv"
+msgctxt "concept:121"
+msgid "Parents"
 msgstr ""
 
-msgctxt "concept:370"
-msgid "Memorial Stolperstein"
+msgctxt "concept:122"
+msgid "Father's attitude towards Zionism"
 msgstr ""
 
-msgctxt "concept:371"
-msgid "Memorial street name"
+msgctxt "concept:123"
+msgid "Parents' Attitude to Zionism"
 msgstr ""
 
-msgctxt "concept:372"
-msgid "Memorial Yad Vashem"
+msgctxt "concept:124"
+msgid "Crystal Night"
 msgstr ""
 
-msgctxt "concept:373"
-msgid "Military service"
+msgctxt "concept:125"
+msgid "Departure certificate for Ada's father"
 msgstr ""
 
-msgctxt "concept:374"
-msgid "Murder"
+msgctxt "concept:126"
+msgid "Help from family"
 msgstr ""
 
-msgctxt "concept:375"
+msgctxt "concept:127"
+msgid "Story of the Liberation of Ada's Father"
+msgstr ""
+
+msgctxt "concept:128"
+msgid "Living in the new country"
+msgstr ""
+
+msgctxt "concept:129"
+msgid "Languages and \"mastery\" of reality"
+msgstr ""
+
+msgctxt "concept:130"
+msgid "Language and Fracture"
+msgstr ""
+
+msgctxt "concept:131"
+msgid "related to the anniversary of the father's death"
+msgstr ""
+
+msgctxt "concept:132"
+msgid "Internment camps for Jews in Cyprus"
+msgstr ""
+
+msgctxt "concept:133"
+msgid "Various professions in the field of music education and musicology"
+msgstr ""
+
+msgctxt "concept:134"
+msgid "Contribution to music education in radio broadcasts"
+msgstr ""
+
+msgctxt "concept:135"
+msgid "Series about Bach and Beethoven"
+msgstr ""
+
+msgctxt "concept:136"
+msgid "Rilke"
+msgstr ""
+
+msgctxt "concept:137"
+msgid "Translation problems when recomposing lyrics"
+msgstr ""
+
+msgctxt "concept:138"
+msgid "Relationship with the German language"
+msgstr ""
+
+msgctxt "concept:139"
+msgid "Speech with brother"
+msgstr ""
+
+msgctxt "concept:140"
+msgid "Ada's attitude towards her work as a contribution to cultural life in Israel"
+msgstr ""
+
+msgctxt "concept:141"
+msgid "Enjoyment of their work"
+msgstr ""
+
+msgctxt "concept:142"
+msgid "Continuity (passing on the culture"
+msgstr ""
+
+msgctxt "concept:143"
+msgid "Memories and experiences of the daughters)"
+msgstr ""
+
+msgctxt "concept:144"
+msgid "Negative feelings and experiences during visits to Germany"
+msgstr ""
+
+msgctxt "concept:145"
+msgid "Languages"
+msgstr ""
+
+msgctxt "concept:146"
+msgid "Culture"
+msgstr ""
+
+msgctxt "concept:147"
+msgid "Complex and conflicting perceptions of emigration as a young girl"
+msgstr ""
+
+msgctxt "concept:148"
+msgid "Flight"
+msgstr ""
+
+msgctxt "concept:149"
+msgid "Emigration"
+msgstr ""
+
+msgctxt "concept:150"
 msgid "My New Home"
 msgstr ""
 
-msgctxt "concept:376"
-msgid "Notification"
+msgctxt "concept:151"
+msgid "Offspring"
 msgstr ""
 
-msgctxt "concept:377"
-msgid "Der Ort der Zeit"
+msgctxt "concept:152"
+msgid "Casting anti-Semitism"
 msgstr ""
 
-msgctxt "concept:378"
+msgctxt "concept:153"
+msgid "Step mother"
+msgstr ""
+
+msgctxt "concept:154"
+msgid "Gießen"
+msgstr ""
+
+msgctxt "concept:155"
+msgid "Palestine State"
+msgstr ""
+
+msgctxt "concept:156"
+msgid "Germany"
+msgstr ""
+
+msgctxt "concept:157"
+msgid "1938"
+msgstr ""
+
+msgctxt "concept:158"
+msgid "'Kristallnacht‘"
+msgstr ""
+
+msgctxt "concept:159"
+msgid "Synagogues"
+msgstr ""
+
+msgctxt "concept:160"
+msgid "Shoah"
+msgstr ""
+
+msgctxt "concept:161"
 msgid "The journey back"
 msgstr ""
 
+msgctxt "concept:162"
+msgid "Jewish Brigade"
+msgstr ""
+
+msgctxt "concept:163"
+msgid "Grand Father"
+msgstr ""
+
+msgctxt "concept:164"
+msgid "Isaak Stern"
+msgstr ""
+
+msgctxt "concept:165"
+msgid "Fanatacism"
+msgstr ""
+
+msgctxt "concept:166"
+msgid "1918"
+msgstr ""
+
+msgctxt "concept:167"
+msgid "Kibbutz"
+msgstr ""
+
+msgctxt "concept:168"
+msgid "Gießen School"
+msgstr ""
+
+msgctxt "concept:169"
+msgid "1933 – 1936"
+msgstr ""
+
+msgctxt "concept:170"
+msgid "Patriotism"
+msgstr ""
+
+msgctxt "concept:171"
+msgid "Scouting"
+msgstr ""
+
+msgctxt "concept:172"
+msgid "Jewish Youth Group"
+msgstr ""
+
+msgctxt "concept:173"
+msgid "german classics"
+msgstr ""
+
+msgctxt "concept:174"
+msgid "IPD, among other materials"
+msgstr ""
+
+msgctxt "concept:175"
+msgid "B'nai Akiba"
+msgstr ""
+
+msgctxt "concept:176"
+msgid "Bachad (Brith chaluzim datiim)"
+msgstr ""
+
+msgctxt "concept:177"
+msgid "STEPSISTER"
+msgstr ""
+
+msgctxt "concept:178"
+msgid "Ancient Home'Haunted‘"
+msgstr ""
+
+msgctxt "concept:179"
+msgid "2. Mother old homeland"
+msgstr ""
+
+msgctxt "concept:180"
+msgid "Efforts to emigrate"
+msgstr ""
+
+msgctxt "concept:181"
+msgid "Stuttgart"
+msgstr ""
+
+msgctxt "concept:182"
+msgid "Letters"
+msgstr ""
+
+msgctxt "concept:183"
+msgid "Sonneborn's relatives"
+msgstr ""
+
+msgctxt "concept:184"
+msgid "Support"
+msgstr ""
+
+msgctxt "concept:185"
+msgid "Related"
+msgstr ""
+
+msgctxt "concept:186"
+msgid "Youth Aliya"
+msgstr ""
+
+msgctxt "concept:187"
+msgid "Help, support,"
+msgstr ""
+
+msgctxt "concept:188"
+msgid "Henrietta Szold"
+msgstr ""
+
+msgctxt "concept:189"
+msgid "Siblings (Sister Sonja)"
+msgstr ""
+
+msgctxt "concept:190"
+msgid "Emotions (theming)"
+msgstr ""
+
+msgctxt "concept:191"
+msgid "Sister"
+msgstr ""
+
+msgctxt "concept:192"
+msgid "1935"
+msgstr ""
+
+msgctxt "concept:193"
+msgid "== Works =="
+msgstr ""
+
+msgctxt "concept:194"
+msgid "Berlin"
+msgstr ""
+
+msgctxt "concept:195"
+msgid "Frankfurt/MYESHIVA"
+msgstr ""
+
+msgctxt "concept:196"
+msgid "Youth aliyah"
+msgstr ""
+
+msgctxt "concept:197"
+msgid "Means of transport"
+msgstr ""
+
+msgctxt "concept:198"
+msgid "Place of transit"
+msgstr ""
+
+msgctxt "concept:199"
+msgid "Zug"
+msgstr ""
+
+msgctxt "concept:200"
+msgid "Boat"
+msgstr ""
+
+msgctxt "concept:201"
+msgid "Palestine Office"
+msgstr ""
+
+msgctxt "concept:202"
+msgid "Marseille"
+msgstr ""
+
+msgctxt "concept:203"
+msgid "Frankfurt"
+msgstr ""
+
+msgctxt "concept:204"
+msgid "Train Station"
+msgstr ""
+
+msgctxt "concept:205"
+msgid "Abschied von den Eltern\"."
+msgstr ""
+
+msgctxt "concept:206"
+msgid "Compartment"
+msgstr ""
+
+msgctxt "concept:207"
+msgid "Kehl"
+msgstr ""
+
+msgctxt "concept:208"
+msgid "Transit point border"
+msgstr ""
+
+msgctxt "concept:209"
+msgid "France"
+msgstr ""
+
+msgctxt "concept:210"
+msgid "Transit point Germany"
+msgstr ""
+
+msgctxt "concept:211"
+msgid "Rheinha"
+msgstr ""
+
+msgctxt "concept:212"
+msgid "Tikwa Emotions"
+msgstr ""
+
+msgctxt "concept:213"
+msgid "Pardesim"
+msgstr ""
+
+msgctxt "concept:214"
+msgid "Jecke"
+msgstr ""
+
+msgctxt "concept:215"
+msgid "Corner'Ostjuden‘"
+msgstr ""
+
+msgctxt "concept:216"
+msgid "Yiddish language"
+msgstr ""
+
+msgctxt "concept:217"
+msgid "Grandfather m'Ostjuden‘ World War I"
+msgstr ""
+
+msgctxt "concept:218"
+msgid "German culture"
+msgstr ""
+
+msgctxt "concept:219"
+msgid "Kvutzat Rodges"
+msgstr ""
+
+msgctxt "concept:220"
+msgid "Journey through the country"
+msgstr ""
+
+msgctxt "concept:221"
+msgid "Emek"
+msgstr ""
+
+msgctxt "concept:222"
+msgid "Old Homeland School"
+msgstr ""
+
+msgctxt "concept:223"
+msgid "German language"
+msgstr ""
+
+msgctxt "concept:224"
+msgid "Faust"
+msgstr ""
+
+msgctxt "concept:225"
+msgid "Rischon le"
+msgstr ""
+
+msgctxt "concept:226"
+msgid "Zion making guest appearances."
+msgstr ""
+
+msgctxt "concept:227"
+msgid "Factory i/ near Haifa"
+msgstr ""
+
+msgctxt "concept:228"
+msgid "Soldier"
+msgstr ""
+
+msgctxt "concept:229"
+msgid "Haifa"
+msgstr ""
+
+msgctxt "concept:230"
+msgid "Tirat Zvi"
+msgstr ""
+
+msgctxt "concept:231"
+msgid "Jewish Brigade Lost Family"
+msgstr ""
+
+msgctxt "concept:232"
+msgid "Tirat Tzvi"
+msgstr ""
+
+msgctxt "concept:233"
+msgid "German, English"
+msgstr ""
+
+msgctxt "concept:234"
+msgid "Jewish Brigade Soldier"
+msgstr ""
+
+msgctxt "concept:235"
+msgid "Haganah"
+msgstr ""
+
+msgctxt "concept:236"
+msgid "Ms"
+msgstr ""
+
+msgctxt "concept:237"
+msgid "Haifa University Haifa"
+msgstr ""
+
+msgctxt "concept:238"
+msgid "1936"
+msgstr ""
+
+msgctxt "concept:239"
+msgid "Arrival"
+msgstr ""
+
+msgctxt "concept:240"
+msgid "German; Hebrew"
+msgstr ""
+
+msgctxt "concept:241"
+msgid "Documentation"
+msgstr ""
+
+msgctxt "concept:242"
+msgid "1975"
+msgstr ""
+
+msgctxt "concept:243"
+msgid "World War II"
+msgstr ""
+
+msgctxt "concept:244"
+msgid "1944"
+msgstr ""
+
+msgctxt "concept:245"
+msgid "Belgium"
+msgstr ""
+
+msgctxt "concept:246"
+msgid "Netherlands"
+msgstr ""
+
+msgctxt "concept:247"
+msgid "Birthplace"
+msgstr ""
+
+msgctxt "concept:248"
+msgid "Frankfurt-Gießen trip"
+msgstr ""
+
+msgctxt "concept:249"
+msgid "Kleinlinden"
+msgstr ""
+
+msgctxt "concept:250"
+msgid "Großen-Linden"
+msgstr ""
+
+msgctxt "concept:251"
+msgid "New home from the club of the former Giesseners"
+msgstr ""
+
+msgctxt "concept:252"
+msgid "last generation"
+msgstr ""
+
+msgctxt "concept:253"
+msgid "Grandpa"
+msgstr ""
+
+msgctxt "concept:254"
+msgid "Breidenbach"
+msgstr ""
+
+msgctxt "concept:255"
+msgid "Grandparents m"
+msgstr ""
+
+msgctxt "concept:256"
+msgid "Migration"
+msgstr ""
+
+msgctxt "concept:257"
+msgid "Fate of the family"
+msgstr ""
+
+msgctxt "concept:258"
+msgid "Primary school"
+msgstr ""
+
+msgctxt "concept:259"
+msgid "Realgymnasium (Scientific grammar school)"
+msgstr ""
+
+msgctxt "concept:260"
+msgid "Development"
+msgstr ""
+
+msgctxt "concept:261"
+msgid "Grandparents v"
+msgstr ""
+
+msgctxt "concept:262"
+msgid "Summer holiday"
+msgstr ""
+
+msgctxt "concept:263"
+msgid "Sennfeld"
+msgstr ""
+
+msgctxt "concept:264"
+msgid "1945"
+msgstr ""
+
+msgctxt "concept:265"
+msgid "Relative Aunt"
+msgstr ""
+
+msgctxt "concept:266"
+msgid "Soldier in the Jewish Brigade"
+msgstr ""
+
+msgctxt "concept:267"
+msgid "Mother"
+msgstr ""
+
+msgctxt "concept:268"
+msgid "Jugendalijja"
+msgstr ""
+
+msgctxt "concept:269"
+msgid "Palestine Office Berlin"
+msgstr ""
+
+msgctxt "concept:270"
+msgid "Departure"
+msgstr ""
+
+msgctxt "concept:271"
+msgid "Frankfurt train station"
+msgstr ""
+
+msgctxt "concept:272"
+msgid "Kehl (am Rhein)"
+msgstr ""
+
+msgctxt "concept:273"
+msgid "Petah Tikva"
+msgstr ""
+
+msgctxt "concept:274"
+msgid "9 November"
+msgstr ""
+
+msgctxt "concept:275"
+msgid "Cousins"
+msgstr ""
+
+msgctxt "concept:276"
+msgid "Displacing the Shoah?"
+msgstr ""
+
+msgctxt "concept:277"
+msgid "Jeckes"
+msgstr ""
+
+msgctxt "concept:278"
+msgid "Stigmatisation of the 'East Jews‘ of the Weimar Republic"
+msgstr ""
+
+msgctxt "concept:279"
+msgid "1998"
+msgstr ""
+
+msgctxt "concept:280"
+msgid "Kibbutz Ha 'Ogen"
+msgstr ""
+
+msgctxt "concept:281"
+msgid "Jecke's 'East Jew‘ Apology"
+msgstr ""
+
+msgctxt "concept:282"
+msgid "Kibbutz Rodges"
+msgstr ""
+
+msgctxt "concept:283"
+msgid "Meliorization"
+msgstr ""
+
+msgctxt "concept:284"
+msgid "Emigration Gießen"
+msgstr ""
+
+msgctxt "concept:285"
+msgid "Apartment Löberstraße 20"
+msgstr ""
+
+msgctxt "concept:286"
+msgid "Synagogue"
+msgstr ""
+
+msgctxt "concept:287"
+msgid "Mother's Cemetery/Grave"
+msgstr ""
+
+msgctxt "concept:288"
+msgid "Items"
+msgstr ""
+
+msgctxt "concept:289"
+msgid "Streamer"
+msgstr ""
+
+msgctxt "concept:290"
+msgid "Case"
+msgstr ""
+
+msgctxt "concept:291"
+msgid "Mother's book"
+msgstr ""
+
+msgctxt "concept:292"
+msgid "Painter Kaulbach"
+msgstr ""
+
+msgctxt "concept:293"
+msgid "Friends"
+msgstr ""
+
+msgctxt "concept:294"
+msgid "Family Religion"
+msgstr ""
+
+msgctxt "concept:295"
+msgid "JPD Jüdischer Pfadfinderbund Deutschland"
+msgstr ""
+
+msgctxt "concept:296"
+msgid "Else Brumlik"
+msgstr ""
+
+msgctxt "concept:297"
+msgid "Horst Brumlik"
+msgstr ""
+
+msgctxt "concept:298"
+msgid "Crossing of powers"
+msgstr ""
+
+msgctxt "concept:299"
+msgid "1933"
+msgstr ""
+
+msgctxt "concept:300"
+msgid "\"Moses Mendelssohn\"."
+msgstr ""
+
+msgctxt "concept:301"
+msgid "Be Jewish"
+msgstr ""
+
+msgctxt "concept:302"
+msgid "Family Brumlik"
+msgstr ""
+
+msgctxt "concept:303"
+msgid "Switzerland"
+msgstr ""
+
+msgctxt "concept:304"
+msgid "Uncle:"
+msgstr ""
+
+msgctxt "concept:305"
+msgid "1923"
+msgstr ""
+
+msgctxt "concept:306"
+msgid "Blue/white"
+msgstr ""
+
+msgctxt "concept:307"
+msgid "jewish Youth Group Religious Jungedbund"
+msgstr ""
+
+msgctxt "concept:308"
+msgid "Bachad"
+msgstr ""
+
+msgctxt "concept:309"
+msgid "Bund Bnei Akiva"
+msgstr ""
+
+msgctxt "concept:310"
+msgid "Gießen Jewish youth groups"
+msgstr ""
+
+msgctxt "concept:311"
+msgid "Sonnenborns"
+msgstr ""
+
+msgctxt "concept:312"
+msgid "Family Reunion"
+msgstr ""
+
+msgctxt "concept:313"
+msgid "Kibbutz near Akko"
+msgstr ""
+
+msgctxt "concept:314"
+msgid "Ideal."
+msgstr ""
+
+msgctxt "concept:315"
+msgid "Rodgeszentrale Hakhshara Office of the Religious Workers' Party"
+msgstr ""
+
+msgctxt "concept:316"
+msgid "Kibbutz Tirat Zvi"
+msgstr ""
+
+msgctxt "concept:317"
+msgid "Prayer belts"
+msgstr ""
+
+msgctxt "concept:318"
+msgid "Season"
+msgstr ""
+
+msgctxt "concept:319"
+msgid "Infancy"
+msgstr ""
+
+msgctxt "concept:320"
+msgid "Jewish-German customs"
+msgstr ""
+
+msgctxt "concept:321"
+msgid "Heine"
+msgstr ""
+
+msgctxt "concept:322"
+msgid "Hanukah"
+msgstr ""
+
+msgctxt "concept:323"
+msgid "Item"
+msgstr ""
+
+msgctxt "concept:324"
+msgid "Gift? Bicycle"
+msgstr ""
+
+msgctxt "concept:325"
+msgid "1934"
+msgstr ""
+
+msgctxt "concept:326"
+msgid "Bar Mitzvah"
+msgstr ""
+
+msgctxt "concept:327"
+msgid "193419351936"
+msgstr ""
+
+msgctxt "concept:328"
+msgid "Realgymnasium Antisemitism"
+msgstr ""
+
+msgctxt "concept:329"
+msgid "Music; Fist"
+msgstr ""
+
+msgctxt "concept:330"
+msgid "gramophone records."
+msgstr ""
+
+msgctxt "concept:331"
+msgid "Haifa Bay"
+msgstr ""
+
+msgctxt "concept:332"
+msgid "Kiryat Bialik"
+msgstr ""
+
+msgctxt "concept:333"
+msgid "Beit Katz"
+msgstr ""
+
+msgctxt "concept:334"
+msgid "Parents-in-law"
+msgstr ""
+
+msgctxt "concept:335"
+msgid "Gramophone"
+msgstr ""
+
+msgctxt "concept:336"
+msgid "Adulting"
+msgstr ""
+
+msgctxt "concept:337"
+msgid "Jecke's stigma"
+msgstr ""
+
+msgctxt "concept:338"
+msgid "Response to the Shoah"
+msgstr ""
+
+msgctxt "concept:339"
+msgid "Grandchildren"
+msgstr ""
+
+msgctxt "concept:340"
+msgid "Hapoel Ha"
+msgstr ""
+
+msgctxt "concept:341"
+msgid "Mizrachi"
+msgstr ""
+
+msgctxt "concept:342"
+msgid "Bnei Akiva"
+msgstr ""
+
+msgctxt "concept:343"
+msgid "Head Yth Dev"
+msgstr ""
+
+msgctxt "concept:344"
+msgid "Fatherland"
+msgstr ""
+
+msgctxt "concept:345"
+msgid "Erwin Knausß"
+msgstr ""
+
+msgctxt "concept:346"
+msgid "Kindergarten"
+msgstr ""
+
+msgctxt "concept:347"
+msgid "Hedwig Burgheim"
+msgstr ""
+
+msgctxt "concept:348"
+msgid "Auschwitz:"
+msgstr ""
+
+msgctxt "concept:349"
+msgid "Shoah"
+msgstr ""
+
+msgctxt "concept:350"
+msgid "Hedwig-Burgheim"
+msgstr ""
+
+msgctxt "concept:351"
+msgid "Hedwig Burgheim Medal"
+msgstr ""
+
+msgctxt "concept:352"
+msgid "Adam Scheurer"
+msgstr ""
+
+msgctxt "concept:353"
+msgid "Theresienstadt"
+msgstr ""
+
+msgctxt "concept:354"
+msgid "Administrative"
+msgstr ""
+
+msgctxt "concept:356"
+msgid "old_home\n"
+"place of remembrance"
+msgstr ""
+
+msgctxt "concept:357"
+msgid "old_home \n"
+"transit"
+msgstr ""
+
+msgctxt "concept:358"
+msgid "Arrest"
+msgstr ""
+
+msgctxt "concept:360"
+msgid "Birth"
+msgstr ""
+
+msgctxt "concept:361"
+msgid "Death"
+msgstr ""
+
+msgctxt "concept:362"
+msgid "Deportation"
+msgstr ""
+
+msgctxt "concept:363"
+msgid "Education"
+msgstr ""
+
+msgctxt "concept:364"
+msgid "Emigration transit"
+msgstr ""
+
+msgctxt "concept:365"
+msgid "Encounter"
+msgstr ""
+
+msgctxt "concept:366"
+msgid "Place of Remembrance"
+msgstr ""
+
+msgctxt "concept:367"
+msgid "Place of remembrance\n"
+"Place of time"
+msgstr ""
+
+msgctxt "concept:368"
+msgid "Farewell"
+msgstr ""
+
+msgctxt "concept:369"
+msgid "Forced designation"
+msgstr ""
+
+msgctxt "concept:370"
+msgid "Forced eviction"
+msgstr ""
+
+msgctxt "concept:371"
+msgid "https://encyclopedia.yivo.org/article/959"
+msgstr ""
+
+msgctxt "concept:373"
+msgid "Marriage"
+msgstr ""
+
+msgctxt "concept:374"
+msgid "Membership"
+msgstr ""
+
+msgctxt "concept:375"
+msgid "Memorial Gedenkbuch Berlin"
+msgstr ""
+
+msgctxt "concept:376"
+msgid "Memorial Gedenkbuch Bundesarchiv"
+msgstr ""
+
+msgctxt "concept:377"
+msgid "Other memorial"
+msgstr ""
+
+msgctxt "concept:378"
+msgid "Memorial plaque"
+msgstr ""
+
 msgctxt "concept:379"
-msgid "Residence"
+msgid "Memorial Stolperstein"
 msgstr ""
 
 msgctxt "concept:380"
-msgid "Residence change"
+msgid "Memorial street name"
 msgstr ""
 
 msgctxt "concept:381"
-msgid "Return visit"
+msgid "Memorial Yad Vashem"
 msgstr ""
 
 msgctxt "concept:382"
-msgid "Return visit transit"
+msgid "Military service"
 msgstr ""
 
 msgctxt "concept:383"
-msgid "Transport arrival"
-msgstr ""
-
-msgctxt "concept:384"
-msgid "Transport departure"
+msgid "Murder"
 msgstr ""
 
 msgctxt "concept:385"
-msgid "Work"
+msgid "new_home\n"
+"Place of Time"
 msgstr ""
 
 msgctxt "concept:386"
-msgid "Phone in the ghetto house"
+msgid "Notification"
 msgstr ""
 
 msgctxt "concept:387"
-msgid "Train"
+msgid "Place of time"
+msgstr ""
+
+msgctxt "concept:388"
+msgid "other (biographically significant relationships)"
+msgstr ""
+
+msgctxt "concept:389"
+msgid "Other (illness)"
+msgstr ""
+
+msgctxt "concept:391"
+msgid "Release"
+msgstr ""
+
+msgctxt "concept:392"
+msgid "Residence"
+msgstr ""
+
+msgctxt "concept:393"
+msgid "Residence change"
+msgstr ""
+
+msgctxt "concept:394"
+msgid "Return visit"
+msgstr ""
+
+msgctxt "concept:395"
+msgid "Return visit transit"
+msgstr ""
+
+msgctxt "concept:396"
+msgid "Reunion"
+msgstr ""
+
+msgctxt "concept:397"
+msgid "School leaving"
+msgstr ""
+
+msgctxt "concept:398"
+msgid "School-leaving class"
+msgstr ""
+
+msgctxt "concept:399"
+msgid "Separation"
+msgstr ""
+
+msgctxt "concept:400"
+msgid "transit"
+msgstr ""
+
+msgctxt "concept:401"
+msgid "Transport arrival"
+msgstr ""
+
+msgctxt "concept:402"
+msgid "Transport departure"
+msgstr ""
+
+msgctxt "concept:403"
+msgid "Travel"
+msgstr ""
+
+msgctxt "concept:405"
+msgid "Unknown"
+msgstr ""
+
+msgctxt "concept:406"
+msgid "Ship"
+msgstr ""
+
+msgctxt "concept:407"
+msgid "Ship?"
+msgstr ""
+
+msgctxt "concept:408"
+msgid "Phone in the ghetto house"
+msgstr ""
+
+msgctxt "concept:409"
+msgid "Schools"
+msgstr ""
+
+msgctxt "concept:410"
+msgid "ship called \"Gerusalemme\""
 msgstr ""
 
