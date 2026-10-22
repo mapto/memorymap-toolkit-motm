@@ -1,3 +1,5 @@
 files:
   - source: /locale/de/LC_MESSAGES/django.po
     translation: /locale/%two_letters_code%/LC_MESSAGES/django.po
+  - source: /locale/de/LC_MESSAGES/*.po
+    translation: /locale/%two_letters_code%/LC_MESSAGES/%original_file_name%
