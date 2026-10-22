@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-28 11:01+0000\n"
-"PO-Revision-Date: 2026-10-22 13:23\n"
+"PO-Revision-Date: 2026-10-22 13:47\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it_IT\n"
@@ -53,7 +53,7 @@ msgstr "Stimato"
 
 #: mmt_motm/models.py
 msgid "Unknown"
-msgstr ""
+msgstr "Sconosciuto"
 
 #: mmt_motm/models.py:11
 msgid "Probable"
@@ -155,7 +155,7 @@ msgstr "Mappa di calore"
 #: templates/mmt_map/base.html:134 templates/mmt_motm/event_list.html:6
 #: templates/mmt_motm/text_only.html:23
 msgid "Timeline"
-msgstr ""
+msgstr "Linea del tempo"
 
 #: templates/mmt_map/base.html:144 templates/mmt_map/base.html:309
 #: templates/mmt_motm/concept_detail.html:23
@@ -168,7 +168,7 @@ msgstr "Citazioni"
 
 #: templates/mmt_motm/person_detail.html:188
 msgid "Quotes about this person"
-msgstr ""
+msgstr "Citazioni su questa persona"
 
 #: templates/mmt_map/base.html:157
 msgid "About"
@@ -383,19 +383,19 @@ msgstr "Persona menzionata:"
 
 #: templates/mmt_motm/extraction_detail.html:30
 msgid "Priority:"
-msgstr ""
+msgstr "Priorità:"
 
 #: mmt_motm/models.py
 msgid "High"
-msgstr ""
+msgstr "Alta"
 
 #: mmt_motm/models.py
 msgid "Medium"
-msgstr ""
+msgstr "Media"
 
 #: mmt_motm/models.py
 msgid "Low"
-msgstr ""
+msgstr "Bassa"
 
 #: templates/mmt_motm/extraction_detail.html:39
 msgid "Event:"
@@ -419,7 +419,7 @@ msgstr "Cerca per citazione, concetto o persona…"
 
 #: templates/mmt_motm/extraction_list.html
 msgid "citations"
-msgstr ""
+msgstr "citazioni"
 
 #: templates/mmt_motm/extraction_list.html:12
 msgid "Person"
@@ -584,7 +584,7 @@ msgstr "Morto/a:"
 
 #: templates/mmt_motm/person_detail.html:60
 msgid "Persecuted group"
-msgstr ""
+msgstr "Gruppo perseguitato"
 
 #: templates/mmt_motm/person_detail.html:104
 msgid "top 20"
@@ -708,21 +708,21 @@ msgstr "Vista mappa"
 
 #: templates/mmt_motm/person_detail.html:170
 msgid "See all"
-msgstr ""
+msgstr "Vedi tutte"
 
 #: templates/mmt_map/index.html
 msgid "Selected map items"
-msgstr ""
+msgstr "Elementi selezionati sulla mappa"
 
 msgid "Education / qualification:"
-msgstr ""
+msgstr "Istruzione / titolo:"
 
 msgid "Occupation at emigration:"
-msgstr ""
+msgstr "Professione al momento dell'emigrazione:"
 
 msgid "Occupation at source:"
-msgstr ""
+msgstr "Professione al momento della fonte:"
 
 msgid "Residence at source:"
-msgstr ""
+msgstr "Luogo di residenza al momento della fonte:"
 
