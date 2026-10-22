@@ -9,23 +9,31 @@ from django.utils import translation
 
 @lru_cache(maxsize=None)
 def _catalog(domain, language_code):
+    """Return the message mapping for a domain and language.
+
+    When no ``.mo`` file exists, gettext returns ``NullTranslations``, which has
+    no message mapping. In that case an empty dict is returned so callers fall
+    back to the source message.
+    """
     locale_root = str(settings.LOCALE_PATHS[0])
-    return gettext.translation(
+    translations = gettext.translation(
         domain,
         localedir=locale_root,
         languages=[language_code],
         fallback=True,
     )
+    return getattr(translations, "_catalog", {})
 
 
 def catalog_pgettext(domain, context, message, language_code=None):
-    """Translate a context-specific data value with the active locale."""
+    """Translate a context-specific data value with the active locale.
+
+    Falls back to ``message`` when no translation is available.
+    """
     language_code = language_code or translation.get_language() or settings.LANGUAGE_CODE
-    catalog = _catalog(domain, language_code)
+    messages = _catalog(domain, language_code)
     contextual_key = f"{context}\x04{message}"
-    if contextual_key in catalog._catalog:
-        return catalog._catalog[contextual_key]
-    return message
+    return messages.get(contextual_key, message)
 
 
 def localized_event_description(event, language_code=None):
