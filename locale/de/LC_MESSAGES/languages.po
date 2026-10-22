@@ -1,109 +1,102 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: motm\n"
+"Project-Id-Version: memorymap-toolkit-language-names\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-07 00:00+0000\n"
-"PO-Revision-Date: 2026-10-22 12:56\n"
+"PO-Revision-Date: 2026-10-07 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Crowdin-Project: motm\n"
-"X-Crowdin-Project-ID: 925547\n"
-"X-Crowdin-Language: de\n"
-"X-Crowdin-File: /alignment/locale/de/LC_MESSAGES/languages.po\n"
-"X-Crowdin-File-ID: 26\n"
 
 msgid "German"
-msgstr ""
+msgstr "Deutsch"
 
 msgid "English"
-msgstr ""
+msgstr "Englisch"
 
 msgid "French"
-msgstr ""
+msgstr "Französisch"
 
 msgid "Italian"
-msgstr ""
+msgstr "Italienisch"
 
 msgid "Spanish"
-msgstr ""
+msgstr "Spanisch"
 
 msgid "Portuguese"
-msgstr ""
+msgstr "Portugiesisch"
 
 msgid "Dutch"
-msgstr ""
+msgstr "Niederländisch"
 
 msgid "Polish"
-msgstr ""
+msgstr "Polnisch"
 
 msgid "Czech"
-msgstr ""
+msgstr "Tschechisch"
 
 msgid "Russian"
-msgstr ""
+msgstr "Russisch"
 
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ukrainisch"
 
 msgid "Hebrew"
-msgstr ""
+msgstr "Hebräisch"
 
 msgid "Yiddish"
-msgstr ""
+msgstr "Jiddisch"
 
 msgid "Arabic"
-msgstr ""
+msgstr "Arabisch"
 
 msgid "Turkish"
-msgstr ""
+msgstr "Türkisch"
 
 msgid "Hungarian"
-msgstr ""
+msgstr "Ungarisch"
 
 msgid "Romanian"
-msgstr ""
+msgstr "Rumänisch"
 
 msgid "Bulgarian"
-msgstr ""
+msgstr "Bulgarisch"
 
 msgid "Croatian"
-msgstr ""
+msgstr "Kroatisch"
 
 msgid "Serbian"
-msgstr ""
+msgstr "Serbisch"
 
 msgid "Slovak"
-msgstr ""
+msgstr "Slowakisch"
 
 msgid "Slovenian"
-msgstr ""
+msgstr "Slowenisch"
 
 msgid "Greek"
-msgstr ""
+msgstr "Griechisch"
 
 msgid "Danish"
-msgstr ""
+msgstr "Dänisch"
 
 msgid "Swedish"
-msgstr ""
+msgstr "Schwedisch"
 
 msgid "Norwegian"
-msgstr ""
+msgstr "Norwegisch"
 
 msgid "Finnish"
-msgstr ""
+msgstr "Finnisch"
 
 msgid "Japanese"
-msgstr ""
+msgstr "Japanisch"
 
 msgid "Chinese"
-msgstr ""
+msgstr "Chinesisch"
 
 msgid "Korean"
-msgstr ""
-
+msgstr "Koreanisch"
