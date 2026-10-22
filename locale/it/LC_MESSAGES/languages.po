@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: motm\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-07 00:00+0000\n"
-"PO-Revision-Date: 2026-10-22 12:56\n"
+"PO-Revision-Date: 2026-10-22 13:47\n"
 "Last-Translator: \n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -18,92 +18,92 @@ msgstr ""
 "X-Crowdin-File-ID: 26\n"
 
 msgid "German"
-msgstr ""
+msgstr "Tedesco"
 
 msgid "English"
-msgstr ""
+msgstr "Inglese"
 
 msgid "French"
-msgstr ""
+msgstr "Francese"
 
 msgid "Italian"
-msgstr ""
+msgstr "Italiano"
 
 msgid "Spanish"
-msgstr ""
+msgstr "Spagnolo"
 
 msgid "Portuguese"
-msgstr ""
+msgstr "Portoghese"
 
 msgid "Dutch"
-msgstr ""
+msgstr "Olandese"
 
 msgid "Polish"
-msgstr ""
+msgstr "Polacco"
 
 msgid "Czech"
-msgstr ""
+msgstr "Ceco"
 
 msgid "Russian"
-msgstr ""
+msgstr "Russo"
 
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ucraino"
 
 msgid "Hebrew"
-msgstr ""
+msgstr "Ebraico"
 
 msgid "Yiddish"
 msgstr ""
 
 msgid "Arabic"
-msgstr ""
+msgstr "Arabo"
 
 msgid "Turkish"
-msgstr ""
+msgstr "Turco"
 
 msgid "Hungarian"
-msgstr ""
+msgstr "Ungherese"
 
 msgid "Romanian"
-msgstr ""
+msgstr "Rumeno"
 
 msgid "Bulgarian"
-msgstr ""
+msgstr "Bulgaro"
 
 msgid "Croatian"
-msgstr ""
+msgstr "Croato"
 
 msgid "Serbian"
-msgstr ""
+msgstr "Serbo"
 
 msgid "Slovak"
-msgstr ""
+msgstr "Slovacco"
 
 msgid "Slovenian"
-msgstr ""
+msgstr "Sloveno"
 
 msgid "Greek"
-msgstr ""
+msgstr "Greco"
 
 msgid "Danish"
-msgstr ""
+msgstr "Danese"
 
 msgid "Swedish"
-msgstr ""
+msgstr "Svedese"
 
 msgid "Norwegian"
-msgstr ""
+msgstr "Norvegese"
 
 msgid "Finnish"
-msgstr ""
+msgstr "Finlandese"
 
 msgid "Japanese"
-msgstr ""
+msgstr "Giapponese"
 
 msgid "Chinese"
-msgstr ""
+msgstr "Cinese"
 
 msgid "Korean"
-msgstr ""
+msgstr "Coreano"
 
